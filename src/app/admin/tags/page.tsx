@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import { Plus, Edit2, Trash2, X } from 'lucide-react';
-import { Button, Card, Modal } from '@/components/common';
+import { Button, Card, Modal, Input } from '@/components/common';
 import { tags } from '@/data';
 import { Tag } from '@/types';
+import { tagBadgeStyle } from '@/lib';
 
 export default function AdminTagsPage() {
   const [tagList, setTagList] = useState<Tag[]>(tags);
@@ -104,7 +105,7 @@ export default function AdminTagsPage() {
                     </span>
                   </td>
                   <td className="py-4 px-6">
-                    <span className="text-xs px-2 py-0.5 rounded-full border bg-gray-500/20 text-gray-400 border-gray-500/30">
+                    <span className={`text-xs px-2 py-0.5 rounded-full border ${tagBadgeStyle}`}>
                       {tag.name}
                     </span>
                   </td>
@@ -155,25 +156,19 @@ export default function AdminTagsPage() {
       </Card>
 
       {/* Create/Edit Modal */}
-      <Modal isOpen={isModalOpen} onClose={closeModal}>
+      <Modal isOpen={isModalOpen} onClose={closeModal} maxWidth="max-w-sm">
         <div className="p-6">
           <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-6">
             {editingTag ? 'Edit Tag' : 'New Tag'}
           </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                Name
-              </label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({ name: e.target.value })}
-                placeholder="e.g., Analytics"
-                className="w-full px-4 py-2 bg-[var(--bg-body)] border border-[var(--border-default)] rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:border-[var(--brand-green-primary)]"
-                required
-              />
-            </div>
+            <Input
+              label="Name"
+              value={formData.name}
+              onChange={(e) => setFormData({ name: e.target.value })}
+              placeholder="e.g., Analytics"
+              required
+            />
 
             <div className="flex items-center justify-end gap-3 pt-4">
               <Button type="button" variant="ghost" onClick={closeModal}>

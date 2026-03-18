@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { Plus, Edit2, Trash2, X, ExternalLink } from 'lucide-react';
-import { Button, Card, Modal } from '@/components/common';
+import { Button, Card, Modal, Input, Textarea } from '@/components/common';
 import { partners } from '@/data';
 import { Partner } from '@/types';
 
@@ -29,7 +30,7 @@ export default function AdminPartnersPage() {
     setFormData({
       name: partner.name,
       website: partner.website,
-      logo: partner.logo,
+      logo: partner.logo || '',
       description: partner.description,
     });
     setIsModalOpen(true);
@@ -122,14 +123,18 @@ export default function AdminPartnersPage() {
                 >
                   <td className="py-4 px-6">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-[var(--bg-body)] border border-[var(--border-default)] flex items-center justify-center overflow-hidden">
+                      <div className="w-10 h-10 rounded-lg bg-white border border-[var(--border-default)] flex items-center justify-center overflow-hidden">
                         {partner.logo ? (
-                          <span className="text-xs text-[var(--text-tertiary)]">
-                            {partner.name.charAt(0)}
-                          </span>
+                          <Image
+                            src={`/logos/${partner.logo}`}
+                            alt={`${partner.name} logo`}
+                            width={28}
+                            height={28}
+                            className="object-contain"
+                          />
                         ) : (
-                          <span className="text-xs text-[var(--text-tertiary)]">
-                            {partner.name.charAt(0)}
+                          <span className="text-sm font-bold text-slate-600">
+                            {partner.name.slice(0, 2).toUpperCase()}
                           </span>
                         )}
                       </div>
@@ -201,67 +206,46 @@ export default function AdminPartnersPage() {
       </Card>
 
       {/* Create/Edit Modal */}
-      <Modal isOpen={isModalOpen} onClose={closeModal}>
+      <Modal isOpen={isModalOpen} onClose={closeModal} maxWidth="max-w-lg">
         <div className="p-6">
           <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-6">
             {editingPartner ? 'Edit Partner' : 'New Partner'}
           </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                Name
-              </label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-                placeholder="e.g., Acme Inc"
-                className="w-full px-4 py-2 bg-[var(--bg-body)] border border-[var(--border-default)] rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:border-[var(--brand-green-primary)]"
-                required
-              />
-            </div>
+            <Input
+              label="Name"
+              value={formData.name}
+              onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+              placeholder="e.g., Acme Inc"
+              required
+            />
+
+            <Input
+              label="Website"
+              value={formData.website}
+              onChange={(e) => setFormData((prev) => ({ ...prev, website: e.target.value }))}
+              placeholder="e.g., acme.com"
+            />
 
             <div>
-              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                Website
-              </label>
-              <input
-                type="text"
-                value={formData.website}
-                onChange={(e) => setFormData((prev) => ({ ...prev, website: e.target.value }))}
-                placeholder="e.g., acme.com"
-                className="w-full px-4 py-2 bg-[var(--bg-body)] border border-[var(--border-default)] rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:border-[var(--brand-green-primary)]"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                Logo Filename
-              </label>
-              <input
-                type="text"
+              <Input
+                label="Logo Filename"
                 value={formData.logo}
                 onChange={(e) => setFormData((prev) => ({ ...prev, logo: e.target.value }))}
                 placeholder="e.g., acme.png"
-                className="w-full px-4 py-2 bg-[var(--bg-body)] border border-[var(--border-default)] rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:border-[var(--brand-green-primary)]"
               />
               <p className="text-xs text-[var(--text-tertiary)] mt-1">
                 Filename of the logo image in the public folder
               </p>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                Description
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
-                placeholder="Brief description of what this partner does..."
-                rows={3}
-                className="w-full px-4 py-2 bg-[var(--bg-body)] border border-[var(--border-default)] rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:border-[var(--brand-green-primary)] resize-none"
-              />
-            </div>
+            <Textarea
+              label="Description"
+              value={formData.description}
+              onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
+              placeholder="Brief description of what this partner does..."
+              rows={3}
+            />
 
             <div className="flex items-center justify-end gap-3 pt-4">
               <Button type="button" variant="ghost" onClick={closeModal}>

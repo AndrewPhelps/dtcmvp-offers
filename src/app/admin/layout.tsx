@@ -21,9 +21,9 @@ export default function AdminLayout({
   const pathname = usePathname();
 
   return (
-    <div className="flex min-h-screen">
-      {/* Sidebar */}
-      <aside className="w-64 bg-[var(--bg-card)] border-r border-[var(--border-default)] flex flex-col">
+    <div className="min-h-screen">
+      {/* Sidebar - Fixed */}
+      <aside className="fixed inset-y-0 left-0 w-64 bg-[var(--bg-card)] border-r border-[var(--border-default)] flex flex-col z-40 overflow-y-auto">
         {/* Logo/Brand */}
         <div className="p-6 border-b border-[var(--border-default)]">
           <Link href="/admin" className="flex items-center gap-2">
@@ -73,8 +73,8 @@ export default function AdminLayout({
         </div>
       </aside>
 
-      {/* Main content */}
-      <main className="flex-1 bg-[var(--bg-body)]">
+      {/* Main content - offset for fixed sidebar */}
+      <main className="pl-64 min-h-screen bg-[var(--bg-body)]">
         {children}
       </main>
     </div>

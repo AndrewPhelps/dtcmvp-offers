@@ -1,16 +1,43 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import Image from 'next/image';
-import { Search, Sparkles, ArrowRight, Trash2, Loader2 } from 'lucide-react';
-import { Card, Button } from '@/components/common';
+import { Search, Sparkles, ArrowRight, Trash2 } from 'lucide-react';
+import { Card } from '@/components/common';
 import { OfferDrawer } from '@/components/offers';
 import { QuestionnaireModal } from '@/components/questionnaire';
 import { offers, partners, categories, getCategory, getTagsByIds } from '@/data';
 import { Offer } from '@/types';
 import { getCategoryColorByColorName, tagBadgeStyle } from '@/lib/categoryColors';
 import { useBrand } from '@/contexts';
+
+// Typewriter effect component
+function TypewriterText({ text, speed = 25 }: { text: string; speed?: number }) {
+  const [displayedText, setDisplayedText] = useState('');
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    setDisplayedText('');
+    setCurrentIndex(0);
+  }, [text]);
+
+  useEffect(() => {
+    if (currentIndex < text.length) {
+      const timeout = setTimeout(() => {
+        setDisplayedText(text.slice(0, currentIndex + 1));
+        setCurrentIndex(currentIndex + 1);
+      }, speed);
+      return () => clearTimeout(timeout);
+    }
+  }, [currentIndex, text, speed]);
+
+  return (
+    <span>
+      {displayedText}
+      {currentIndex < text.length && <span className="animate-pulse">|</span>}
+    </span>
+  );
+}
 
 export default function OffersPage() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | 'all'>('all');
@@ -26,7 +53,6 @@ export default function OffersPage() {
     isAnalyzing,
     loadingMessageIndex,
     loadingMessages,
-    startAnalysis,
     generateRecommendationsImmediate,
     selectRecommendation,
     clearRecommendationView,
@@ -35,13 +61,6 @@ export default function OffersPage() {
 
   // Get claimed offer IDs for filtering
   const claimedOfferIds = useMemo(() => claims.map((c) => c.offerId), [claims]);
-  const [navActionsEl, setNavActionsEl] = useState<HTMLElement | null>(null);
-
-  // Find the nav actions element for portal
-  useEffect(() => {
-    const el = document.getElementById('nav-actions');
-    if (el) setNavActionsEl(el);
-  }, []);
 
   // Get recommended offer IDs for selected recommendation
   const selectedRecommendationOfferIds = useMemo(() => {
@@ -103,12 +122,6 @@ export default function OffersPage() {
     return offers.filter((o) => o.isActive && !hiddenOfferIds.includes(o.id) && !claimedOfferIds.includes(o.id)).length;
   };
 
-  // Handle "Find Offers For Me" click - starts AI-like loading animation
-  const handleFindOffersForMe = () => {
-    startAnalysis();
-    setSelectedCategoryId('all');
-  };
-
   const handleOfferClick = (offer: Offer) => {
     setSelectedOffer(offer);
     setDrawerOpen(true);
@@ -155,36 +168,18 @@ export default function OffersPage() {
 
   const selectedPartner = selectedOffer ? getPartner(selectedOffer.partnerId) : null;
 
-  // Nav actions to render via portal
-  const navActions = (
-    <Button
-      onClick={handleFindOffersForMe}
-      disabled={isAnalyzing}
-    >
-      {isAnalyzing ? (
-        <>
-          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          Analyzing...
-        </>
-      ) : (
-        <>
-          <Sparkles className="w-4 h-4 mr-2" />
-          Find Offers For Me
-        </>
-      )}
-    </Button>
-  );
-
   return (
     <div className="relative">
-      {/* Render nav actions via portal */}
-      {navActionsEl && createPortal(navActions, navActionsEl)}
-
       {/* Background image - fixed to bottom */}
       <div
         className="fixed bottom-0 left-0 right-0 pointer-events-none z-0 opacity-25"
         style={{ backgroundImage: 'url(/bg-offers.jpg)', backgroundSize: '100% auto', backgroundPosition: 'bottom', backgroundRepeat: 'no-repeat' }}
       >
+        {/* Gradient overlay at top to blend with page background */}
+        <div
+          className="absolute top-0 left-0 right-0 h-[120px]"
+          style={{ background: 'linear-gradient(to bottom, var(--bg-body) 0%, transparent 100%)' }}
+        />
         <img src="/bg-offers.jpg" alt="" className="w-full invisible" />
       </div>
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
@@ -324,11 +319,11 @@ export default function OffersPage() {
                   </div>
                   <div className="absolute inset-0 rounded-full border-2 border-[var(--brand-green-primary)]/30 animate-ping" />
                 </div>
-                <p className="text-lg text-[var(--text-primary)] font-medium mb-2">
-                  Finding your perfect offers
+                <p className="text-lg text-[var(--text-primary)] font-medium mb-3">
+                  Finding Offers For You
                 </p>
-                <p className="text-sm text-[var(--text-secondary)] animate-pulse transition-all duration-300">
-                  {loadingMessages[loadingMessageIndex]}
+                <p className="text-base text-[var(--text-secondary)] h-6">
+                  <TypewriterText text={loadingMessages[loadingMessageIndex]} speed={20} />
                 </p>
               </div>
             )}

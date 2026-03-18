@@ -1,10 +1,8 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
-import { createPortal } from 'react-dom';
+import { useState, useMemo } from 'react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
-import { ArrowRight, Bookmark, CheckCircle, Send, MessageSquare, Sparkles, Loader2, FileText } from 'lucide-react';
+import { ArrowRight, Bookmark, CheckCircle, FileText } from 'lucide-react';
 import { Card, Button, Modal } from '@/components/common';
 import { OfferDrawer } from '@/components/offers';
 import { useBrand, BrandClaim } from '@/contexts';
@@ -21,15 +19,7 @@ export default function MyOffersPage() {
   const [notesModalOpen, setNotesModalOpen] = useState(false);
   const [notesOfferId, setNotesOfferId] = useState<string | null>(null);
   const [notesValue, setNotesValue] = useState('');
-  const { claims, savedOfferIds, updateClaimNotes, unsaveOffer, startAnalysis, isAnalyzing } = useBrand();
-  const [navActionsEl, setNavActionsEl] = useState<HTMLElement | null>(null);
-  const router = useRouter();
-
-  // Find the nav actions element for portal
-  useEffect(() => {
-    const el = document.getElementById('nav-actions');
-    if (el) setNavActionsEl(el);
-  }, []);
+  const { claims, savedOfferIds, updateClaimNotes, unsaveOffer } = useBrand();
 
   const claimedOffers = useMemo(() => {
     return claims.map((claim) => {
@@ -87,34 +77,8 @@ export default function MyOffersPage() {
     closeNotesModal();
   };
 
-  // Handle "Find Offers For Me" click
-  const handleFindOffersForMe = () => {
-    startAnalysis();
-    router.push('/offers');
-  };
-
-  // Nav actions to render via portal
-  const navActions = (
-    <Button onClick={handleFindOffersForMe} disabled={isAnalyzing}>
-      {isAnalyzing ? (
-        <>
-          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          Analyzing...
-        </>
-      ) : (
-        <>
-          <Sparkles className="w-4 h-4 mr-2" />
-          Find Offers For Me
-        </>
-      )}
-    </Button>
-  );
-
   return (
     <div className="relative">
-      {/* Render nav actions via portal */}
-      {navActionsEl && createPortal(navActions, navActionsEl)}
-
       {/* Background image - fixed to bottom */}
       <div
         className="fixed bottom-0 left-0 right-0 pointer-events-none z-0 opacity-25"

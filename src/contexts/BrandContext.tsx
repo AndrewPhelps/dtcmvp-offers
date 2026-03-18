@@ -143,7 +143,7 @@ export function BrandProvider({ children }: { children: ReactNode }) {
         }
         return prev + 1;
       });
-    }, 800);
+    }, 2000);
 
     const completeTimeout = setTimeout(() => {
       const recommendedOffers = generateRecommendations();
@@ -156,7 +156,7 @@ export function BrandProvider({ children }: { children: ReactNode }) {
       setSelectedRecommendation(newRecommendation.id);
       setIsAnalyzing(false);
       setLoadingMessageIndex(0);
-    }, 4500);
+    }, 8000);
 
     return () => {
       clearInterval(messageInterval);

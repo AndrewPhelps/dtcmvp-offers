@@ -35,6 +35,7 @@ export default function EditOfferPage() {
     tagIds: [] as string[],
     status: 'draft' as 'active' | 'draft' | 'archived',
     isActive: true,
+    sampleDeliverablePdf: '',
   });
 
   const [formFields, setFormFields] = useState<FormField[]>([]);
@@ -52,6 +53,7 @@ export default function EditOfferPage() {
         tagIds: offer.tagIds,
         status: offer.status,
         isActive: offer.isActive,
+        sampleDeliverablePdf: offer.sampleDeliverablePdf || '',
       });
       setFormFields(offer.formFields);
     } else {
@@ -94,6 +96,7 @@ export default function EditOfferPage() {
       id: offerId,
       ...formData,
       formFields,
+      sampleDeliverablePdf: formData.sampleDeliverablePdf || undefined,
     };
 
     console.log('Offer updated:', updatedOffer);
@@ -124,7 +127,7 @@ export default function EditOfferPage() {
   }
 
   return (
-    <div className="p-8 max-w-4xl">
+    <div className="p-8 max-w-3xl mx-auto">
       <Link
         href="/admin/offers"
         className="inline-flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors mb-6"
@@ -142,7 +145,7 @@ export default function EditOfferPage() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Info */}
-        <Card>
+        <Card className="p-6">
           <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-6">
             Basic Information
           </h2>
@@ -194,7 +197,7 @@ export default function EditOfferPage() {
         </Card>
 
         {/* Descriptions */}
-        <Card>
+        <Card className="p-6">
           <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-6">
             Descriptions
           </h2>
@@ -226,7 +229,7 @@ export default function EditOfferPage() {
             />
 
             <div>
-              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
                 Tags
               </label>
               <div className="flex flex-wrap gap-2 p-3 bg-[var(--bg-body)] border border-[var(--border-default)] rounded-lg min-h-[42px]">
@@ -246,7 +249,7 @@ export default function EditOfferPage() {
                             tagIds: prev.tagIds.filter((id) => id !== tagId),
                           }))
                         }
-                        className="text-[var(--text-tertiary)] hover:text-[var(--brand-red)]"
+                        className="text-[var(--text-tertiary)] hover:text-[var(--brand-red)] cursor-pointer"
                       >
                         ×
                       </button>
@@ -276,11 +279,21 @@ export default function EditOfferPage() {
                 </select>
               </div>
             </div>
+
+            <Input
+              label="Sample Deliverable PDF"
+              value={formData.sampleDeliverablePdf}
+              onChange={(e) => handleChange('sampleDeliverablePdf', e.target.value)}
+              placeholder="e.g., sample-audit-report.pdf"
+            />
+            <p className="text-xs text-[var(--text-tertiary)] -mt-2">
+              Filename of a sample deliverable PDF in the public/pdfs folder (optional)
+            </p>
           </div>
         </Card>
 
         {/* Form Fields */}
-        <Card>
+        <Card className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-lg font-semibold text-[var(--text-primary)]">

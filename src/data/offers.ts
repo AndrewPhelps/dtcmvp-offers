@@ -10,6 +10,7 @@ export const offers: Offer[] = [
     categoryId: 'operations',
     tagIds: ['fraud', 'security', 'audit'],
     isActive: true,
+    sampleDeliverablePdf: 'sample-fraud-audit.pdf',
     formFields: [
       { id: 'store_url', type: 'url', label: 'Store URL', required: true },
       { id: 'monthly_orders', type: 'select', label: 'Monthly order volume', required: true, options: ['<1k', '1k-5k', '5k-10k', '10k-25k', '25k+'] },
@@ -77,6 +78,7 @@ Recent audits have found $300K+ in wasted spend and $75K-$150K in unlockable inc
     categoryId: 'marketplaces',
     tagIds: ['amazon', 'advertising', 'audit', 'ppc'],
     isActive: true,
+    sampleDeliverablePdf: 'sample-amazon-audit.pdf',
     formFields: [
       { id: 'brand_name', type: 'text', label: 'Brand name', required: true },
       { id: 'store_url', type: 'url', label: 'Store URL', required: true },
@@ -126,6 +128,7 @@ You'll get insights on:
     categoryId: 'retention-loyalty',
     tagIds: ['subscription', 'retention', 'ltv', 'churn'],
     isActive: true,
+    sampleDeliverablePdf: 'sample-subscription-report.pdf',
     formFields: [
       { id: 'store_url', type: 'url', label: 'Store URL', required: true },
       { id: 'subscription_platform', type: 'select', label: 'Subscription platform', required: true, options: ['Recharge', 'Skio', 'Smartrr', 'Loop', 'Other'] },
@@ -200,6 +203,7 @@ Your report includes:
     categoryId: 'analytics-insights',
     tagIds: ['personas', 'audience', 'segmentation', 'targeting'],
     isActive: true,
+    sampleDeliverablePdf: 'sample-personas-report.pdf',
     formFields: [
       { id: 'store_url', type: 'url', label: 'Store URL', required: true },
       { id: 'monthly_orders', type: 'select', label: 'Monthly orders', required: true, options: ['<500', '500-2k', '2k-5k', '5k-10k', '10k+'] },

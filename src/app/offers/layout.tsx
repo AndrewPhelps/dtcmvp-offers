@@ -1,15 +1,47 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { BrandProvider } from '@/contexts';
+import { usePathname, useRouter } from 'next/navigation';
+import { Sparkles, Loader2 } from 'lucide-react';
+import { BrandProvider, useBrand } from '@/contexts';
+import { Button } from '@/components/common';
 
 const brandNavItems = [
   { href: '/offers', label: 'Find Offers', exact: true },
   { href: '/offers/my', label: 'My Offers' },
 ];
 
-export default function OffersLayout({
+function NavActions() {
+  const { startAnalysis, isAnalyzing } = useBrand();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const handleFindOffersForMe = () => {
+    startAnalysis();
+    // Only navigate if not already on /offers
+    if (pathname !== '/offers') {
+      router.push('/offers');
+    }
+  };
+
+  return (
+    <Button onClick={handleFindOffersForMe} disabled={isAnalyzing}>
+      {isAnalyzing ? (
+        <>
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          Analyzing...
+        </>
+      ) : (
+        <>
+          <Sparkles className="w-4 h-4 mr-2" />
+          Find Offers For Me
+        </>
+      )}
+    </Button>
+  );
+}
+
+function OffersLayoutContent({
   children,
 }: {
   children: React.ReactNode;
@@ -17,7 +49,6 @@ export default function OffersLayout({
   const pathname = usePathname();
 
   return (
-    <BrandProvider>
     <div className="min-h-screen">
       {/* Top Navigation Bar */}
       <nav className="border-b border-[var(--border-default)] bg-[var(--bg-body)]">
@@ -53,10 +84,8 @@ export default function OffersLayout({
               })}
             </div>
 
-            {/* Right side slot - rendered by page via portal or we leave empty for now */}
-            <div id="nav-actions" className="flex items-center gap-3">
-              {/* Page-specific actions will be placed here */}
-            </div>
+            {/* Find Offers For Me button */}
+            <NavActions />
           </div>
         </div>
       </nav>
@@ -66,6 +95,17 @@ export default function OffersLayout({
         {children}
       </main>
     </div>
+  );
+}
+
+export default function OffersLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <BrandProvider>
+      <OffersLayoutContent>{children}</OffersLayoutContent>
     </BrandProvider>
   );
 }

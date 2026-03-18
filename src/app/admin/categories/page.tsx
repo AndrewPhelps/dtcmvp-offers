@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Plus, Edit2, Trash2, X } from 'lucide-react';
-import { Button, Card, Modal } from '@/components/common';
+import { Button, Card, Modal, Input } from '@/components/common';
 import { categories } from '@/data';
 import { Category } from '@/types';
 import { getCategoryColorByColorName } from '@/lib';
@@ -100,9 +100,6 @@ export default function AdminCategoriesPage() {
                   Name
                 </th>
                 <th className="text-left py-4 px-6 text-sm font-semibold text-[var(--text-secondary)]">
-                  Color
-                </th>
-                <th className="text-left py-4 px-6 text-sm font-semibold text-[var(--text-secondary)]">
                   Preview
                 </th>
                 <th className="text-right py-4 px-6 text-sm font-semibold text-[var(--text-secondary)]">
@@ -122,16 +119,6 @@ export default function AdminCategoriesPage() {
                       <span className="font-medium text-[var(--text-primary)]">
                         {category.name}
                       </span>
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-2">
-                        <div
-                          className={`w-4 h-4 rounded-full ${colors.bg} border ${colors.text.replace('text-', 'border-')}`}
-                        />
-                        <span className="text-[var(--text-secondary)] capitalize">
-                          {category.color}
-                        </span>
-                      </div>
                     </td>
                     <td className="py-4 px-6">
                       <span className={`text-xs px-2 py-0.5 rounded-full border ${colors.badge}`}>
@@ -186,31 +173,25 @@ export default function AdminCategoriesPage() {
       </Card>
 
       {/* Create/Edit Modal */}
-      <Modal isOpen={isModalOpen} onClose={closeModal}>
+      <Modal isOpen={isModalOpen} onClose={closeModal} maxWidth="max-w-md">
         <div className="p-6">
           <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-6">
             {editingCategory ? 'Edit Category' : 'New Category'}
           </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                Name
-              </label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-                placeholder="e.g., Analytics & Insights"
-                className="w-full px-4 py-2 bg-[var(--bg-body)] border border-[var(--border-default)] rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:border-[var(--brand-green-primary)]"
-                required
-              />
-            </div>
+            <Input
+              label="Name"
+              value={formData.name}
+              onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+              placeholder="e.g., Analytics & Insights"
+              required
+            />
 
             <div>
               <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
                 Color
               </label>
-              <div className="grid grid-cols-5 gap-2">
+              <div className="flex flex-wrap gap-2">
                 {colorOptions.map((option) => {
                   const colors = getCategoryColorByColorName(option.value);
                   const isSelected = formData.color === option.value;
@@ -219,16 +200,13 @@ export default function AdminCategoriesPage() {
                       key={option.value}
                       type="button"
                       onClick={() => setFormData((prev) => ({ ...prev, color: option.value }))}
-                      className={`p-3 rounded-lg border-2 transition-all ${
+                      className={`text-xs px-3 py-1 rounded-full border transition-all cursor-pointer ${colors.badge} ${
                         isSelected
-                          ? `${colors.bg} border-current ${colors.text}`
-                          : 'border-transparent hover:border-[var(--border-default)]'
+                          ? 'ring-2 ring-offset-2 ring-offset-[var(--bg-card)] ring-[var(--text-primary)]'
+                          : 'opacity-70 hover:opacity-100'
                       }`}
                     >
-                      <div className={`w-4 h-4 mx-auto rounded-full ${colors.bg} ${colors.text.replace('text-', 'border-')} border-2`} />
-                      <span className="text-xs mt-1 block text-center text-[var(--text-secondary)]">
-                        {option.label}
-                      </span>
+                      {option.label}
                     </button>
                   );
                 })}

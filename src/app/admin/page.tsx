@@ -59,7 +59,7 @@ export default function AdminDashboardPage() {
           const Icon = stat.icon;
           return (
             <Link key={stat.label} href={stat.href}>
-              <Card className="hover:border-[var(--border-hover)] transition-colors cursor-pointer">
+              <Card className="hover:border-[var(--border-hover)] transition-colors cursor-pointer p-6">
                 <div className="flex items-center gap-4">
                   <div
                     className="w-12 h-12 rounded-lg flex items-center justify-center"
@@ -81,8 +81,8 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Recent claims */}
-      <Card>
-        <div className="flex items-center justify-between mb-6">
+      <Card className="overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-default)]">
           <h2 className="text-lg font-semibold text-[var(--text-primary)]">
             Recent Claims
           </h2>
@@ -94,41 +94,65 @@ export default function AdminDashboardPage() {
           </Link>
         </div>
 
-        <div className="space-y-4">
-          {recentClaims.map((claim) => {
-            const offer = offers.find((o) => o.id === claim.offerId);
-            return (
-              <div
-                key={claim.id}
-                className="flex items-center justify-between py-3 border-b border-[var(--border-default)] last:border-0"
-              >
-                <div>
-                  <p className="font-medium text-[var(--text-primary)]">
-                    {claim.brandName}
-                  </p>
-                  <p className="text-sm text-[var(--text-secondary)]">
-                    Claimed: {offer?.name}
-                  </p>
-                </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-sm text-[var(--text-tertiary)]">
-                    {new Date(claim.claimedAt).toLocaleDateString()}
-                  </span>
-                  <Badge
-                    variant={
-                      claim.status === 'pending'
-                        ? 'warning'
-                        : claim.status === 'reviewed'
-                        ? 'info'
-                        : 'success'
-                    }
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-[var(--border-default)]">
+                <th className="text-left py-4 px-6 text-sm font-semibold text-[var(--text-secondary)]">
+                  Brand
+                </th>
+                <th className="text-left py-4 px-6 text-sm font-semibold text-[var(--text-secondary)]">
+                  Offer
+                </th>
+                <th className="text-left py-4 px-6 text-sm font-semibold text-[var(--text-secondary)]">
+                  Date
+                </th>
+                <th className="text-left py-4 px-6 text-sm font-semibold text-[var(--text-secondary)]">
+                  Status
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {recentClaims.map((claim) => {
+                const offer = offers.find((o) => o.id === claim.offerId);
+                return (
+                  <tr
+                    key={claim.id}
+                    className="border-b border-[var(--border-default)] last:border-0 hover:bg-[var(--bg-card-hover)]"
                   >
-                    {claim.status}
-                  </Badge>
-                </div>
-              </div>
-            );
-          })}
+                    <td className="py-4 px-6">
+                      <span className="font-medium text-[var(--text-primary)]">
+                        {claim.brandName}
+                      </span>
+                    </td>
+                    <td className="py-4 px-6">
+                      <span className="text-[var(--text-secondary)]">
+                        {offer?.name}
+                      </span>
+                    </td>
+                    <td className="py-4 px-6">
+                      <span className="text-[var(--text-tertiary)]">
+                        {new Date(claim.claimedAt).toLocaleDateString()}
+                      </span>
+                    </td>
+                    <td className="py-4 px-6">
+                      <Badge
+                        variant={
+                          claim.status === 'pending'
+                            ? 'warning'
+                            : claim.status === 'reviewed'
+                            ? 'info'
+                            : 'success'
+                        }
+                      >
+                        {claim.status.charAt(0).toUpperCase() + claim.status.slice(1)}
+                      </Badge>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       </Card>
     </div>

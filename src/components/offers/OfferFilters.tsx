@@ -53,15 +53,15 @@ export default function OfferFilters({
         </button>
         {categories.map((category) => (
           <button
-            key={category}
-            onClick={() => onCategoryChange(category)}
+            key={category.id}
+            onClick={() => onCategoryChange(category.id as OfferCategory)}
             className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-              selectedCategory === category
+              selectedCategory === category.id
                 ? 'bg-[var(--brand-green-primary)] text-[var(--bg-body)]'
                 : 'bg-[var(--bg-card)] text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)] border border-[var(--border-default)]'
             }`}
           >
-            {category}
+            {category.name}
           </button>
         ))}
       </div>

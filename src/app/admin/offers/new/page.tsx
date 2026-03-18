@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Plus, Trash2, GripVertical } from 'lucide-react';
 import { Button, Card, Input, Textarea, Select } from '@/components/common';
-import { partners, categories } from '@/data';
+import { partners, categories, tags } from '@/data';
 import { FormField } from '@/types';
 
 const fieldTypes = [
@@ -24,12 +24,13 @@ export default function NewOfferPage() {
   const [formData, setFormData] = useState({
     name: '',
     partnerId: '',
-    category: '',
+    categoryId: '',
     shortDescription: '',
     fullDescription: '',
     claimInstructions: '',
-    tags: '',
+    tagIds: [] as string[],
     status: 'draft' as 'active' | 'draft' | 'archived',
+    sampleDeliverablePdf: '',
   });
 
   const [formFields, setFormFields] = useState<FormField[]>([
@@ -69,8 +70,8 @@ export default function NewOfferPage() {
 
     const newOffer = {
       ...formData,
-      tags: formData.tags.split(',').map((t) => t.trim()).filter(Boolean),
       formFields,
+      sampleDeliverablePdf: formData.sampleDeliverablePdf || undefined,
       createdAt: new Date().toISOString(),
     };
 
@@ -79,7 +80,7 @@ export default function NewOfferPage() {
   };
 
   return (
-    <div className="p-8 max-w-4xl">
+    <div className="p-8 max-w-3xl mx-auto">
       <Link
         href="/admin/offers"
         className="inline-flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors mb-6"
@@ -97,7 +98,7 @@ export default function NewOfferPage() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Info */}
-        <Card>
+        <Card className="p-6">
           <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-6">
             Basic Information
           </h2>
@@ -125,11 +126,11 @@ export default function NewOfferPage() {
               <Select
                 label="Category"
                 required
-                value={formData.category}
-                onChange={(e) => handleChange('category', e.target.value)}
+                value={formData.categoryId}
+                onChange={(e) => handleChange('categoryId', e.target.value)}
                 options={[
                   { value: '', label: 'Select a category' },
-                  ...categories.map((c) => ({ value: c, label: c })),
+                  ...categories.map((c) => ({ value: c.id, label: c.name })),
                 ]}
               />
             </div>
@@ -149,7 +150,7 @@ export default function NewOfferPage() {
         </Card>
 
         {/* Descriptions */}
-        <Card>
+        <Card className="p-6">
           <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-6">
             Descriptions
           </h2>
@@ -180,17 +181,72 @@ export default function NewOfferPage() {
               rows={4}
             />
 
+            <div>
+              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
+                Tags
+              </label>
+              <div className="flex flex-wrap gap-2 p-3 bg-[var(--bg-body)] border border-[var(--border-default)] rounded-lg min-h-[42px]">
+                {formData.tagIds.map((tagId) => {
+                  const tag = tags.find((t) => t.id === tagId);
+                  return (
+                    <span
+                      key={tagId}
+                      className="inline-flex items-center gap-1 px-2 py-1 bg-[var(--bg-card)] rounded text-sm text-[var(--text-primary)]"
+                    >
+                      {tag?.name || tagId}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            tagIds: prev.tagIds.filter((id) => id !== tagId),
+                          }))
+                        }
+                        className="text-[var(--text-tertiary)] hover:text-[var(--brand-red)] cursor-pointer"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  );
+                })}
+                <select
+                  value=""
+                  onChange={(e) => {
+                    if (e.target.value && !formData.tagIds.includes(e.target.value)) {
+                      setFormData((prev) => ({
+                        ...prev,
+                        tagIds: [...prev.tagIds, e.target.value],
+                      }));
+                    }
+                  }}
+                  className="bg-transparent text-sm text-[var(--text-tertiary)] focus:outline-none cursor-pointer"
+                >
+                  <option value="">+ Add tag</option>
+                  {tags
+                    .filter((t) => !formData.tagIds.includes(t.id))
+                    .map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            </div>
+
             <Input
-              label="Tags"
-              value={formData.tags}
-              onChange={(e) => handleChange('tags', e.target.value)}
-              placeholder="Comma-separated tags, e.g., fraud, security, audit"
+              label="Sample Deliverable PDF"
+              value={formData.sampleDeliverablePdf}
+              onChange={(e) => handleChange('sampleDeliverablePdf', e.target.value)}
+              placeholder="e.g., sample-audit-report.pdf"
             />
+            <p className="text-xs text-[var(--text-tertiary)] -mt-2">
+              Filename of a sample deliverable PDF in the public/pdfs folder (optional)
+            </p>
           </div>
         </Card>
 
         {/* Form Fields */}
-        <Card>
+        <Card className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-lg font-semibold text-[var(--text-primary)]">

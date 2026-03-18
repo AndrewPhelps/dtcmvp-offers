@@ -12,9 +12,10 @@ interface ModalProps {
   progress?: number; // 0-100, replaces header border with progress bar
   minHeight?: string; // e.g., '500px' - minimum modal height
   contentHeight?: string; // e.g., '400px' - locks content area to exact height (scrolls if needed)
+  maxWidth?: string; // e.g., 'max-w-lg', 'max-w-md' - defaults to 'max-w-4xl'
 }
 
-export default function Modal({ isOpen, onClose, children, header, footer, progress, minHeight, contentHeight }: ModalProps) {
+export default function Modal({ isOpen, onClose, children, header, footer, progress, minHeight, contentHeight, maxWidth = 'max-w-4xl' }: ModalProps) {
   const handleEscape = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -60,7 +61,7 @@ export default function Modal({ isOpen, onClose, children, header, footer, progr
       >
         {/* Modal */}
         <div
-          className={`relative w-full max-w-4xl max-h-[90vh] bg-[var(--bg-card)] border border-[var(--border-default)] rounded-2xl flex flex-col transform transition-all duration-300 ease-out ${
+          className={`relative w-full ${maxWidth} max-h-[90vh] bg-[var(--bg-card)] border border-[var(--border-default)] rounded-2xl flex flex-col transform transition-all duration-300 ease-out ${
             isOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
           }`}
           style={minHeight ? { minHeight } : undefined}

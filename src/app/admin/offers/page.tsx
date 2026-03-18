@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Plus, Search, Edit2, Archive, MoreHorizontal } from 'lucide-react';
+import { Plus, Search, Edit2, Archive } from 'lucide-react';
 import { Button, Card, Badge, Input } from '@/components/common';
 import { offers, partners, categories, getCategory } from '@/data';
 
@@ -42,9 +42,10 @@ export default function AdminOffersPage() {
         </Link>
       </div>
 
-      {/* Filters */}
-      <Card className="mb-6">
-        <div className="flex flex-wrap gap-4">
+      {/* Offers table with integrated filters */}
+      <Card className="overflow-hidden">
+        {/* Filters inside card */}
+        <div className="flex flex-wrap gap-4 px-6 py-4 border-b border-[var(--border-default)]">
           <div className="flex-1 min-w-[200px]">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-tertiary)]" />
@@ -80,10 +81,6 @@ export default function AdminOffersPage() {
             <option value="archived">Archived</option>
           </select>
         </div>
-      </Card>
-
-      {/* Offers table */}
-      <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -140,7 +137,7 @@ export default function AdminOffersPage() {
                           : 'default'
                       }
                     >
-                      {offer.status}
+                      {offer.status.charAt(0).toUpperCase() + offer.status.slice(1)}
                     </Badge>
                   </td>
                   <td className="py-4 px-6 text-[var(--text-tertiary)]">
@@ -149,15 +146,12 @@ export default function AdminOffersPage() {
                   <td className="py-4 px-6">
                     <div className="flex items-center justify-end gap-2">
                       <Link href={`/admin/offers/${offer.id}`}>
-                        <button className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-body)] rounded-lg transition-colors">
+                        <button className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-body)] rounded-lg transition-colors cursor-pointer">
                           <Edit2 className="w-4 h-4" />
                         </button>
                       </Link>
-                      <button className="p-2 text-[var(--text-secondary)] hover:text-[var(--brand-orange)] hover:bg-[var(--bg-body)] rounded-lg transition-colors">
+                      <button className="p-2 text-[var(--text-secondary)] hover:text-[var(--brand-orange)] hover:bg-[var(--bg-body)] rounded-lg transition-colors cursor-pointer">
                         <Archive className="w-4 h-4" />
-                      </button>
-                      <button className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-body)] rounded-lg transition-colors">
-                        <MoreHorizontal className="w-4 h-4" />
                       </button>
                     </div>
                   </td>
