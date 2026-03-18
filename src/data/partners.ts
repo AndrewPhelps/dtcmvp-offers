@@ -1,0 +1,148 @@
+import { Partner } from '@/types';
+
+export const partners: Partner[] = [
+  {
+    id: 'nofraud',
+    name: 'NoFraud',
+    website: 'nofraud.com',
+    logo: 'nofraud.png',
+    description: 'End-to-end ecommerce fraud and abuse prevention. AI and expert analyst review to catch high-risk orders before they ship.',
+  },
+  {
+    id: 'orita',
+    name: 'Orita',
+    website: 'orita.ai',
+    logo: 'orita.png',
+    description: 'AI-powered customer segmentation platform for e-commerce. Integrates with Klaviyo to help brands maximize campaign revenue.',
+  },
+  {
+    id: 'treet',
+    name: 'Treet',
+    website: 'treet.co',
+    logo: 'treet.png',
+    description: 'Branded resale platform that enables e-commerce brands to launch their own secondary marketplaces.',
+  },
+  {
+    id: 'aix',
+    name: 'Agency AIX',
+    website: 'agencyaix.com',
+    logo: 'aix.png',
+    description: 'Amazon advertising and operations agency for DTC/Shopify brands. Specializes in Amazon advertising optimization.',
+  },
+  {
+    id: 'polar',
+    name: 'Polar Analytics',
+    website: 'polaranalytics.com',
+    logo: 'polar.png',
+    description: 'All-in-one e-commerce data platform with centralized analytics, AI agents, and Claude MCP integration.',
+  },
+  {
+    id: 'finsi',
+    name: 'Finsi',
+    website: 'finsi.ai',
+    logo: 'finsi.png',
+    description: 'AI-powered operating system for e-commerce with analytics, automation, and recommendations across the customer lifecycle.',
+  },
+  {
+    id: 'enavi',
+    name: 'Enavi',
+    website: 'enavi.co',
+    logo: 'enavi.png',
+    description: 'Shopify CRO agency specializing in conversion rate optimization through deep customer research and A/B testing.',
+  },
+  {
+    id: 'favsolution',
+    name: 'Fav Solution',
+    website: 'favsolution.com',
+    logo: 'favsolution.png',
+    description: 'Shopify Plus development agency specializing in site builds, redesigns, platform migrations, and optimization.',
+  },
+  {
+    id: 'goaudience',
+    name: 'GoAudience',
+    website: 'goaudience.com',
+    logo: 'goaudience.png',
+    description: 'Growth decision platform that transforms customer behavior data into actionable marketing decisions.',
+  },
+  {
+    id: 'onward',
+    name: 'Onward',
+    website: 'useonward.com',
+    logo: 'onward.png',
+    description: 'Post-purchase platform that turns CX from a cost center into a profit center with shipping protection and rewards.',
+  },
+  {
+    id: 'shopvision',
+    name: 'Shopvision',
+    website: 'shopvision.ai',
+    logo: 'shopvision.png',
+    description: 'AI-driven competitive intelligence platform tracking competitor promotions, pricing, ads, and more.',
+  },
+  {
+    id: 'rivo',
+    name: 'Rivo',
+    website: 'rivo.io',
+    logo: 'rivo.png',
+    description: 'Retention platform for Shopify with loyalty programs, referral programs, memberships, and more.',
+  },
+  {
+    id: 'postscript',
+    name: 'Postscript',
+    website: 'postscript.io',
+    logo: 'postscript.png',
+    description: 'SMS marketing platform built specifically for Shopify with AI optimization and compliance management.',
+  },
+  {
+    id: 'kodif',
+    name: 'Kodif',
+    website: 'kodif.ai',
+    logo: 'kodif.png',
+    description: 'AI-powered customer support automation platform that resolves tickets faster while maintaining quality.',
+  },
+  {
+    id: 'shoptin',
+    name: 'Shoptin',
+    website: 'shoptin.io',
+    logo: 'shoptin.png',
+    description: 'Shopify app that optimizes marketing consent collection at checkout with dynamic regional compliance.',
+  },
+  {
+    id: 'postpilot',
+    name: 'PostPilot',
+    website: 'postpilot.com',
+    logo: 'postpilot.png',
+    description: 'Direct mail marketing platform for e-commerce handling strategy, creative, printing, and analytics.',
+  },
+  {
+    id: 'applovin',
+    name: 'AppLovin (Axon)',
+    website: 'axon.ai',
+    logo: 'applovin.png',
+    description: 'AI-powered mobile advertising platform with access to 1B+ daily active users for profitable customer acquisition.',
+  },
+  {
+    id: 'rokt',
+    name: 'Rokt',
+    website: 'rokt.com',
+    logo: 'rokt.png',
+    description: 'E-commerce platform that monetizes the transaction moment with upsells and post-purchase recommendations.',
+  },
+  {
+    id: 'pdq',
+    name: 'PDQ',
+    website: 'prettydamnquick.com',
+    logo: 'pdq.png',
+    description: 'AI-driven checkout and shipping optimization platform that personalizes checkout for each customer segment.',
+  },
+  {
+    id: 'dashfi',
+    name: 'Dashfi',
+    website: 'dash.fi',
+    logo: 'dashfi.png',
+    description: 'Financial platform with corporate charge card and AI-powered audit agents for ad spend analysis.',
+  },
+];
+
+export const getPartner = (id: string): Partner | undefined => {
+  return partners.find((p) => p.id === id);
+};

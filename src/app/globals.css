@@ -1,26 +1,87 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Brand accents */
+  --brand-green-primary: #7bed9f;
+  --brand-green-secondary: #2ed573;
+  --brand-blue-primary: #70a1ff;
+  --brand-orange: #ffa502;
+  --brand-coral: #ff6348;
+  --brand-red: #ff4757;
+
+  /* Backgrounds - using Tailwind slate scale */
+  --bg-body: #0f172a;           /* slate-900 */
+  --bg-card: #1e293b;           /* slate-800 */
+  --bg-card-hover: #283548;     /* between slate-800 and slate-700 */
+
+  /* Text - using Tailwind slate scale */
+  --text-primary: #ffffff;
+  --text-secondary: #94a3b8;    /* slate-400 */
+  --text-tertiary: #64748b;     /* slate-500 */
+
+  /* Borders - using Tailwind slate scale */
+  --border-default: #334155;    /* slate-700 */
+  --border-hover: #475569;      /* slate-600 */
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  /* Map CSS variables to Tailwind */
+  --color-background: var(--bg-body);
+  --color-foreground: var(--text-primary);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Brand colors */
+  --color-brand-green: var(--brand-green-primary);
+  --color-brand-green-secondary: var(--brand-green-secondary);
+  --color-brand-blue: var(--brand-blue-primary);
+  --color-brand-orange: var(--brand-orange);
+  --color-brand-coral: var(--brand-coral);
+  --color-brand-red: var(--brand-red);
+
+  /* Backgrounds */
+  --color-bg-body: var(--bg-body);
+  --color-bg-card: var(--bg-card);
+  --color-bg-card-hover: var(--bg-card-hover);
+
+  /* Text */
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
+
+  /* Borders */
+  --color-border-default: var(--border-default);
+  --color-border-hover: var(--border-hover);
+
+  /* Fonts */
+  --font-sans: var(--font-inter);
+  --font-heading: var(--font-space-grotesk);
+  --font-mono: var(--font-space-mono);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg-body);
+  color: var(--text-primary);
+  font-family: var(--font-inter), system-ui, sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-space-grotesk), system-ui, sans-serif;
+}
+
+/* Custom scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-body);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-hover);
 }
