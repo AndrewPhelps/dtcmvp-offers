@@ -85,6 +85,36 @@ export default function OfferDetailPage() {
             </p>
           </div>
 
+          {/* Champion / Recommended by */}
+          {offer.champion && offer.champion.name && (
+            <Card className="p-5">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-full bg-[var(--bg-card-hover)] flex items-center justify-center overflow-hidden flex-shrink-0">
+                  {offer.champion.avatarUrl ? (
+                    <img
+                      src={offer.champion.avatarUrl}
+                      alt={offer.champion.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-lg font-medium text-[var(--text-secondary)]">
+                      {offer.champion.name.split(' ').map(n => n[0]).join('')}
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs text-[var(--text-tertiary)] uppercase tracking-wide mb-1">Recommended by</p>
+                  <p className="font-semibold text-[var(--text-primary)]">
+                    {offer.champion.name}
+                  </p>
+                  <p className="text-sm text-[var(--text-secondary)]">
+                    {offer.champion.title} at {offer.champion.brand}
+                  </p>
+                </div>
+              </div>
+            </Card>
+          )}
+
           {/* Full description */}
           <Card className="p-6">
             <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">

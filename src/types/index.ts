@@ -28,6 +28,14 @@ export interface FormField {
   options?: string[];
 }
 
+export interface OfferChampion {
+  name: string;
+  title: string;
+  brand: string;
+  avatarUrl: string;
+  linkedInUrl?: string;
+}
+
 // Legacy type for backwards compatibility during migration
 export type OfferCategory =
   | 'Analytics & Insights'
@@ -52,6 +60,7 @@ export interface Offer {
   status: 'active' | 'draft' | 'archived';
   isActive: boolean;
   sampleDeliverablePdf?: string;
+  champion?: OfferChampion;
   createdAt: string;
 }
 

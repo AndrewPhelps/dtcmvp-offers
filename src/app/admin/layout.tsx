@@ -26,13 +26,12 @@ export default function AdminLayout({
       <aside className="fixed inset-y-0 left-0 w-64 bg-[var(--bg-card)] border-r border-[var(--border-default)] flex flex-col z-40 overflow-y-auto">
         {/* Logo/Brand */}
         <div className="p-6 border-b border-[var(--border-default)]">
-          <Link href="/admin" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-[var(--brand-green-primary)] flex items-center justify-center">
-              <span className="text-sm font-bold text-[var(--bg-body)]">D</span>
+          <Link href="/admin" className="block">
+            <div className="text-sm font-semibold text-[var(--text-primary)]">
+              DTC MVP Partner Offers
             </div>
-            <div>
-              <span className="font-semibold text-[var(--text-primary)]">dtcmvp</span>
-              <span className="text-xs text-[var(--text-tertiary)] block">Admin</span>
+            <div className="text-xs text-[var(--text-secondary)]">
+              Admin
             </div>
           </Link>
         </div>
@@ -75,7 +74,9 @@ export default function AdminLayout({
 
       {/* Main content - offset for fixed sidebar */}
       <main className="pl-64 min-h-screen bg-[var(--bg-body)]">
-        {children}
+        <div className="px-24 py-8">
+          {children}
+        </div>
       </main>
     </div>
   );

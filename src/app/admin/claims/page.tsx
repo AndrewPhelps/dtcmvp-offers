@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, Eye, Mail, CheckCircle, X } from 'lucide-react';
+import { Search, ArrowRight, Mail, CheckCircle } from 'lucide-react';
 import { Card, Badge, Button, Modal } from '@/components/common';
 import { claims, offers, partners } from '@/data';
 
@@ -34,7 +34,7 @@ export default function AdminClaimsPage() {
   const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
 
   return (
-    <div className="p-8">
+    <div>
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-[var(--text-primary)]">Claims</h1>
         <p className="text-[var(--text-secondary)]">
@@ -102,7 +102,8 @@ export default function AdminClaimsPage() {
                 return (
                   <tr
                     key={claim.id}
-                    className="border-b border-[var(--border-default)] last:border-0 hover:bg-[var(--bg-card-hover)]"
+                    onClick={() => setSelectedClaim(claim.id)}
+                    className="border-b border-[var(--border-default)] last:border-0 hover:bg-[var(--bg-card-hover)] cursor-pointer"
                   >
                     <td className="py-4 px-6">
                       <p className="font-medium text-[var(--text-primary)]">
@@ -132,13 +133,8 @@ export default function AdminClaimsPage() {
                       {new Date(claim.claimedAt).toLocaleDateString()}
                     </td>
                     <td className="py-4 px-6">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => setSelectedClaim(claim.id)}
-                          className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-body)] rounded-lg transition-colors cursor-pointer"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
+                      <div className="flex items-center justify-end">
+                        <ArrowRight className="w-4 h-4 text-[var(--text-tertiary)]" />
                       </div>
                     </td>
                   </tr>
@@ -155,15 +151,14 @@ export default function AdminClaimsPage() {
         )}
       </Card>
 
-      {/* Claim Details Drawer */}
-      <Modal
-        isOpen={!!selectedClaimData}
-        onClose={() => setSelectedClaim(null)}
-        maxWidth="max-w-lg"
-      >
-        {selectedClaimData && (
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-6">
+      {/* Claim Details Modal */}
+      {selectedClaimData && (
+        <Modal
+          isOpen={!!selectedClaimData}
+          onClose={() => setSelectedClaim(null)}
+          maxWidth="max-w-xl"
+          header={
+            <div className="flex items-center gap-3">
               <h2 className="text-xl font-semibold text-[var(--text-primary)]">
                 Claim Details
               </h2>
@@ -179,45 +174,66 @@ export default function AdminClaimsPage() {
                 {capitalize(selectedClaimData.status)}
               </Badge>
             </div>
-
-            <div className="space-y-4 mb-6">
-              <div>
-                <p className="text-sm text-[var(--text-tertiary)] mb-1">Brand</p>
-                <p className="font-medium text-[var(--text-primary)]">
-                  {selectedClaimData.brandName}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-sm text-[var(--text-tertiary)] mb-1">Offer</p>
-                <p className="font-medium text-[var(--text-primary)]">
-                  {getOfferInfo(selectedClaimData.offerId).offerName}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-sm text-[var(--text-tertiary)] mb-1">Partner</p>
-                <p className="font-medium text-[var(--text-primary)]">
-                  {getOfferInfo(selectedClaimData.offerId).partnerName}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-sm text-[var(--text-tertiary)] mb-1">Claimed</p>
-                <p className="font-medium text-[var(--text-primary)]">
-                  {new Date(selectedClaimData.claimedAt).toLocaleString()}
-                </p>
-              </div>
+          }
+          footer={
+            <div className="flex items-center justify-end gap-3 px-8 py-4">
+              <Button variant="secondary">
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Mark as Reviewed
+              </Button>
+              <Button>
+                <Mail className="w-4 h-4 mr-2" />
+                Facilitate Intro
+              </Button>
             </div>
+          }
+        >
+          <div className="p-8">
+            <div className="grid grid-cols-2 gap-8">
+              {/* Left Column - Claim Info */}
+              <div className="space-y-4">
+                <div>
+                  <p className="text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wide mb-1">
+                    Brand
+                  </p>
+                  <p className="text-sm text-[var(--text-primary)]">
+                    {selectedClaimData.brandName}
+                  </p>
+                </div>
 
-            <div className="border-t border-[var(--border-default)] pt-4 mb-6">
-              <p className="text-sm text-[var(--text-tertiary)] mb-3">
-                Form Submission
-              </p>
-              <div className="space-y-3">
+                <div>
+                  <p className="text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wide mb-1">
+                    Offer
+                  </p>
+                  <p className="text-sm text-[var(--text-primary)]">
+                    {getOfferInfo(selectedClaimData.offerId).offerName}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wide mb-1">
+                    Partner
+                  </p>
+                  <p className="text-sm text-[var(--text-primary)]">
+                    {getOfferInfo(selectedClaimData.offerId).partnerName}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wide mb-1">
+                    Date Claimed
+                  </p>
+                  <p className="text-sm text-[var(--text-primary)]">
+                    {new Date(selectedClaimData.claimedAt).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+
+              {/* Right Column - Form Submission */}
+              <div className="space-y-4">
                 {Object.entries(selectedClaimData.formData).map(([key, value]) => (
                   <div key={key}>
-                    <p className="text-xs text-[var(--text-tertiary)] capitalize">
+                    <p className="text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wide mb-1">
                       {key.replace(/_/g, ' ')}
                     </p>
                     <p className="text-sm text-[var(--text-primary)]">
@@ -227,20 +243,9 @@ export default function AdminClaimsPage() {
                 ))}
               </div>
             </div>
-
-            <div className="space-y-3">
-              <Button className="w-full">
-                <Mail className="w-4 h-4 mr-2" />
-                Facilitate Intro
-              </Button>
-              <Button variant="secondary" className="w-full">
-                <CheckCircle className="w-4 h-4 mr-2" />
-                Mark as Reviewed
-              </Button>
-            </div>
           </div>
-        )}
-      </Modal>
+        </Modal>
+      )}
     </div>
   );
 }

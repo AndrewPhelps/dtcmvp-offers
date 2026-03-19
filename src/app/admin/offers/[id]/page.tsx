@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Trash2, GripVertical } from 'lucide-react';
-import { Button, Card, Input, Textarea, Select } from '@/components/common';
+import { ArrowLeft, Plus, Trash2, GripVertical, Upload } from 'lucide-react';
+import { Button, Card, Input, Textarea, Select, Toggle } from '@/components/common';
 import { partners, categories, tags, getOffer, getTagsByIds } from '@/data';
 import { FormField } from '@/types';
 
@@ -36,9 +36,15 @@ export default function EditOfferPage() {
     status: 'draft' as 'active' | 'draft' | 'archived',
     isActive: true,
     sampleDeliverablePdf: '',
+    championName: '',
+    championTitle: '',
+    championBrand: '',
+    championAvatarUrl: '',
+    championLinkedInUrl: '',
   });
 
   const [formFields, setFormFields] = useState<FormField[]>([]);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const offer = getOffer(offerId);
@@ -54,6 +60,11 @@ export default function EditOfferPage() {
         status: offer.status,
         isActive: offer.isActive,
         sampleDeliverablePdf: offer.sampleDeliverablePdf || '',
+        championName: offer.champion?.name || '',
+        championTitle: offer.champion?.title || '',
+        championBrand: offer.champion?.brand || '',
+        championAvatarUrl: offer.champion?.avatarUrl || '',
+        championLinkedInUrl: offer.champion?.linkedInUrl || '',
       });
       setFormFields(offer.formFields);
     } else {
@@ -85,6 +96,26 @@ export default function EditOfferPage() {
     setFormFields((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+
+    const newFields = [...formFields];
+    const draggedField = newFields[draggedIndex];
+    newFields.splice(draggedIndex, 1);
+    newFields.splice(index, 0, draggedField);
+    setFormFields(newFields);
+    setDraggedIndex(index);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -92,11 +123,22 @@ export default function EditOfferPage() {
     // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
+    const champion = formData.championName && formData.championTitle && formData.championBrand
+      ? {
+          name: formData.championName,
+          title: formData.championTitle,
+          brand: formData.championBrand,
+          avatarUrl: formData.championAvatarUrl,
+          linkedInUrl: formData.championLinkedInUrl || undefined,
+        }
+      : undefined;
+
     const updatedOffer = {
       id: offerId,
       ...formData,
       formFields,
       sampleDeliverablePdf: formData.sampleDeliverablePdf || undefined,
+      champion,
     };
 
     console.log('Offer updated:', updatedOffer);
@@ -105,7 +147,7 @@ export default function EditOfferPage() {
 
   if (notFound) {
     return (
-      <div className="p-8 max-w-4xl">
+      <div className="max-w-4xl">
         <Link
           href="/admin/offers"
           className="inline-flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors mb-6"
@@ -127,7 +169,7 @@ export default function EditOfferPage() {
   }
 
   return (
-    <div className="p-8 max-w-3xl mx-auto">
+    <div className="max-w-3xl mx-auto">
       <Link
         href="/admin/offers"
         className="inline-flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors mb-6"
@@ -193,40 +235,6 @@ export default function EditOfferPage() {
                 { value: 'archived', label: 'Archived' },
               ]}
             />
-          </div>
-        </Card>
-
-        {/* Descriptions */}
-        <Card className="p-6">
-          <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-6">
-            Descriptions
-          </h2>
-          <div className="space-y-4">
-            <Textarea
-              label="Short Description"
-              required
-              value={formData.shortDescription}
-              onChange={(e) => handleChange('shortDescription', e.target.value)}
-              placeholder="Brief description shown in offer cards (1-2 sentences)"
-              rows={2}
-            />
-
-            <Textarea
-              label="Full Description"
-              required
-              value={formData.fullDescription}
-              onChange={(e) => handleChange('fullDescription', e.target.value)}
-              placeholder="Detailed description of the offer, what's included, benefits, etc."
-              rows={6}
-            />
-
-            <Textarea
-              label="Claim Instructions"
-              value={formData.claimInstructions}
-              onChange={(e) => handleChange('claimInstructions', e.target.value)}
-              placeholder="Step-by-step process after claiming (one step per line)"
-              rows={4}
-            />
 
             <div>
               <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
@@ -279,16 +287,124 @@ export default function EditOfferPage() {
                 </select>
               </div>
             </div>
+          </div>
+        </Card>
+
+        {/* Descriptions */}
+        <Card className="p-6">
+          <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-6">
+            Descriptions
+          </h2>
+          <div className="space-y-4">
+            <Textarea
+              label="Short Description"
+              required
+              value={formData.shortDescription}
+              onChange={(e) => handleChange('shortDescription', e.target.value)}
+              placeholder="Brief description shown in offer cards (1-2 sentences)"
+              rows={2}
+            />
+
+            <Textarea
+              label="Full Description"
+              required
+              value={formData.fullDescription}
+              onChange={(e) => handleChange('fullDescription', e.target.value)}
+              placeholder="Detailed description of the offer, what's included, benefits, etc."
+              rows={6}
+            />
+
+            <Textarea
+              label="Claim Instructions"
+              value={formData.claimInstructions}
+              onChange={(e) => handleChange('claimInstructions', e.target.value)}
+              placeholder="Step-by-step process after claiming (one step per line)"
+              rows={4}
+            />
+
+            <div>
+              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
+                Sample Deliverable PDF
+              </label>
+              <div className="flex gap-3">
+                <Input
+                  value={formData.sampleDeliverablePdf}
+                  onChange={(e) => handleChange('sampleDeliverablePdf', e.target.value)}
+                  placeholder="e.g., sample-audit-report.pdf"
+                  className="flex-1"
+                />
+                <Button type="button" variant="secondary">
+                  <Upload className="w-4 h-4 mr-2" />
+                  Upload
+                </Button>
+              </div>
+              <p className="text-xs text-[var(--text-tertiary)] mt-1.5">
+                Upload a sample deliverable PDF to show brands what they&apos;ll receive (optional)
+              </p>
+            </div>
+          </div>
+        </Card>
+
+        {/* Offer Champion */}
+        <Card className="p-6">
+          <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
+            Offer Champion
+          </h2>
+          <p className="text-sm text-[var(--text-secondary)] mb-6">
+            Add an endorsing champion to build trust (all fields optional)
+          </p>
+          <div className="space-y-4">
+            <div>
+              <Input
+                label="LinkedIn URL"
+                value={formData.championLinkedInUrl}
+                onChange={(e) => handleChange('championLinkedInUrl', e.target.value)}
+                placeholder="e.g., https://linkedin.com/in/sarahchen"
+              />
+              <p className="text-xs text-[var(--text-tertiary)] mt-1.5">
+                Will auto-populate champion info from LinkedIn profile
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Champion Name"
+                value={formData.championName}
+                onChange={(e) => handleChange('championName', e.target.value)}
+                placeholder="e.g., Sarah Chen"
+              />
+              <Input
+                label="Title"
+                value={formData.championTitle}
+                onChange={(e) => handleChange('championTitle', e.target.value)}
+                placeholder="e.g., VP of Marketing"
+              />
+            </div>
 
             <Input
-              label="Sample Deliverable PDF"
-              value={formData.sampleDeliverablePdf}
-              onChange={(e) => handleChange('sampleDeliverablePdf', e.target.value)}
-              placeholder="e.g., sample-audit-report.pdf"
+              label="Brand / Company"
+              value={formData.championBrand}
+              onChange={(e) => handleChange('championBrand', e.target.value)}
+              placeholder="e.g., Glossier"
             />
-            <p className="text-xs text-[var(--text-tertiary)] -mt-2">
-              Filename of a sample deliverable PDF in the public/pdfs folder (optional)
-            </p>
+
+            <div>
+              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
+                Avatar URL
+              </label>
+              <div className="flex gap-3">
+                <Input
+                  value={formData.championAvatarUrl}
+                  onChange={(e) => handleChange('championAvatarUrl', e.target.value)}
+                  placeholder="e.g., /avatars/sarah-chen.jpg"
+                  className="flex-1"
+                />
+                <Button type="button" variant="secondary">
+                  <Upload className="w-4 h-4 mr-2" />
+                  Upload
+                </Button>
+              </div>
+            </div>
           </div>
         </Card>
 
@@ -309,20 +425,25 @@ export default function EditOfferPage() {
             </Button>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             {formFields.map((field, index) => (
               <div
                 key={field.id}
-                className="flex items-start gap-4 p-4 bg-[var(--bg-body)] rounded-lg"
+                draggable
+                onDragStart={() => handleDragStart(index)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDragEnd={handleDragEnd}
+                className={`flex items-center gap-4 p-4 bg-[var(--bg-body)] rounded-lg transition-all ${
+                  draggedIndex === index ? 'opacity-50 scale-[0.98]' : ''
+                }`}
               >
-                <button
-                  type="button"
-                  className="mt-2 text-[var(--text-tertiary)] cursor-grab"
+                <div
+                  className="text-[var(--text-tertiary)] cursor-grab active:cursor-grabbing"
                 >
                   <GripVertical className="w-4 h-4" />
-                </button>
+                </div>
 
-                <div className="flex-1 grid grid-cols-3 gap-4">
+                <div className="flex-1 grid grid-cols-3 gap-4 items-end">
                   <Input
                     label="Label"
                     value={field.label}
@@ -343,25 +464,19 @@ export default function EditOfferPage() {
                     options={fieldTypes}
                   />
 
-                  <div className="flex items-end gap-4">
-                    <label className="flex items-center gap-2 pb-2">
-                      <input
-                        type="checkbox"
-                        checked={field.required}
-                        onChange={(e) =>
-                          updateFormField(index, { required: e.target.checked })
-                        }
-                        className="w-4 h-4 rounded border-[var(--border-default)] bg-[var(--bg-card)] text-[var(--brand-green-primary)]"
-                      />
-                      <span className="text-sm text-[var(--text-secondary)]">
-                        Required
-                      </span>
-                    </label>
+                  <div className="flex items-center justify-between pb-2">
+                    <Toggle
+                      label="Required"
+                      checked={field.required}
+                      onChange={(checked) =>
+                        updateFormField(index, { required: checked })
+                      }
+                    />
 
                     <button
                       type="button"
                       onClick={() => removeFormField(index)}
-                      className="p-2 text-[var(--text-tertiary)] hover:text-[var(--brand-red)] transition-colors"
+                      className="p-2 text-[var(--text-tertiary)] hover:text-[var(--brand-red)] transition-colors cursor-pointer"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>

@@ -94,13 +94,21 @@ export default function OfferDrawer({ offer, partner, isOpen, onClose }: OfferDr
     </div>
   );
 
-  // Footer content - actions with claim button, save, and hide
+  // Footer content - actions on right
   const footerContent = (
-    <div className="flex items-center justify-between px-8 py-6">
-      {/* Left side - Save for Later and Not for Me */}
+    <div className="flex items-center justify-end px-8 py-6">
+
+      {/* Right side - Not for Me, Save for Later, Claim button */}
       <div className="flex items-center gap-3">
         {!isClaimed && (
           <>
+            <button
+              onClick={handleHide}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+            >
+              <EyeOff className="w-4 h-4" />
+              Not for Me
+            </button>
             <button
               onClick={handleSaveToggle}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
@@ -112,21 +120,37 @@ export default function OfferDrawer({ offer, partner, isOpen, onClose }: OfferDr
               <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />
               {isSaved ? 'Saved' : 'Save for Later'}
             </button>
-            <button
-              onClick={handleHide}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
-            >
-              <EyeOff className="w-4 h-4" />
-              Not for Me
-            </button>
           </>
         )}
+        <Button onClick={() => setShowClaimForm(true)} disabled={isClaimed}>
+          {isClaimed ? 'Already Claimed' : 'Claim Offer'}
+        </Button>
       </div>
+    </div>
+  );
 
-      {/* Right side - Claim button */}
-      <Button onClick={() => setShowClaimForm(true)} disabled={isClaimed}>
-        {isClaimed ? 'Already Claimed' : 'Claim Offer'}
-      </Button>
+  // Champion content for display in main content area
+  const championContent = offer.champion && offer.champion.name && (
+    <div className="flex items-center gap-3 mt-8 pt-6 border-t border-[var(--border-default)]">
+      <div className="w-10 h-10 rounded-full bg-[var(--bg-card-hover)] flex items-center justify-center overflow-hidden flex-shrink-0">
+        {offer.champion.avatarUrl ? (
+          <img
+            src={offer.champion.avatarUrl}
+            alt={offer.champion.name}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <span className="text-sm font-medium text-[var(--text-secondary)]">
+            {offer.champion.name.split(' ').map(n => n[0]).join('')}
+          </span>
+        )}
+      </div>
+      <div>
+        <p className="text-xs text-[var(--text-tertiary)]">Recommended by</p>
+        <p className="text-sm text-[var(--text-secondary)]">
+          <span className="text-[var(--text-primary)] font-medium">{offer.champion.name}</span>, {offer.champion.title} at {offer.champion.brand}
+        </p>
+      </div>
     </div>
   );
 
@@ -194,7 +218,7 @@ export default function OfferDrawer({ offer, partner, isOpen, onClose }: OfferDr
       footer={footerContent}
     >
       <div className="py-8 px-16">
-        <div className={`flex gap-8 ${hasPdf ? 'mb-10' : ''}`}>
+        <div className="flex gap-8 mb-10">
           {/* Main content column */}
           <div className={hasPdf ? 'flex-1' : 'w-full'}>
             {/* Short description as heading */}
@@ -203,7 +227,7 @@ export default function OfferDrawer({ offer, partner, isOpen, onClose }: OfferDr
             </h3>
 
             {/* Full description */}
-            <div className={`prose prose-invert max-w-none ${hasPdf ? '' : 'mb-10'}`}>
+            <div className="prose prose-invert max-w-none">
               {offer.fullDescription.split('\n\n').map((paragraph, i) => {
                 // Check if paragraph contains bullet points
                 const lines = paragraph.split('\n');
@@ -239,6 +263,30 @@ export default function OfferDrawer({ offer, partner, isOpen, onClose }: OfferDr
                 );
               })}
             </div>
+
+            {/* Claim instructions if present */}
+            {offer.claimInstructions && (
+              <div className="mt-8">
+                <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-3">
+                  How it works
+                </h3>
+                <div className="space-y-3">
+                  {offer.claimInstructions.split('\n').map((step, i) => (
+                    <div key={i} className="flex items-start gap-3">
+                      <span className="w-6 h-6 rounded-full bg-[var(--brand-green-primary)]/20 flex items-center justify-center flex-shrink-0 text-sm font-semibold text-[var(--brand-green-primary)]">
+                        {i + 1}
+                      </span>
+                      <p className="text-[var(--text-secondary)] pt-0.5">
+                        {step.replace(/^\d+\.\s*/, '')}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Champion / Recommended by */}
+            {championContent}
           </div>
 
           {/* PDF preview column - only show when PDF exists */}
@@ -265,27 +313,6 @@ export default function OfferDrawer({ offer, partner, isOpen, onClose }: OfferDr
             </div>
           )}
         </div>
-
-        {/* Claim instructions if present */}
-        {offer.claimInstructions && (
-          <div className="mb-10">
-            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-3">
-              How it works
-            </h3>
-            <div className="space-y-3">
-              {offer.claimInstructions.split('\n').map((step, i) => (
-                <div key={i} className="flex items-start gap-3">
-                  <span className="w-6 h-6 rounded-full bg-[var(--brand-green-primary)]/20 flex items-center justify-center flex-shrink-0 text-sm font-semibold text-[var(--brand-green-primary)]">
-                    {i + 1}
-                  </span>
-                  <p className="text-[var(--text-secondary)] pt-0.5">
-                    {step.replace(/^\d+\.\s*/, '')}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Partner info */}
         <div className="border border-[var(--border-default)] rounded-xl p-5">

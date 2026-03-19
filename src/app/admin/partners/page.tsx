@@ -81,7 +81,7 @@ export default function AdminPartnersPage() {
   };
 
   return (
-    <div className="p-8">
+    <div>
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-[var(--text-primary)]">Partners</h1>
@@ -104,11 +104,11 @@ export default function AdminPartnersPage() {
                 <th className="text-left py-4 px-6 text-sm font-semibold text-[var(--text-secondary)]">
                   Partner
                 </th>
-                <th className="text-left py-4 px-6 text-sm font-semibold text-[var(--text-secondary)]">
-                  Website
-                </th>
                 <th className="text-left py-4 px-6 text-sm font-semibold text-[var(--text-secondary)] max-w-md">
                   Description
+                </th>
+                <th className="text-left py-4 px-6 text-sm font-semibold text-[var(--text-secondary)]">
+                  Website
                 </th>
                 <th className="text-right py-4 px-6 text-sm font-semibold text-[var(--text-secondary)]">
                   Actions
@@ -143,6 +143,11 @@ export default function AdminPartnersPage() {
                       </span>
                     </div>
                   </td>
+                  <td className="py-4 px-6 max-w-md">
+                    <p className="text-sm text-[var(--text-secondary)] line-clamp-2">
+                      {partner.description}
+                    </p>
+                  </td>
                   <td className="py-4 px-6">
                     <a
                       href={`https://${partner.website}`}
@@ -153,11 +158,6 @@ export default function AdminPartnersPage() {
                       {partner.website}
                       <ExternalLink className="w-3 h-3" />
                     </a>
-                  </td>
-                  <td className="py-4 px-6 max-w-md">
-                    <p className="text-sm text-[var(--text-secondary)] line-clamp-2">
-                      {partner.description}
-                    </p>
                   </td>
                   <td className="py-4 px-6">
                     <div className="flex items-center justify-end gap-2">

@@ -49,6 +49,28 @@ export default function OfferCard({ offer, partner, category, tags }: OfferCardP
               <Badge key={tag.id} className={tagBadgeStyle}>{tag.name}</Badge>
             ))}
           </div>
+
+          {/* Champion / Recommended by */}
+          {offer.champion && offer.champion.name && (
+            <div className="flex items-center gap-2 mt-4 pt-4 border-t border-[var(--border-default)]">
+              <div className="w-8 h-8 rounded-full bg-[var(--bg-card-hover)] flex items-center justify-center overflow-hidden flex-shrink-0">
+                {offer.champion.avatarUrl ? (
+                  <img
+                    src={offer.champion.avatarUrl}
+                    alt={offer.champion.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-xs font-medium text-[var(--text-secondary)]">
+                    {offer.champion.name.split(' ').map(n => n[0]).join('')}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-[var(--text-tertiary)]">
+                Recommended by <span className="text-[var(--text-secondary)]">{offer.champion.name}</span>, {offer.champion.title} at {offer.champion.brand}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Footer */}

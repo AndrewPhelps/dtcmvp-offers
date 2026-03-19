@@ -45,7 +45,7 @@ export default function AdminDashboardPage() {
     .slice(0, 5);
 
   return (
-    <div className="p-8">
+    <div>
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-[var(--text-primary)]">Dashboard</h1>
         <p className="text-[var(--text-secondary)]">
