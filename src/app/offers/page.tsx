@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { Search, Sparkles, ArrowRight, Trash2 } from 'lucide-react';
-import { Card } from '@/components/common';
+import { Card, MoleculeLoader } from '@/components/common';
 import { OfferDrawer } from '@/components/offers';
 import { QuestionnaireModal } from '@/components/questionnaire';
 import { offers, partners, categories, getCategory, getTagsByIds } from '@/data';
@@ -58,6 +58,35 @@ export default function OffersPage() {
     clearRecommendationView,
     removeRecommendation,
   } = useBrand();
+
+  // Track animation phases for loading experience
+  const [showLoadingText, setShowLoadingText] = useState(false);
+  const [isCollapsing, setIsCollapsing] = useState(false);
+  const [showLoader, setShowLoader] = useState(false);
+  const [loaderKey, setLoaderKey] = useState(0);
+  const prevIsAnalyzingRef = useRef(isAnalyzing);
+
+  // Reset text visibility when analyzing starts
+  useEffect(() => {
+    if (isAnalyzing && !prevIsAnalyzingRef.current) {
+      // Starting analysis - increment key to remount loader
+      setShowLoadingText(false);
+      setIsCollapsing(false);
+      setShowLoader(true);
+      setLoaderKey(k => k + 1);
+    } else if (!isAnalyzing && prevIsAnalyzingRef.current) {
+      // Ending analysis - trigger collapse animation
+      setIsCollapsing(true);
+    }
+    prevIsAnalyzingRef.current = isAnalyzing;
+  }, [isAnalyzing]);
+
+  // Handle collapse completion
+  const handleCollapseComplete = useCallback(() => {
+    setShowLoader(false);
+    setIsCollapsing(false);
+    setShowLoadingText(false);
+  }, []);
 
   // Get claimed offer IDs for filtering
   const claimedOfferIds = useMemo(() => claims.map((c) => c.offerId), [claims]);
@@ -311,25 +340,37 @@ export default function OffersPage() {
           {/* Right content - Offer list */}
           <div className="flex-1 min-w-0">
             {/* AI Analysis Loading State */}
-            {isAnalyzing && (
-              <div className="flex flex-col items-center justify-center py-24">
-                <div className="relative mb-6">
-                  <div className="w-16 h-16 rounded-full bg-[var(--brand-green-primary)]/20 flex items-center justify-center">
-                    <Sparkles className="w-8 h-8 text-[var(--brand-green-primary)] animate-pulse" />
-                  </div>
-                  <div className="absolute inset-0 rounded-full border-2 border-[var(--brand-green-primary)]/30 animate-ping" />
+            {(isAnalyzing || showLoader) && (
+              <div className="flex flex-col items-center justify-center pt-6 pb-12">
+                <MoleculeLoader
+                  key={loaderKey}
+                  width={200}
+                  height={200}
+                  onParticlesReady={() => setShowLoadingText(true)}
+                  isCollapsing={isCollapsing}
+                  onCollapseComplete={handleCollapseComplete}
+                />
+                <div
+                  className={`transition-all duration-300 ease-out ${
+                    showLoadingText && !isCollapsing
+                      ? 'opacity-100 translate-y-0'
+                      : 'opacity-0 translate-y-4'
+                  }`}
+                >
+                  <p className="text-lg text-[var(--text-primary)] font-medium mb-3 -mt-2 text-center">
+                    Finding Offers For You
+                  </p>
+                  <p className="text-base text-[var(--text-secondary)] h-6 text-center">
+                    {showLoadingText && !isCollapsing && (
+                      <TypewriterText text={loadingMessages[loadingMessageIndex]} speed={20} />
+                    )}
+                  </p>
                 </div>
-                <p className="text-lg text-[var(--text-primary)] font-medium mb-3">
-                  Finding Offers For You
-                </p>
-                <p className="text-base text-[var(--text-secondary)] h-6">
-                  <TypewriterText text={loadingMessages[loadingMessageIndex]} speed={20} />
-                </p>
               </div>
             )}
 
             {/* Show context header based on current view */}
-            {!isAnalyzing && selectedRecommendation ? (
+            {!isAnalyzing && !showLoader && selectedRecommendation ? (
               <div className="flex items-center justify-between mb-4 pb-4 border-b border-[var(--border-default)]">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-[var(--brand-green-primary)]" />
@@ -348,7 +389,7 @@ export default function OffersPage() {
                   View all offers
                 </button>
               </div>
-            ) : !isAnalyzing && (
+            ) : !isAnalyzing && !showLoader && (
               <div className="flex items-center justify-between mb-4 pb-4 border-b border-[var(--border-default)]">
                 <div className="flex items-center gap-2">
                   <span className="text-[var(--text-primary)] font-medium">
@@ -371,7 +412,7 @@ export default function OffersPage() {
             )}
 
             {/* Offer cards - full width list */}
-            {!isAnalyzing && (
+            {!isAnalyzing && !showLoader && (
             <div className="flex flex-col gap-5">
               {filteredOffers.map((offer) => {
                 const partner = getPartner(offer.partnerId);

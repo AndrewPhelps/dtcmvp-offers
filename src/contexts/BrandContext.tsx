@@ -136,14 +136,21 @@ export function BrandProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isAnalyzing) return;
 
-    const messageInterval = setInterval(() => {
-      setLoadingMessageIndex((prev) => {
-        if (prev >= loadingMessages.length - 1) {
-          return prev;
-        }
-        return prev + 1;
-      });
-    }, 2000);
+    // Delay the start of message cycling to account for intro animation (~750ms)
+    // This ensures the first message gets full display time after text appears
+    const introAnimationDelay = 750;
+    let messageInterval: NodeJS.Timeout;
+
+    const startInterval = setTimeout(() => {
+      messageInterval = setInterval(() => {
+        setLoadingMessageIndex((prev) => {
+          if (prev >= loadingMessages.length - 1) {
+            return prev;
+          }
+          return prev + 1;
+        });
+      }, 2000);
+    }, introAnimationDelay);
 
     const completeTimeout = setTimeout(() => {
       const recommendedOffers = generateRecommendations();
@@ -159,6 +166,7 @@ export function BrandProvider({ children }: { children: ReactNode }) {
     }, 8000);
 
     return () => {
+      clearTimeout(startInterval);
       clearInterval(messageInterval);
       clearTimeout(completeTimeout);
     };
