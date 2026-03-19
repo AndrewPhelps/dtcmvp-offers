@@ -303,12 +303,14 @@ export default function MoleculeLoader({
             : 'translate-y-4 opacity-0 scale-90'
         }`}
       >
-        <Image
-          src="/dtcmvp-logo.svg"
-          alt="DTC MVP"
-          width={logoSize}
-          height={logoSize}
-        />
+        <div className="animate-pulse-glow">
+          <Image
+            src="/dtcmvp-logo.svg"
+            alt="DTC MVP"
+            width={logoSize}
+            height={logoSize}
+          />
+        </div>
       </div>
     </div>
   );

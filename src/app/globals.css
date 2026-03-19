@@ -85,3 +85,17 @@ h1, h2, h3, h4, h5, h6 {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--border-hover);
 }
+
+/* Pulsing glow animation for MoleculeLoader logo */
+@keyframes pulse-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 8px rgba(123, 237, 159, 0.6)) drop-shadow(0 0 16px rgba(123, 237, 159, 0.3));
+  }
+  50% {
+    filter: drop-shadow(0 0 12px rgba(123, 237, 159, 0.8)) drop-shadow(0 0 24px rgba(123, 237, 159, 0.5));
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
