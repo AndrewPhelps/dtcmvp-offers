@@ -77,10 +77,10 @@ export default function AdminCategoriesPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 md:mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--text-primary)]">Categories</h1>
-          <p className="text-[var(--text-secondary)]">
+          <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">Categories</h1>
+          <p className="text-sm md:text-base text-[var(--text-secondary)]">
             Manage offer categories and their colors
           </p>
         </div>
@@ -93,76 +93,78 @@ export default function AdminCategoriesPage() {
       {/* Categories list */}
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-[var(--border-default)]">
-                <th className="text-left py-4 px-6 text-sm font-semibold text-[var(--text-secondary)]">
-                  Name
-                </th>
-                <th className="text-left py-4 px-6 text-sm font-semibold text-[var(--text-secondary)]">
-                  Preview
-                </th>
-                <th className="text-right py-4 px-6 text-sm font-semibold text-[var(--text-secondary)]">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {categoryList.map((category) => {
-                const colors = getCategoryColorByColorName(category.color);
-                return (
-                  <tr
-                    key={category.id}
-                    className="border-b border-[var(--border-default)] last:border-0 hover:bg-[var(--bg-card-hover)]"
-                  >
-                    <td className="py-4 px-6">
-                      <span className="font-medium text-[var(--text-primary)]">
-                        {category.name}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6">
-                      <span className={`text-xs px-2 py-0.5 rounded-full border ${colors.badge}`}>
-                        {category.name}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => openEditModal(category)}
-                          className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-body)] rounded-lg transition-colors"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        {deleteConfirm === category.id ? (
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => handleDelete(category.id)}
-                              className="px-2 py-1 text-xs text-[var(--brand-red)] hover:bg-[var(--brand-red)]/10 rounded transition-colors"
-                            >
-                              Confirm
-                            </button>
-                            <button
-                              onClick={() => setDeleteConfirm(null)}
-                              className="p-1 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                        ) : (
+          <div className="min-w-[400px]">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-[var(--border-default)]">
+                  <th className="text-left py-3 md:py-4 px-4 md:px-6 text-sm font-semibold text-[var(--text-secondary)]">
+                    Name
+                  </th>
+                  <th className="text-left py-3 md:py-4 px-4 md:px-6 text-sm font-semibold text-[var(--text-secondary)]">
+                    Preview
+                  </th>
+                  <th className="text-right py-3 md:py-4 px-4 md:px-6 text-sm font-semibold text-[var(--text-secondary)]">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {categoryList.map((category) => {
+                  const colors = getCategoryColorByColorName(category.color);
+                  return (
+                    <tr
+                      key={category.id}
+                      className="border-b border-[var(--border-default)] last:border-0 hover:bg-[var(--bg-card-hover)]"
+                    >
+                      <td className="py-3 md:py-4 px-4 md:px-6">
+                        <span className="font-medium text-[var(--text-primary)]">
+                          {category.name}
+                        </span>
+                      </td>
+                      <td className="py-3 md:py-4 px-4 md:px-6">
+                        <span className={`text-xs px-2 py-0.5 rounded-full border ${colors.badge}`}>
+                          {category.name}
+                        </span>
+                      </td>
+                      <td className="py-3 md:py-4 px-4 md:px-6">
+                        <div className="flex items-center justify-end gap-2">
                           <button
-                            onClick={() => setDeleteConfirm(category.id)}
-                            className="p-2 text-[var(--text-secondary)] hover:text-[var(--brand-red)] hover:bg-[var(--bg-body)] rounded-lg transition-colors"
+                            onClick={() => openEditModal(category)}
+                            className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-body)] rounded-lg transition-colors"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Edit2 className="w-4 h-4" />
                           </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                          {deleteConfirm === category.id ? (
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => handleDelete(category.id)}
+                                className="px-2 py-1 text-xs text-[var(--brand-red)] hover:bg-[var(--brand-red)]/10 rounded transition-colors"
+                              >
+                                Confirm
+                              </button>
+                              <button
+                                onClick={() => setDeleteConfirm(null)}
+                                className="p-1 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setDeleteConfirm(category.id)}
+                              className="p-2 text-[var(--text-secondary)] hover:text-[var(--brand-red)] hover:bg-[var(--bg-body)] rounded-lg transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {categoryList.length === 0 && (
@@ -174,8 +176,8 @@ export default function AdminCategoriesPage() {
 
       {/* Create/Edit Modal */}
       <Modal isOpen={isModalOpen} onClose={closeModal} maxWidth="max-w-md">
-        <div className="p-6">
-          <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-6">
+        <div className="p-4 md:p-6">
+          <h2 className="text-lg md:text-xl font-semibold text-[var(--text-primary)] mb-4 md:mb-6">
             {editingCategory ? 'Edit Category' : 'New Category'}
           </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -200,7 +202,7 @@ export default function AdminCategoriesPage() {
                       key={option.value}
                       type="button"
                       onClick={() => setFormData((prev) => ({ ...prev, color: option.value }))}
-                      className={`text-xs px-3 py-1 rounded-full border transition-all cursor-pointer ${colors.badge} ${
+                      className={`text-xs px-3 py-1.5 md:py-1 rounded-full border transition-all cursor-pointer ${colors.badge} ${
                         isSelected
                           ? 'ring-2 ring-offset-2 ring-offset-[var(--bg-card)] ring-[var(--text-primary)]'
                           : 'opacity-70 hover:opacity-100'
@@ -213,11 +215,11 @@ export default function AdminCategoriesPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-4">
-              <Button type="button" variant="ghost" onClick={closeModal}>
+            <div className="flex flex-col-reverse md:flex-row items-stretch md:items-center justify-end gap-2 md:gap-3 pt-4">
+              <Button type="button" variant="ghost" onClick={closeModal} className="justify-center">
                 Cancel
               </Button>
-              <Button type="submit">
+              <Button type="submit" className="justify-center">
                 {editingCategory ? 'Save Changes' : 'Create Category'}
               </Button>
             </div>

@@ -82,10 +82,10 @@ export default function AdminPartnersPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 md:mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--text-primary)]">Partners</h1>
-          <p className="text-[var(--text-secondary)]">
+          <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">Partners</h1>
+          <p className="text-sm md:text-base text-[var(--text-secondary)]">
             Manage partner companies and their details
           </p>
         </div>
@@ -98,104 +98,106 @@ export default function AdminPartnersPage() {
       {/* Partners list */}
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-[var(--border-default)]">
-                <th className="text-left py-4 px-6 text-sm font-semibold text-[var(--text-secondary)]">
-                  Partner
-                </th>
-                <th className="text-left py-4 px-6 text-sm font-semibold text-[var(--text-secondary)] max-w-md">
-                  Description
-                </th>
-                <th className="text-left py-4 px-6 text-sm font-semibold text-[var(--text-secondary)]">
-                  Website
-                </th>
-                <th className="text-right py-4 px-6 text-sm font-semibold text-[var(--text-secondary)]">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {partnerList.map((partner) => (
-                <tr
-                  key={partner.id}
-                  className="border-b border-[var(--border-default)] last:border-0 hover:bg-[var(--bg-card-hover)]"
-                >
-                  <td className="py-4 px-6">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-white border border-[var(--border-default)] flex items-center justify-center overflow-hidden">
-                        {partner.logo ? (
-                          <Image
-                            src={`/logos/${partner.logo}`}
-                            alt={`${partner.name} logo`}
-                            width={28}
-                            height={28}
-                            className="object-contain"
-                          />
+          <div className="min-w-[600px]">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-[var(--border-default)]">
+                  <th className="text-left py-3 md:py-4 px-4 md:px-6 text-sm font-semibold text-[var(--text-secondary)]">
+                    Partner
+                  </th>
+                  <th className="text-left py-3 md:py-4 px-4 md:px-6 text-sm font-semibold text-[var(--text-secondary)] max-w-md">
+                    Description
+                  </th>
+                  <th className="text-left py-3 md:py-4 px-4 md:px-6 text-sm font-semibold text-[var(--text-secondary)]">
+                    Website
+                  </th>
+                  <th className="text-right py-3 md:py-4 px-4 md:px-6 text-sm font-semibold text-[var(--text-secondary)]">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {partnerList.map((partner) => (
+                  <tr
+                    key={partner.id}
+                    className="border-b border-[var(--border-default)] last:border-0 hover:bg-[var(--bg-card-hover)]"
+                  >
+                    <td className="py-3 md:py-4 px-4 md:px-6">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-white border border-[var(--border-default)] flex items-center justify-center overflow-hidden flex-shrink-0">
+                          {partner.logo ? (
+                            <Image
+                              src={`/logos/${partner.logo}`}
+                              alt={`${partner.name} logo`}
+                              width={28}
+                              height={28}
+                              className="object-contain"
+                            />
+                          ) : (
+                            <span className="text-sm font-bold text-slate-600">
+                              {partner.name.slice(0, 2).toUpperCase()}
+                            </span>
+                          )}
+                        </div>
+                        <span className="font-medium text-[var(--text-primary)]">
+                          {partner.name}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="py-3 md:py-4 px-4 md:px-6 max-w-md">
+                      <p className="text-sm text-[var(--text-secondary)] line-clamp-2">
+                        {partner.description}
+                      </p>
+                    </td>
+                    <td className="py-3 md:py-4 px-4 md:px-6">
+                      <a
+                        href={`https://${partner.website}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-[var(--brand-blue-primary)] hover:underline cursor-pointer"
+                      >
+                        {partner.website}
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </td>
+                    <td className="py-3 md:py-4 px-4 md:px-6">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => openEditModal(partner)}
+                          className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-body)] rounded-lg transition-colors cursor-pointer"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        {deleteConfirm === partner.id ? (
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => handleDelete(partner.id)}
+                              className="px-2 py-1 text-xs text-[var(--brand-red)] hover:bg-[var(--brand-red)]/10 rounded transition-colors cursor-pointer"
+                            >
+                              Confirm
+                            </button>
+                            <button
+                              onClick={() => setDeleteConfirm(null)}
+                              className="p-1 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] cursor-pointer"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
                         ) : (
-                          <span className="text-sm font-bold text-slate-600">
-                            {partner.name.slice(0, 2).toUpperCase()}
-                          </span>
+                          <button
+                            onClick={() => setDeleteConfirm(partner.id)}
+                            className="p-2 text-[var(--text-secondary)] hover:text-[var(--brand-red)] hover:bg-[var(--bg-body)] rounded-lg transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         )}
                       </div>
-                      <span className="font-medium text-[var(--text-primary)]">
-                        {partner.name}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="py-4 px-6 max-w-md">
-                    <p className="text-sm text-[var(--text-secondary)] line-clamp-2">
-                      {partner.description}
-                    </p>
-                  </td>
-                  <td className="py-4 px-6">
-                    <a
-                      href={`https://${partner.website}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-[var(--brand-blue-primary)] hover:underline cursor-pointer"
-                    >
-                      {partner.website}
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </td>
-                  <td className="py-4 px-6">
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => openEditModal(partner)}
-                        className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-body)] rounded-lg transition-colors cursor-pointer"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      {deleteConfirm === partner.id ? (
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => handleDelete(partner.id)}
-                            className="px-2 py-1 text-xs text-[var(--brand-red)] hover:bg-[var(--brand-red)]/10 rounded transition-colors cursor-pointer"
-                          >
-                            Confirm
-                          </button>
-                          <button
-                            onClick={() => setDeleteConfirm(null)}
-                            className="p-1 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] cursor-pointer"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => setDeleteConfirm(partner.id)}
-                          className="p-2 text-[var(--text-secondary)] hover:text-[var(--brand-red)] hover:bg-[var(--bg-body)] rounded-lg transition-colors cursor-pointer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {partnerList.length === 0 && (
@@ -207,8 +209,8 @@ export default function AdminPartnersPage() {
 
       {/* Create/Edit Modal */}
       <Modal isOpen={isModalOpen} onClose={closeModal} maxWidth="max-w-lg">
-        <div className="p-6">
-          <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-6">
+        <div className="p-4 md:p-6">
+          <h2 className="text-lg md:text-xl font-semibold text-[var(--text-primary)] mb-4 md:mb-6">
             {editingPartner ? 'Edit Partner' : 'New Partner'}
           </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -247,11 +249,11 @@ export default function AdminPartnersPage() {
               rows={3}
             />
 
-            <div className="flex items-center justify-end gap-3 pt-4">
-              <Button type="button" variant="ghost" onClick={closeModal}>
+            <div className="flex flex-col-reverse md:flex-row items-stretch md:items-center justify-end gap-2 md:gap-3 pt-4">
+              <Button type="button" variant="ghost" onClick={closeModal} className="justify-center">
                 Cancel
               </Button>
-              <Button type="submit">
+              <Button type="submit" className="justify-center">
                 {editingPartner ? 'Save Changes' : 'Create Partner'}
               </Button>
             </div>

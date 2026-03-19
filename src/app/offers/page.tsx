@@ -211,14 +211,14 @@ export default function OffersPage() {
         />
         <img src="/bg-offers.jpg" alt="" className="w-full invisible" />
       </div>
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
-        {/* Two-column layout */}
-        <div className="flex gap-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8 relative z-10">
+        {/* Two-column layout on desktop, single column on mobile */}
+        <div className="flex flex-col md:flex-row gap-4 md:gap-8">
           {/* Left sidebar - Categories */}
-          <aside className="w-64 flex-shrink-0">
-            <div className="sticky top-8">
+          <aside className="w-full md:w-64 md:flex-shrink-0">
+            <div className="md:sticky md:top-8">
               {/* Search */}
-              <div className="mb-6">
+              <div className="mb-4 md:mb-6">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-tertiary)]" />
                   <input
@@ -234,105 +234,174 @@ export default function OffersPage() {
                 </div>
               </div>
 
-              {/* Recommended Offers section */}
-              {recommendations.length > 0 && (
-                <div className="mb-6">
+              {/* Mobile: Horizontal scrolling category pills */}
+              <div className="md:hidden mb-4">
+                {/* Recommendations pills on mobile */}
+                {recommendations.length > 0 && (
+                  <div className="overflow-x-auto pb-2 -mx-4 px-4 mb-3">
+                    <div className="flex gap-2 min-w-max">
+                      {recommendations.map((rec) => {
+                        const isSelected = selectedRecommendation === rec.id;
+                        return (
+                          <button
+                            key={rec.id}
+                            onClick={() => handleSelectRecommendation(rec.id)}
+                            className={`flex-shrink-0 px-3 py-2 rounded-full text-sm whitespace-nowrap flex items-center gap-1.5 ${
+                              isSelected
+                                ? 'bg-[var(--brand-green-primary)] text-[var(--bg-body)]'
+                                : 'bg-[var(--bg-card)] text-[var(--text-secondary)] border border-[var(--border-default)]'
+                            }`}
+                          >
+                            <Sparkles className="w-3.5 h-3.5" />
+                            {formatRecommendationDate(rec.date)} ({rec.offerIds.length})
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                {/* Category pills */}
+                <div className="overflow-x-auto pb-2 -mx-4 px-4">
+                  <div className="flex gap-2 min-w-max">
+                    <button
+                      onClick={() => {
+                        setSelectedCategoryId('all');
+                        clearRecommendationView();
+                      }}
+                      className={`flex-shrink-0 px-3 py-2 rounded-full text-sm whitespace-nowrap ${
+                        selectedCategoryId === 'all' && !selectedRecommendation
+                          ? 'bg-[var(--brand-green-primary)] text-[var(--bg-body)]'
+                          : 'bg-[var(--bg-card)] text-[var(--text-secondary)] border border-[var(--border-default)]'
+                      }`}
+                    >
+                      All ({getTotalActiveOffersCount()})
+                    </button>
+                    {categories.map((category) => {
+                      const colors = getCategoryColorByColorName(category.color);
+                      const isSelected = selectedCategoryId === category.id && !selectedRecommendation;
+                      return (
+                        <button
+                          key={category.id}
+                          onClick={() => {
+                            setSelectedCategoryId(category.id);
+                            clearRecommendationView();
+                          }}
+                          className={`flex-shrink-0 px-3 py-2 rounded-full text-sm whitespace-nowrap ${
+                            isSelected
+                              ? `${colors.bg} ${colors.text}`
+                              : 'bg-[var(--bg-card)] text-[var(--text-secondary)] border border-[var(--border-default)]'
+                          }`}
+                        >
+                          {category.name} ({getCategoryCount(category.id)})
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Desktop: Vertical sidebar */}
+              <div className="hidden md:block">
+                {/* Recommended Offers section */}
+                {recommendations.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider mb-3">
+                      Recommended Offers
+                    </h3>
+                    <nav className="space-y-1">
+                      {recommendations.map((rec) => {
+                        const isSelected = selectedRecommendation === rec.id;
+                        return (
+                          <div
+                            key={rec.id}
+                            onClick={() => handleSelectRecommendation(rec.id)}
+                            className={`group w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-between cursor-pointer ${
+                              isSelected
+                                ? 'bg-[var(--brand-green-primary)]/10 text-[var(--brand-green-primary)] font-medium'
+                                : 'text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]'
+                            }`}
+                          >
+                            <span className="flex items-center gap-2">
+                              <Sparkles className="w-3.5 h-3.5" />
+                              {formatRecommendationDate(rec.date)}
+                            </span>
+                            <span className="flex items-center gap-2">
+                              <span className={`${
+                                isSelected
+                                  ? 'text-[var(--brand-green-primary)]'
+                                  : 'text-[var(--text-tertiary)] group-hover:text-[var(--text-secondary)]'
+                              }`}>
+                                {rec.offerIds.length}
+                              </span>
+                              <button
+                                onClick={(e) => handleRemoveRecommendation(rec.id, e)}
+                                className="p-0.5 rounded hover:bg-[var(--bg-card)] transition-all cursor-pointer"
+                              >
+                                <Trash2 className="w-3 h-3 text-[var(--text-tertiary)] hover:text-[var(--brand-red)] transition-colors" />
+                              </button>
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </nav>
+                  </div>
+                )}
+
+                {/* Categories */}
+                <div>
                   <h3 className="text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider mb-3">
-                    Recommended Offers
+                    Categories
                   </h3>
                   <nav className="space-y-1">
-                    {recommendations.map((rec) => {
-                      const isSelected = selectedRecommendation === rec.id;
+                    <button
+                      onClick={() => {
+                        setSelectedCategoryId('all');
+                        clearRecommendationView();
+                      }}
+                      className={`group w-full text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${
+                        selectedCategoryId === 'all' && !selectedRecommendation
+                          ? 'bg-[var(--brand-green-primary)]/10 text-[var(--brand-green-primary)] font-medium'
+                          : 'text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]'
+                      }`}
+                    >
+                      All Offers
+                      <span className={`float-right ${
+                        selectedCategoryId === 'all' && !selectedRecommendation
+                          ? 'text-[var(--brand-green-primary)]'
+                          : 'text-[var(--text-tertiary)] group-hover:text-[var(--text-secondary)]'
+                      }`}>
+                        {getTotalActiveOffersCount()}
+                      </span>
+                    </button>
+                    {categories.map((category) => {
+                      const colors = getCategoryColorByColorName(category.color);
+                      const isSelected = selectedCategoryId === category.id && !selectedRecommendation;
                       return (
-                        <div
-                          key={rec.id}
-                          onClick={() => handleSelectRecommendation(rec.id)}
-                          className={`group w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-between cursor-pointer ${
+                        <button
+                          key={category.id}
+                          onClick={() => {
+                            setSelectedCategoryId(category.id);
+                            clearRecommendationView();
+                          }}
+                          className={`group w-full text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${
                             isSelected
-                              ? 'bg-[var(--brand-green-primary)]/10 text-[var(--brand-green-primary)] font-medium'
+                              ? `${colors.bg} ${colors.text} font-medium`
                               : 'text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]'
                           }`}
                         >
-                          <span className="flex items-center gap-2">
-                            <Sparkles className="w-3.5 h-3.5" />
-                            {formatRecommendationDate(rec.date)}
+                          {category.name}
+                          <span className={`float-right transition-colors ${
+                            isSelected
+                              ? colors.text
+                              : `text-[var(--text-tertiary)] group-hover:${colors.text}`
+                          }`}>
+                            {getCategoryCount(category.id)}
                           </span>
-                          <span className="flex items-center gap-2">
-                            <span className={`${
-                              isSelected
-                                ? 'text-[var(--brand-green-primary)]'
-                                : 'text-[var(--text-tertiary)] group-hover:text-[var(--text-secondary)]'
-                            }`}>
-                              {rec.offerIds.length}
-                            </span>
-                            <button
-                              onClick={(e) => handleRemoveRecommendation(rec.id, e)}
-                              className="p-0.5 rounded hover:bg-[var(--bg-card)] transition-all cursor-pointer"
-                            >
-                              <Trash2 className="w-3 h-3 text-[var(--text-tertiary)] hover:text-[var(--brand-red)] transition-colors" />
-                            </button>
-                          </span>
-                        </div>
+                        </button>
                       );
                     })}
                   </nav>
                 </div>
-              )}
-
-              {/* Categories */}
-              <div>
-                <h3 className="text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider mb-3">
-                  Categories
-                </h3>
-                <nav className="space-y-1">
-                  <button
-                    onClick={() => {
-                      setSelectedCategoryId('all');
-                      clearRecommendationView();
-                    }}
-                    className={`group w-full text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${
-                      selectedCategoryId === 'all' && !selectedRecommendation
-                        ? 'bg-[var(--brand-green-primary)]/10 text-[var(--brand-green-primary)] font-medium'
-                        : 'text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]'
-                    }`}
-                  >
-                    All Offers
-                    <span className={`float-right ${
-                      selectedCategoryId === 'all' && !selectedRecommendation
-                        ? 'text-[var(--brand-green-primary)]'
-                        : 'text-[var(--text-tertiary)] group-hover:text-[var(--text-secondary)]'
-                    }`}>
-                      {getTotalActiveOffersCount()}
-                    </span>
-                  </button>
-                  {categories.map((category) => {
-                    const colors = getCategoryColorByColorName(category.color);
-                    const isSelected = selectedCategoryId === category.id && !selectedRecommendation;
-                    return (
-                      <button
-                        key={category.id}
-                        onClick={() => {
-                          setSelectedCategoryId(category.id);
-                          clearRecommendationView();
-                        }}
-                        className={`group w-full text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${
-                          isSelected
-                            ? `${colors.bg} ${colors.text} font-medium`
-                            : 'text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]'
-                        }`}
-                      >
-                        {category.name}
-                        <span className={`float-right transition-colors ${
-                          isSelected
-                            ? colors.text
-                            : `text-[var(--text-tertiary)] group-hover:${colors.text}`
-                        }`}>
-                          {getCategoryCount(category.id)}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </nav>
               </div>
             </div>
           </aside>
@@ -413,7 +482,7 @@ export default function OffersPage() {
 
             {/* Offer cards - full width list */}
             {!isAnalyzing && !showLoader && (
-            <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-3 md:gap-5">
               {filteredOffers.map((offer) => {
                 const partner = getPartner(offer.partnerId);
                 if (!partner) return null;
@@ -427,19 +496,19 @@ export default function OffersPage() {
                     onClick={() => handleOfferClick(offer)}
                     className="text-left cursor-pointer"
                   >
-                    <Card variant="interactive" className="flex items-center gap-8 p-10">
+                    <Card variant="interactive" className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-8 p-5 md:p-10">
                       {/* Partner logo */}
-                      <div className="w-16 h-16 rounded-xl bg-white flex items-center justify-center flex-shrink-0 overflow-hidden">
+                      <div className="w-12 h-12 md:w-16 md:h-16 rounded-xl bg-white flex items-center justify-center flex-shrink-0 overflow-hidden">
                         {partner.logo ? (
                           <Image
                             src={`/logos/${partner.logo}`}
                             alt={partner.name}
                             width={64}
                             height={64}
-                            className="w-full h-full object-contain p-2"
+                            className="w-full h-full object-contain p-1.5 md:p-2"
                           />
                         ) : (
-                          <span className="text-[var(--brand-green-primary)] font-semibold text-xl">
+                          <span className="text-[var(--brand-green-primary)] font-semibold text-lg md:text-xl">
                             {partner.name.slice(0, 2).toUpperCase()}
                           </span>
                         )}
@@ -447,10 +516,10 @@ export default function OffersPage() {
 
                       {/* Content */}
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-1.5">
+                        <h3 className="text-base md:text-xl font-semibold text-[var(--text-primary)] mb-1 md:mb-1.5">
                           {offer.name} <span className="font-normal text-[var(--text-secondary)]">from {partner.name}</span>
                         </h3>
-                        <p className="text-sm text-[var(--text-secondary)] mb-2">
+                        <p className="text-sm text-[var(--text-secondary)] mb-2 line-clamp-2 md:line-clamp-none">
                           {offer.shortDescription}
                         </p>
                         <div className="flex items-center gap-2 flex-wrap">
@@ -459,16 +528,25 @@ export default function OffersPage() {
                               {category.name}
                             </span>
                           )}
-                          {offerTags.map((tag) => (
+                          {offerTags.slice(0, 2).map((tag) => (
                             <span key={tag.id} className={`text-xs px-2 py-0.5 rounded-full border ${tagBadgeStyle}`}>
                               {tag.name}
                             </span>
                           ))}
+                          {offerTags.length > 2 && (
+                            <span className="hidden md:inline">
+                              {offerTags.slice(2).map((tag) => (
+                                <span key={tag.id} className={`text-xs px-2 py-0.5 rounded-full border ${tagBadgeStyle} ml-2`}>
+                                  {tag.name}
+                                </span>
+                              ))}
+                            </span>
+                          )}
                         </div>
                       </div>
 
-                      {/* Arrow */}
-                      <ArrowRight className="w-5 h-5 text-[var(--text-tertiary)] flex-shrink-0" />
+                      {/* Arrow - hidden on mobile, visible on desktop */}
+                      <ArrowRight className="hidden md:block w-5 h-5 text-[var(--text-tertiary)] flex-shrink-0" />
                     </Card>
                   </button>
                 );

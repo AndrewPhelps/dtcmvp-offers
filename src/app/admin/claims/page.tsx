@@ -35,9 +35,9 @@ export default function AdminClaimsPage() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[var(--text-primary)]">Claims</h1>
-        <p className="text-[var(--text-secondary)]">
+      <div className="mb-6 md:mb-8">
+        <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">Claims</h1>
+        <p className="text-sm md:text-base text-[var(--text-secondary)]">
           Review and manage offer claims from brands
         </p>
       </div>
@@ -45,8 +45,8 @@ export default function AdminClaimsPage() {
       {/* Claims table with integrated filters */}
       <Card className="overflow-hidden">
         {/* Filters inside card */}
-        <div className="flex flex-wrap gap-4 px-6 py-4 border-b border-[var(--border-default)]">
-          <div className="flex-1 min-w-[200px]">
+        <div className="flex flex-col md:flex-row gap-3 md:gap-4 px-4 md:px-6 py-3 md:py-4 border-b border-[var(--border-default)]">
+          <div className="flex-1 min-w-0 md:min-w-[200px]">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-tertiary)]" />
               <input
@@ -72,80 +72,82 @@ export default function AdminClaimsPage() {
 
         {/* Table */}
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-[var(--border-default)]">
-                <th className="text-left py-4 px-6 text-sm font-semibold text-[var(--text-secondary)]">
-                  Brand
-                </th>
-                <th className="text-left py-4 px-6 text-sm font-semibold text-[var(--text-secondary)]">
-                  Offer
-                </th>
-                <th className="text-left py-4 px-6 text-sm font-semibold text-[var(--text-secondary)]">
-                  Partner
-                </th>
-                <th className="text-left py-4 px-6 text-sm font-semibold text-[var(--text-secondary)]">
-                  Status
-                </th>
-                <th className="text-left py-4 px-6 text-sm font-semibold text-[var(--text-secondary)]">
-                  Date
-                </th>
-                <th className="text-right py-4 px-6 text-sm font-semibold text-[var(--text-secondary)]">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredClaims.map((claim) => {
-                const { offerName, partnerName } = getOfferInfo(claim.offerId);
+          <div className="min-w-[700px]">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-[var(--border-default)]">
+                  <th className="text-left py-3 md:py-4 px-4 md:px-6 text-sm font-semibold text-[var(--text-secondary)]">
+                    Brand
+                  </th>
+                  <th className="text-left py-3 md:py-4 px-4 md:px-6 text-sm font-semibold text-[var(--text-secondary)]">
+                    Offer
+                  </th>
+                  <th className="text-left py-3 md:py-4 px-4 md:px-6 text-sm font-semibold text-[var(--text-secondary)]">
+                    Partner
+                  </th>
+                  <th className="text-left py-3 md:py-4 px-4 md:px-6 text-sm font-semibold text-[var(--text-secondary)]">
+                    Status
+                  </th>
+                  <th className="text-left py-3 md:py-4 px-4 md:px-6 text-sm font-semibold text-[var(--text-secondary)]">
+                    Date
+                  </th>
+                  <th className="text-right py-3 md:py-4 px-4 md:px-6 text-sm font-semibold text-[var(--text-secondary)]">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredClaims.map((claim) => {
+                  const { offerName, partnerName } = getOfferInfo(claim.offerId);
 
-                return (
-                  <tr
-                    key={claim.id}
-                    onClick={() => setSelectedClaim(claim.id)}
-                    className="border-b border-[var(--border-default)] last:border-0 hover:bg-[var(--bg-card-hover)] cursor-pointer"
-                  >
-                    <td className="py-4 px-6">
-                      <p className="font-medium text-[var(--text-primary)]">
-                        {claim.brandName}
-                      </p>
-                    </td>
-                    <td className="py-4 px-6 text-[var(--text-secondary)]">
-                      {offerName}
-                    </td>
-                    <td className="py-4 px-6 text-[var(--text-secondary)]">
-                      {partnerName}
-                    </td>
-                    <td className="py-4 px-6">
-                      <Badge
-                        variant={
-                          claim.status === 'pending'
-                            ? 'warning'
-                            : claim.status === 'reviewed'
-                            ? 'info'
-                            : 'success'
-                        }
-                      >
-                        {capitalize(claim.status)}
-                      </Badge>
-                    </td>
-                    <td className="py-4 px-6 text-[var(--text-tertiary)]">
-                      {new Date(claim.claimedAt).toLocaleDateString()}
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="flex items-center justify-end">
-                        <ArrowRight className="w-4 h-4 text-[var(--text-tertiary)]" />
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                  return (
+                    <tr
+                      key={claim.id}
+                      onClick={() => setSelectedClaim(claim.id)}
+                      className="border-b border-[var(--border-default)] last:border-0 hover:bg-[var(--bg-card-hover)] cursor-pointer"
+                    >
+                      <td className="py-3 md:py-4 px-4 md:px-6">
+                        <p className="font-medium text-[var(--text-primary)]">
+                          {claim.brandName}
+                        </p>
+                      </td>
+                      <td className="py-3 md:py-4 px-4 md:px-6 text-[var(--text-secondary)]">
+                        {offerName}
+                      </td>
+                      <td className="py-3 md:py-4 px-4 md:px-6 text-[var(--text-secondary)]">
+                        {partnerName}
+                      </td>
+                      <td className="py-3 md:py-4 px-4 md:px-6">
+                        <Badge
+                          variant={
+                            claim.status === 'pending'
+                              ? 'warning'
+                              : claim.status === 'reviewed'
+                              ? 'info'
+                              : 'success'
+                          }
+                        >
+                          {capitalize(claim.status)}
+                        </Badge>
+                      </td>
+                      <td className="py-3 md:py-4 px-4 md:px-6 text-[var(--text-tertiary)]">
+                        {new Date(claim.claimedAt).toLocaleDateString()}
+                      </td>
+                      <td className="py-3 md:py-4 px-4 md:px-6">
+                        <div className="flex items-center justify-end">
+                          <ArrowRight className="w-4 h-4 text-[var(--text-tertiary)]" />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {filteredClaims.length === 0 && (
-          <div className="text-center py-12">
+          <div className="text-center py-8 md:py-12">
             <p className="text-[var(--text-secondary)]">No claims found</p>
           </div>
         )}
@@ -176,20 +178,20 @@ export default function AdminClaimsPage() {
             </div>
           }
           footer={
-            <div className="flex items-center justify-end gap-3 px-8 py-4">
-              <Button variant="secondary">
+            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-end gap-2 md:gap-3 px-4 md:px-8 py-3 md:py-4">
+              <Button variant="secondary" className="justify-center">
                 <CheckCircle className="w-4 h-4 mr-2" />
                 Mark as Reviewed
               </Button>
-              <Button>
+              <Button className="justify-center">
                 <Mail className="w-4 h-4 mr-2" />
                 Facilitate Intro
               </Button>
             </div>
           }
         >
-          <div className="p-8">
-            <div className="grid grid-cols-2 gap-8">
+          <div className="p-4 md:p-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
               {/* Left Column - Claim Info */}
               <div className="space-y-4">
                 <div>

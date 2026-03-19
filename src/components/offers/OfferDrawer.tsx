@@ -58,25 +58,25 @@ export default function OfferDrawer({ offer, partner, isOpen, onClose }: OfferDr
 
   // Header content with logo, offer name with partner, category badge, and tags
   const headerContent = (
-    <div className="flex items-center gap-5">
-      <div className="w-14 h-14 rounded-xl bg-white flex items-center justify-center flex-shrink-0">
+    <div className="flex items-center gap-3 md:gap-5">
+      <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl bg-white flex items-center justify-center flex-shrink-0">
         {partner.logo ? (
           <Image
             src={`/logos/${partner.logo}`}
             alt={`${partner.name} logo`}
             width={36}
             height={36}
-            className="object-contain"
+            className="object-contain w-6 h-6 md:w-9 md:h-9"
           />
         ) : (
-          <span className="text-sm font-bold text-slate-600">
+          <span className="text-xs md:text-sm font-bold text-slate-600">
             {partner.name.slice(0, 2).toUpperCase()}
           </span>
         )}
       </div>
       <div className="flex-1 min-w-0">
-        <h2 className="text-xl font-semibold text-[var(--text-primary)] truncate mb-1">
-          {offer.name} <span className="font-normal text-[var(--text-secondary)]">from {partner.name}</span>
+        <h2 className="text-base md:text-xl font-semibold text-[var(--text-primary)] truncate mb-1">
+          {offer.name} <span className="hidden md:inline font-normal text-[var(--text-secondary)]">from {partner.name}</span>
         </h2>
         <div className="flex items-center gap-2 flex-wrap">
           {category && (
@@ -84,11 +84,18 @@ export default function OfferDrawer({ offer, partner, isOpen, onClose }: OfferDr
               {category.name}
             </span>
           )}
-          {offerTags.slice(0, 3).map((tag) => (
+          {offerTags.slice(0, 2).map((tag) => (
             <span key={tag.id} className={`text-xs px-2 py-0.5 rounded-full border ${tagBadgeStyle}`}>
               {tag.name}
             </span>
           ))}
+          <span className="hidden md:inline">
+            {offerTags.slice(2, 3).map((tag) => (
+              <span key={tag.id} className={`text-xs px-2 py-0.5 rounded-full border ${tagBadgeStyle} ml-2`}>
+                {tag.name}
+              </span>
+            ))}
+          </span>
         </div>
       </div>
     </div>
@@ -96,34 +103,36 @@ export default function OfferDrawer({ offer, partner, isOpen, onClose }: OfferDr
 
   // Footer content - actions on right
   const footerContent = (
-    <div className="flex items-center justify-end px-8 py-6">
+    <div className="flex items-center justify-end px-4 md:px-8 py-4 md:py-6 gap-2 md:gap-3">
 
-      {/* Right side - Not for Me, Save for Later, Claim button */}
-      <div className="flex items-center gap-3">
+      {/* Actions */}
+      <div className="flex items-center gap-2 md:gap-3">
         {!isClaimed && (
           <>
+            {/* Hide button - icon only on mobile */}
             <button
               onClick={handleHide}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+              className="flex items-center gap-2 p-2 md:px-4 md:py-2 rounded-lg text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
             >
               <EyeOff className="w-4 h-4" />
-              Not for Me
+              <span className="hidden md:inline">Not for Me</span>
             </button>
+            {/* Save button - icon only on mobile */}
             <button
               onClick={handleSaveToggle}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+              className={`flex items-center gap-2 p-2 md:px-4 md:py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
                 isSaved
                   ? 'bg-[var(--brand-green-primary)]/10 text-[var(--brand-green-primary)]'
                   : 'text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]'
               }`}
             >
               <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />
-              {isSaved ? 'Saved' : 'Save for Later'}
+              <span className="hidden md:inline">{isSaved ? 'Saved' : 'Save for Later'}</span>
             </button>
           </>
         )}
-        <Button onClick={() => setShowClaimForm(true)} disabled={isClaimed}>
-          {isClaimed ? 'Already Claimed' : 'Claim Offer'}
+        <Button onClick={() => setShowClaimForm(true)} disabled={isClaimed} className="text-sm md:text-base">
+          {isClaimed ? 'Claimed' : 'Claim Offer'}
         </Button>
       </div>
     </div>
@@ -165,17 +174,17 @@ export default function OfferDrawer({ offer, partner, isOpen, onClose }: OfferDr
         onClose={onClose}
         header={headerContent}
       >
-        <div className={`flex h-full overflow-hidden ${!hasInstructions ? 'justify-center' : ''}`}>
+        <div className={`flex flex-col md:flex-row h-full overflow-hidden ${!hasInstructions ? 'justify-center' : ''}`}>
           {/* Left column - How it works (fixed, no scroll) - hide after submission */}
           {hasInstructions && (
-            <div className="w-96 flex-shrink-0 p-8 border-r border-[var(--border-default)] overflow-hidden">
-              <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
+            <div className="w-full md:w-96 flex-shrink-0 p-4 md:p-8 border-b md:border-b-0 md:border-r border-[var(--border-default)] overflow-hidden">
+              <h3 className="text-base md:text-lg font-semibold text-[var(--text-primary)] mb-3 md:mb-4">
                 How it works
               </h3>
-              <div className="space-y-3">
+              <div className="space-y-2 md:space-y-3">
                 {offer.claimInstructions!.split('\n').map((step, i) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <span className="w-6 h-6 rounded-full bg-[var(--brand-green-primary)]/20 flex items-center justify-center flex-shrink-0 text-sm font-semibold text-[var(--brand-green-primary)]">
+                  <div key={i} className="flex items-start gap-2 md:gap-3">
+                    <span className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-[var(--brand-green-primary)]/20 flex items-center justify-center flex-shrink-0 text-xs md:text-sm font-semibold text-[var(--brand-green-primary)]">
                       {i + 1}
                     </span>
                     <p className="text-[var(--text-secondary)] text-sm pt-0.5">
@@ -187,10 +196,10 @@ export default function OfferDrawer({ offer, partner, isOpen, onClose }: OfferDr
             </div>
           )}
           {/* Right column - Form (scrollable), or centered if no instructions/after submission */}
-          <div className={`p-8 overflow-y-auto ${hasInstructions ? 'flex-1' : 'w-[calc(100%-24rem)]'}`}>
-            <div className="max-w-md">
+          <div className={`p-4 md:p-8 overflow-y-auto ${hasInstructions ? 'flex-1' : 'w-full md:w-[calc(100%-24rem)]'}`}>
+            <div className="max-w-md mx-auto md:mx-0">
               {!formSubmitted && (
-                <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-6">
+                <h3 className="text-base md:text-lg font-semibold text-[var(--text-primary)] mb-4 md:mb-6">
                   Claim your {offer.name}
                 </h3>
               )}
@@ -217,86 +226,16 @@ export default function OfferDrawer({ offer, partner, isOpen, onClose }: OfferDr
       header={headerContent}
       footer={footerContent}
     >
-      <div className="py-8 px-16">
-        <div className="flex gap-8 mb-10">
-          {/* Main content column */}
-          <div className={hasPdf ? 'flex-1' : 'w-full'}>
-            {/* Short description as heading */}
-            <h3 className="text-xl font-semibold text-[var(--text-primary)] leading-relaxed mb-4">
-              {offer.shortDescription}
-            </h3>
-
-            {/* Full description */}
-            <div className="prose prose-invert max-w-none">
-              {offer.fullDescription.split('\n\n').map((paragraph, i) => {
-                // Check if paragraph contains bullet points
-                const lines = paragraph.split('\n');
-                const hasBullets = lines.some(line => line.trim().startsWith('•'));
-
-                if (hasBullets) {
-                  return (
-                    <div key={i} className="mb-5 last:mb-0">
-                      {lines.map((line, j) => {
-                        const trimmedLine = line.trim();
-                        if (trimmedLine.startsWith('•')) {
-                          return (
-                            <div key={j} className="flex gap-2 text-[var(--text-secondary)] text-base leading-relaxed mb-1">
-                              <span className="flex-shrink-0">•</span>
-                              <span>{trimmedLine.slice(1).trim()}</span>
-                            </div>
-                          );
-                        }
-                        return (
-                          <p key={j} className="text-[var(--text-secondary)] text-base leading-relaxed mb-2">
-                            {line}
-                          </p>
-                        );
-                      })}
-                    </div>
-                  );
-                }
-
-                return (
-                  <p key={i} className="text-[var(--text-secondary)] text-base mb-5 last:mb-0 whitespace-pre-line leading-relaxed">
-                    {paragraph}
-                  </p>
-                );
-              })}
-            </div>
-
-            {/* Claim instructions if present */}
-            {offer.claimInstructions && (
-              <div className="mt-8">
-                <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-3">
-                  How it works
-                </h3>
-                <div className="space-y-3">
-                  {offer.claimInstructions.split('\n').map((step, i) => (
-                    <div key={i} className="flex items-start gap-3">
-                      <span className="w-6 h-6 rounded-full bg-[var(--brand-green-primary)]/20 flex items-center justify-center flex-shrink-0 text-sm font-semibold text-[var(--brand-green-primary)]">
-                        {i + 1}
-                      </span>
-                      <p className="text-[var(--text-secondary)] pt-0.5">
-                        {step.replace(/^\d+\.\s*/, '')}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Champion / Recommended by */}
-            {championContent}
-          </div>
-
-          {/* PDF preview column - only show when PDF exists */}
+      <div className="py-4 md:py-8 px-4 md:px-16">
+        <div className="flex flex-col md:flex-row gap-6 md:gap-8 mb-6 md:mb-10">
+          {/* PDF preview - show at top on mobile, side on desktop */}
           {hasPdf && (
-            <div className="w-64 flex-shrink-0">
-              <div className="border border-[var(--border-default)] rounded-xl p-5">
-                {/* PDF thumbnail preview */}
-                <div className="aspect-[8.5/11] bg-white rounded-lg mb-4 flex items-center justify-center relative overflow-hidden">
+            <div className="w-full md:w-64 md:flex-shrink-0 md:order-last">
+              <div className="border border-[var(--border-default)] rounded-xl p-4 md:p-5">
+                {/* PDF thumbnail preview - smaller on mobile */}
+                <div className="aspect-[8.5/11] bg-white rounded-lg mb-3 md:mb-4 flex items-center justify-center relative overflow-hidden max-w-[160px] md:max-w-none mx-auto md:mx-0">
                   <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400">
-                    <FileText className="w-12 h-12 mb-2" />
+                    <FileText className="w-8 h-8 md:w-12 md:h-12 mb-1 md:mb-2" />
                     <span className="text-xs font-medium uppercase">PDF Preview</span>
                   </div>
                 </div>
@@ -312,13 +251,83 @@ export default function OfferDrawer({ offer, partner, isOpen, onClose }: OfferDr
               </div>
             </div>
           )}
+
+          {/* Main content column */}
+          <div className={hasPdf ? 'flex-1' : 'w-full'}>
+            {/* Short description as heading */}
+            <h3 className="text-lg md:text-xl font-semibold text-[var(--text-primary)] leading-relaxed mb-3 md:mb-4">
+              {offer.shortDescription}
+            </h3>
+
+            {/* Full description */}
+            <div className="prose prose-invert max-w-none">
+              {offer.fullDescription.split('\n\n').map((paragraph, i) => {
+                // Check if paragraph contains bullet points
+                const lines = paragraph.split('\n');
+                const hasBullets = lines.some(line => line.trim().startsWith('•'));
+
+                if (hasBullets) {
+                  return (
+                    <div key={i} className="mb-4 md:mb-5 last:mb-0">
+                      {lines.map((line, j) => {
+                        const trimmedLine = line.trim();
+                        if (trimmedLine.startsWith('•')) {
+                          return (
+                            <div key={j} className="flex gap-2 text-[var(--text-secondary)] text-sm md:text-base leading-relaxed mb-1">
+                              <span className="flex-shrink-0">•</span>
+                              <span>{trimmedLine.slice(1).trim()}</span>
+                            </div>
+                          );
+                        }
+                        return (
+                          <p key={j} className="text-[var(--text-secondary)] text-sm md:text-base leading-relaxed mb-2">
+                            {line}
+                          </p>
+                        );
+                      })}
+                    </div>
+                  );
+                }
+
+                return (
+                  <p key={i} className="text-[var(--text-secondary)] text-sm md:text-base mb-4 md:mb-5 last:mb-0 whitespace-pre-line leading-relaxed">
+                    {paragraph}
+                  </p>
+                );
+              })}
+            </div>
+
+            {/* Claim instructions if present */}
+            {offer.claimInstructions && (
+              <div className="mt-6 md:mt-8">
+                <h3 className="text-base md:text-lg font-semibold text-[var(--text-primary)] mb-2 md:mb-3">
+                  How it works
+                </h3>
+                <div className="space-y-2 md:space-y-3">
+                  {offer.claimInstructions.split('\n').map((step, i) => (
+                    <div key={i} className="flex items-start gap-2 md:gap-3">
+                      <span className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-[var(--brand-green-primary)]/20 flex items-center justify-center flex-shrink-0 text-xs md:text-sm font-semibold text-[var(--brand-green-primary)]">
+                        {i + 1}
+                      </span>
+                      <p className="text-[var(--text-secondary)] text-sm md:text-base pt-0.5">
+                        {step.replace(/^\d+\.\s*/, '')}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Champion / Recommended by */}
+            {championContent}
+          </div>
         </div>
 
         {/* Partner info */}
-        <div className="border border-[var(--border-default)] rounded-xl p-5">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex-1 min-w-0 pr-6">
-              <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
+        <div className="border border-[var(--border-default)] rounded-xl p-4 md:p-5">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4">
+            <div className="flex-1 min-w-0 md:pr-6">
+              <h3 className="text-base md:text-lg font-semibold text-[var(--text-primary)] mb-1 md:mb-2">
                 About {partner.name}
               </h3>
               <p className="text-[var(--text-secondary)] text-sm">
@@ -329,7 +338,7 @@ export default function OfferDrawer({ offer, partner, isOpen, onClose }: OfferDr
               href={`https://${partner.website}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center px-4 py-2 text-sm font-medium text-[var(--text-primary)] bg-[var(--bg-card-hover)] hover:bg-[var(--border-hover)] border border-[var(--border-default)] rounded-lg transition-colors flex-shrink-0"
+              className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-[var(--text-primary)] bg-[var(--bg-card-hover)] hover:bg-[var(--border-hover)] border border-[var(--border-default)] rounded-lg transition-colors flex-shrink-0"
             >
               Visit Website
             </a>

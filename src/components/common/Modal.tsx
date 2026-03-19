@@ -54,14 +54,14 @@ export default function Modal({ isOpen, onClose, children, header, footer, progr
 
       {/* Modal container - clicking here closes modal */}
       <div
-        className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-300 ${
+        className={`fixed inset-0 z-50 flex items-center justify-center p-2 md:p-4 transition-opacity duration-300 ${
           isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         onClick={handleBackdropClick}
       >
         {/* Modal */}
         <div
-          className={`relative w-full ${maxWidth} max-h-[90vh] bg-[var(--bg-card)] border border-[var(--border-default)] rounded-2xl flex flex-col transform transition-all duration-300 ease-out ${
+          className={`relative w-full ${maxWidth} max-h-[95vh] md:max-h-[90vh] bg-[var(--bg-card)] border border-[var(--border-default)] rounded-xl md:rounded-2xl flex flex-col transform transition-all duration-300 ease-out ${
             isOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
           }`}
           style={minHeight ? { minHeight } : undefined}
@@ -69,7 +69,7 @@ export default function Modal({ isOpen, onClose, children, header, footer, progr
           {/* Close button - top right inside modal */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 rounded-full text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)] transition-colors z-10 cursor-pointer"
+            className="absolute top-3 right-3 md:top-4 md:right-4 p-2 rounded-full text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)] transition-colors z-10 cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -77,7 +77,7 @@ export default function Modal({ isOpen, onClose, children, header, footer, progr
           {/* Header */}
           {header && (
             <div className="flex-shrink-0">
-              <div className="flex items-center px-8 py-6 pr-16">
+              <div className="flex items-center px-4 md:px-8 py-4 md:py-6 pr-12 md:pr-16">
                 <div className="flex-1 min-w-0">
                   {header}
                 </div>

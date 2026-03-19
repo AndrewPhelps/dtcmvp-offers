@@ -126,15 +126,15 @@ export default function QuestionnaireModal({ isOpen, onClose, onComplete }: Ques
 
   // Header content
   const headerContent = (
-    <div className="flex items-center gap-4">
-      <div className="w-12 h-12 rounded-xl bg-[var(--brand-green-primary)]/20 flex items-center justify-center flex-shrink-0">
-        <Sparkles className="w-6 h-6 text-[var(--brand-green-primary)]" />
+    <div className="flex items-center gap-3 md:gap-4">
+      <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-[var(--brand-green-primary)]/20 flex items-center justify-center flex-shrink-0">
+        <Sparkles className="w-5 h-5 md:w-6 md:h-6 text-[var(--brand-green-primary)]" />
       </div>
       <div>
-        <h2 className="text-xl font-semibold text-[var(--text-primary)]">
+        <h2 className="text-base md:text-xl font-semibold text-[var(--text-primary)]">
           Let&apos;s find the offers best for you
         </h2>
-        <p className="text-sm text-[var(--text-tertiary)]">
+        <p className="text-xs md:text-sm text-[var(--text-tertiary)]">
           Question {currentStep + 1} of {questions.length}
         </p>
       </div>
@@ -143,27 +143,29 @@ export default function QuestionnaireModal({ isOpen, onClose, onComplete }: Ques
 
   // Footer content - navigation buttons
   const footerContent = (
-    <div className="flex items-center justify-between px-8 py-4">
+    <div className="flex items-center justify-between px-4 md:px-8 py-3 md:py-4">
       {isFirstQuestion ? (
         <button
           onClick={handleClose}
-          className="text-sm text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors cursor-pointer"
+          className="text-xs md:text-sm text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors cursor-pointer"
         >
-          Skip and browse all offers
+          Skip and browse all
         </button>
       ) : (
         <Button
           variant="ghost"
           onClick={handleBack}
+          size="sm"
+          className="md:text-base"
         >
-          <ArrowLeft className="w-4 h-4 mr-2" />
+          <ArrowLeft className="w-4 h-4 mr-1 md:mr-2" />
           Back
         </Button>
       )}
 
-      <Button onClick={handleNext} disabled={!canProceed}>
+      <Button onClick={handleNext} disabled={!canProceed} size="sm" className="md:text-base">
         {isLastQuestion ? 'See Results' : 'Next'}
-        {!isLastQuestion && <ArrowRight className="w-4 h-4 ml-2" />}
+        {!isLastQuestion && <ArrowRight className="w-4 h-4 ml-1 md:ml-2" />}
       </Button>
     </div>
   );
@@ -177,14 +179,14 @@ export default function QuestionnaireModal({ isOpen, onClose, onComplete }: Ques
       progress={progress}
       contentHeight="570px"
     >
-      <div className="p-8">
+      <div className="p-4 md:p-8">
         {/* Question */}
-        <div className="mb-6">
-          <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-2">
+        <div className="mb-4 md:mb-6">
+          <h3 className="text-base md:text-xl font-semibold text-[var(--text-primary)] mb-1 md:mb-2">
             {currentQuestion.question}
           </h3>
           {currentQuestion.description && (
-            <p className="text-[var(--text-secondary)]">
+            <p className="text-sm md:text-base text-[var(--text-secondary)]">
               {currentQuestion.description}
             </p>
           )}
@@ -199,7 +201,7 @@ export default function QuestionnaireModal({ isOpen, onClose, onComplete }: Ques
               <button
                 key={option.id}
                 onClick={() => handleSelect(option.id)}
-                className={`w-full text-left p-4 transition-all cursor-pointer ${
+                className={`w-full text-left p-3 md:p-4 transition-all cursor-pointer min-h-[48px] ${
                   selected
                     ? 'bg-[var(--brand-green-primary)]/10'
                     : 'bg-[var(--bg-body)] hover:bg-[var(--bg-card-hover)]'
@@ -207,7 +209,7 @@ export default function QuestionnaireModal({ isOpen, onClose, onComplete }: Ques
               >
                 <div className="flex items-center gap-3">
                   <div
-                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
                       selected
                         ? 'border-[var(--brand-green-primary)] bg-[var(--brand-green-primary)]'
                         : 'border-[var(--border-default)]'
@@ -218,7 +220,7 @@ export default function QuestionnaireModal({ isOpen, onClose, onComplete }: Ques
                     )}
                   </div>
                   <span
-                    className={`font-medium ${
+                    className={`text-sm md:text-base font-medium ${
                       selected
                         ? 'text-[var(--brand-green-primary)]'
                         : 'text-[var(--text-primary)]'

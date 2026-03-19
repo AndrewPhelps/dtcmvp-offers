@@ -26,7 +26,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           id={inputId}
           className={`
-            w-full px-3 py-2 rounded-lg
+            w-full px-3 py-2.5 md:py-2 rounded-lg min-h-[44px] md:min-h-0
             bg-[var(--bg-body)] border border-[var(--border-default)]
             text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]
             focus:outline-none focus:ring-2 focus:ring-[var(--brand-green-primary)] focus:border-transparent
@@ -71,7 +71,7 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           ref={ref}
           id={inputId}
           className={`
-            w-full px-3 py-2 rounded-lg min-h-[100px] resize-y
+            w-full px-3 py-2.5 md:py-2 rounded-lg min-h-[100px] resize-y
             bg-[var(--bg-body)] border border-[var(--border-default)]
             text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]
             focus:outline-none focus:ring-2 focus:ring-[var(--brand-green-primary)] focus:border-transparent
@@ -117,7 +117,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
           ref={ref}
           id={inputId}
           className={`
-            w-full px-3 py-2 rounded-lg
+            w-full px-3 py-2.5 md:py-2 rounded-lg min-h-[44px] md:min-h-0
             bg-[var(--bg-body)] border border-[var(--border-default)]
             text-[var(--text-primary)]
             focus:outline-none focus:ring-2 focus:ring-[var(--brand-green-primary)] focus:border-transparent
@@ -156,13 +156,13 @@ const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
 
     return (
       <div className="space-y-1">
-        <label htmlFor={inputId} className="flex items-center gap-2 cursor-pointer">
+        <label htmlFor={inputId} className="flex items-center gap-3 cursor-pointer min-h-[44px] md:min-h-0">
           <input
             ref={ref}
             type="checkbox"
             id={inputId}
             className={`
-              h-4 w-4 rounded
+              h-5 w-5 md:h-4 md:w-4 rounded
               bg-[var(--bg-body)] border border-[var(--border-default)]
               text-[var(--brand-green-primary)]
               focus:ring-2 focus:ring-[var(--brand-green-primary)] focus:ring-offset-0
@@ -191,7 +191,7 @@ interface ToggleProps {
 
 const Toggle = ({ label, checked, onChange, disabled }: ToggleProps) => {
   return (
-    <label className={`flex items-center gap-2 ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+    <label className={`flex items-center gap-3 min-h-[44px] md:min-h-0 ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
       <button
         type="button"
         role="switch"
@@ -199,7 +199,7 @@ const Toggle = ({ label, checked, onChange, disabled }: ToggleProps) => {
         disabled={disabled}
         onClick={() => !disabled && onChange(!checked)}
         className={`
-          relative inline-flex h-5 w-9 shrink-0 items-center rounded-full
+          relative inline-flex h-6 w-11 md:h-5 md:w-9 shrink-0 items-center rounded-full
           transition-colors duration-200 ease-in-out
           focus:outline-none focus:ring-2 focus:ring-[var(--brand-green-primary)] focus:ring-offset-2 focus:ring-offset-[var(--bg-body)]
           ${checked ? 'bg-[var(--brand-green-primary)]' : 'bg-[var(--border-default)]'}
@@ -208,9 +208,9 @@ const Toggle = ({ label, checked, onChange, disabled }: ToggleProps) => {
       >
         <span
           className={`
-            inline-block h-4 w-4 transform rounded-full bg-white shadow-sm
+            inline-block h-5 w-5 md:h-4 md:w-4 transform rounded-full bg-white shadow-sm
             transition-transform duration-200 ease-in-out
-            ${checked ? 'translate-x-4' : 'translate-x-0.5'}
+            ${checked ? 'translate-x-5 md:translate-x-4' : 'translate-x-0.5'}
           `}
         />
       </button>

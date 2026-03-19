@@ -44,11 +44,12 @@ export default function Drawer({ isOpen, onClose, children, header, headerAction
         onClick={onClose}
       />
 
-      {/* Close button - outside drawer on the left */}
+      {/* Close button - outside drawer on desktop, inside on mobile */}
+      {/* Desktop close button - outside drawer on the left */}
       <button
         onClick={onClose}
-        className={`fixed top-6 z-50 p-2 rounded-full bg-[var(--bg-card)] border border-[var(--border-default)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)] transition-all duration-300 ${
-          isOpen ? 'opacity-100 right-[calc(100vw-48rem+1rem)]' : 'opacity-0 pointer-events-none right-[100vw]'
+        className={`hidden md:block fixed top-6 z-50 p-2 rounded-full bg-[var(--bg-card)] border border-[var(--border-default)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)] transition-all duration-300 ${
+          isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         style={{
           right: isOpen ? 'calc(min(100vw, 48rem) + 1rem)' : '100vw'
@@ -59,17 +60,26 @@ export default function Drawer({ isOpen, onClose, children, header, headerAction
 
       {/* Drawer */}
       <div
-        className={`fixed top-0 right-0 h-full w-full max-w-3xl bg-[var(--bg-card)] border-l border-[var(--border-default)] z-50 flex flex-col transform transition-transform duration-300 ease-out ${
+        className={`fixed top-0 right-0 h-full w-full md:max-w-3xl bg-[var(--bg-card)] border-l border-[var(--border-default)] z-50 flex flex-col transform transition-transform duration-300 ease-out ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
+        {/* Mobile close button - inside drawer */}
+        <button
+          onClick={onClose}
+          className="md:hidden absolute top-4 right-4 p-2 rounded-full text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)] transition-colors z-10"
+          aria-label="Close drawer"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
         {/* Header */}
-        <div className="flex items-center justify-between px-8 py-6 border-b border-[var(--border-default)] flex-shrink-0">
+        <div className="flex items-center justify-between px-4 md:px-8 py-4 md:py-6 pr-12 md:pr-8 border-b border-[var(--border-default)] flex-shrink-0">
           <div className="flex-1 min-w-0">
             {header}
           </div>
           {headerAction && (
-            <div className="ml-6 flex-shrink-0">
+            <div className="ml-4 md:ml-6 flex-shrink-0">
               {headerAction}
             </div>
           )}

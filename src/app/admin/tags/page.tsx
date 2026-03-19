@@ -63,10 +63,10 @@ export default function AdminTagsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 md:mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--text-primary)]">Tags</h1>
-          <p className="text-[var(--text-secondary)]">
+          <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">Tags</h1>
+          <p className="text-sm md:text-base text-[var(--text-secondary)]">
             Manage offer tags for filtering and organization
           </p>
         </div>
@@ -79,73 +79,75 @@ export default function AdminTagsPage() {
       {/* Tags list */}
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-[var(--border-default)]">
-                <th className="text-left py-4 px-6 text-sm font-semibold text-[var(--text-secondary)]">
-                  Name
-                </th>
-                <th className="text-left py-4 px-6 text-sm font-semibold text-[var(--text-secondary)]">
-                  Preview
-                </th>
-                <th className="text-right py-4 px-6 text-sm font-semibold text-[var(--text-secondary)]">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {tagList.map((tag) => (
-                <tr
-                  key={tag.id}
-                  className="border-b border-[var(--border-default)] last:border-0 hover:bg-[var(--bg-card-hover)]"
-                >
-                  <td className="py-4 px-6">
-                    <span className="font-medium text-[var(--text-primary)]">
-                      {tag.name}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6">
-                    <span className={`text-xs px-2 py-0.5 rounded-full border ${tagBadgeStyle}`}>
-                      {tag.name}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6">
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => openEditModal(tag)}
-                        className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-body)] rounded-lg transition-colors cursor-pointer"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      {deleteConfirm === tag.id ? (
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => handleDelete(tag.id)}
-                            className="px-2 py-1 text-xs text-[var(--brand-red)] hover:bg-[var(--brand-red)]/10 rounded transition-colors cursor-pointer"
-                          >
-                            Confirm
-                          </button>
-                          <button
-                            onClick={() => setDeleteConfirm(null)}
-                            className="p-1 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] cursor-pointer"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => setDeleteConfirm(tag.id)}
-                          className="p-2 text-[var(--text-secondary)] hover:text-[var(--brand-red)] hover:bg-[var(--bg-body)] rounded-lg transition-colors cursor-pointer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  </td>
+          <div className="min-w-[400px]">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-[var(--border-default)]">
+                  <th className="text-left py-3 md:py-4 px-4 md:px-6 text-sm font-semibold text-[var(--text-secondary)]">
+                    Name
+                  </th>
+                  <th className="text-left py-3 md:py-4 px-4 md:px-6 text-sm font-semibold text-[var(--text-secondary)]">
+                    Preview
+                  </th>
+                  <th className="text-right py-3 md:py-4 px-4 md:px-6 text-sm font-semibold text-[var(--text-secondary)]">
+                    Actions
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {tagList.map((tag) => (
+                  <tr
+                    key={tag.id}
+                    className="border-b border-[var(--border-default)] last:border-0 hover:bg-[var(--bg-card-hover)]"
+                  >
+                    <td className="py-3 md:py-4 px-4 md:px-6">
+                      <span className="font-medium text-[var(--text-primary)]">
+                        {tag.name}
+                      </span>
+                    </td>
+                    <td className="py-3 md:py-4 px-4 md:px-6">
+                      <span className={`text-xs px-2 py-0.5 rounded-full border ${tagBadgeStyle}`}>
+                        {tag.name}
+                      </span>
+                    </td>
+                    <td className="py-3 md:py-4 px-4 md:px-6">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => openEditModal(tag)}
+                          className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-body)] rounded-lg transition-colors cursor-pointer"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        {deleteConfirm === tag.id ? (
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => handleDelete(tag.id)}
+                              className="px-2 py-1 text-xs text-[var(--brand-red)] hover:bg-[var(--brand-red)]/10 rounded transition-colors cursor-pointer"
+                            >
+                              Confirm
+                            </button>
+                            <button
+                              onClick={() => setDeleteConfirm(null)}
+                              className="p-1 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] cursor-pointer"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setDeleteConfirm(tag.id)}
+                            className="p-2 text-[var(--text-secondary)] hover:text-[var(--brand-red)] hover:bg-[var(--bg-body)] rounded-lg transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {tagList.length === 0 && (
@@ -157,8 +159,8 @@ export default function AdminTagsPage() {
 
       {/* Create/Edit Modal */}
       <Modal isOpen={isModalOpen} onClose={closeModal} maxWidth="max-w-sm">
-        <div className="p-6">
-          <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-6">
+        <div className="p-4 md:p-6">
+          <h2 className="text-lg md:text-xl font-semibold text-[var(--text-primary)] mb-4 md:mb-6">
             {editingTag ? 'Edit Tag' : 'New Tag'}
           </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -170,11 +172,11 @@ export default function AdminTagsPage() {
               required
             />
 
-            <div className="flex items-center justify-end gap-3 pt-4">
-              <Button type="button" variant="ghost" onClick={closeModal}>
+            <div className="flex flex-col-reverse md:flex-row items-stretch md:items-center justify-end gap-2 md:gap-3 pt-4">
+              <Button type="button" variant="ghost" onClick={closeModal} className="justify-center">
                 Cancel
               </Button>
-              <Button type="submit">
+              <Button type="submit" className="justify-center">
                 {editingTag ? 'Save Changes' : 'Create Tag'}
               </Button>
             </div>
