@@ -5,6 +5,7 @@ import { CheckCircle, AlertTriangle } from 'lucide-react';
 import { Button, Input, Textarea, Select, Checkbox } from '@/components/common';
 import { FormField } from '@/types';
 import { submitClaim } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ClaimFormProps {
   offerSlug: string;
@@ -17,16 +18,13 @@ interface ClaimFormProps {
 }
 
 export default function ClaimForm({ offerSlug, offerName, formFields, onClaimed, onSubmitted }: ClaimFormProps) {
-  // Brand identity (always collected, not part of per-offer formFields)
-  const [brandName, setBrandName] = useState('');
-  const [brandEmail, setBrandEmail] = useState('');
-
-  // Per-offer dynamic fields
+  // Per-offer dynamic fields. Identity comes from session.
   const [formData, setFormData] = useState<Record<string, string | boolean>>({});
 
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
   const handleChange = (fieldId: string, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [fieldId]: value }));
@@ -38,12 +36,7 @@ export default function ClaimForm({ offerSlug, offerName, formFields, onClaimed,
     setLoading(true);
 
     try {
-      const result = await submitClaim({
-        slug: offerSlug,
-        brandName: brandName.trim(),
-        brandEmail: brandEmail.trim().toLowerCase(),
-        formData,
-      });
+      const result = await submitClaim({ slug: offerSlug, formData });
       setSubmitted(true);
       onClaimed?.(result.claim.claim_id);
       onSubmitted?.();
@@ -73,23 +66,12 @@ export default function ClaimForm({ offerSlug, offerName, formFields, onClaimed,
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      {/* Always-collected identity fields */}
-      <Input
-        type="text"
-        label="Your name"
-        placeholder="Alex Smith"
-        required
-        value={brandName}
-        onChange={(e) => setBrandName(e.target.value)}
-      />
-      <Input
-        type="email"
-        label="Your work email"
-        placeholder="you@yourbrand.com"
-        required
-        value={brandEmail}
-        onChange={(e) => setBrandEmail(e.target.value)}
-      />
+      {/* Identity comes from session — show who's signing the claim. */}
+      {user?.email && (
+        <p className="text-xs text-[var(--text-tertiary)]">
+          Signed in as <span className="text-[var(--text-secondary)]">{user.email}</span>
+        </p>
+      )}
 
       {/* Per-offer dynamic fields */}
       {formFields.map((field) => {

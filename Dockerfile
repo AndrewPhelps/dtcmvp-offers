@@ -17,11 +17,10 @@ WORKDIR /app
 # api.dtcmvpete.com — frontend never talks to Supabase directly.
 ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_APP_URL
-ARG NEXT_PUBLIC_AUTH_API_URL
 
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
-ENV NEXT_PUBLIC_AUTH_API_URL=$NEXT_PUBLIC_AUTH_API_URL
+# AUTH_API_URL is passed at runtime via docker-compose environment, not baked.
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .

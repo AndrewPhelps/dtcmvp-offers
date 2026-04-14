@@ -3,6 +3,8 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { brandProfile, getLoadingMessages } from '@/data/brandProfile';
 import { Offer } from '@/types';
+import { getMyClaims, ClaimRecord } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 export type BrandClaimStatus = 'submitted' | 'intro_sent';
 
@@ -73,8 +75,33 @@ const initialState: BrandState = {
   claims: [],
 };
 
+function apiClaimToBrandClaim(c: ClaimRecord): BrandClaim {
+  return {
+    offerId: c.offer_slug,
+    status: c.status === 'pending' ? 'submitted' : 'intro_sent',
+    notes: c.notes ?? '',
+    claimedAt: c.claimed_at,
+  };
+}
+
 export function BrandProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<BrandState>(initialState);
+  const { user } = useAuth();
+
+  // Hydrate claims from the backend when a user becomes available.
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    getMyClaims()
+      .then((claims) => {
+        if (cancelled) return;
+        setState((prev) => ({ ...prev, claims: claims.map(apiClaimToBrandClaim) }));
+      })
+      .catch((err) => console.error('[Brand] Failed to load claims:', err));
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   // Offers available to the recommendation engine. Populated by the marketplace
   // page on mount from the API. Empty array on other routes — safe, since
@@ -245,6 +272,9 @@ export function BrandProvider({ children }: { children: ReactNode }) {
     return state.claims.find((c) => c.offerId === offerId);
   };
 
+  // updateClaimNotes / markIntroSent are client-only — they update local state
+  // but do not persist to the backend. Adding notes/status edit endpoints is a
+  // separate task; until then these reset on reload.
   const updateClaimNotes = (offerId: string, notes: string) => {
     setState((prev) => ({
       ...prev,

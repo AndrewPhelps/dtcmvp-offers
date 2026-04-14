@@ -10,6 +10,7 @@
  */
 
 import { Offer, Partner, FormField, OfferChampion } from '@/types';
+import { authFetch } from '@/lib/auth';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://webhooks.dtcmvp.com/api';
 
@@ -210,24 +211,29 @@ export async function getPartnerSummaries(): Promise<PartnerSummary[]> {
 
 export interface SubmitClaimInput {
   slug: string;
-  brandName: string;
-  brandEmail: string;
   formData: Record<string, string | boolean>;
+}
+
+export interface ClaimRecord {
+  claim_id: string;
+  offer_slug: string;
+  offer_name: string;
+  status: 'pending' | 'reviewed' | 'completed';
+  claimed_at: string;
+  notes?: string | null;
+  reviewed_at?: string | null;
 }
 
 export interface SubmitClaimResult {
   success: true;
-  claim: {
-    claim_id: string;
-    offer_slug: string;
-    offer_name: string;
-    status: 'pending' | 'reviewed' | 'completed';
-    claimed_at: string;
-  };
+  claim: ClaimRecord;
 }
 
+/**
+ * Submit a claim. Auth required — backend derives identity from session.
+ */
 export async function submitClaim(input: SubmitClaimInput): Promise<SubmitClaimResult> {
-  const res = await fetch(`${API_URL}/offers/claims`, {
+  const res = await authFetch(`${API_URL}/offers/claims`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
@@ -237,4 +243,18 @@ export async function submitClaim(input: SubmitClaimInput): Promise<SubmitClaimR
     throw new Error(`Claim submission failed (${res.status}): ${body}`);
   }
   return res.json() as Promise<SubmitClaimResult>;
+}
+
+/**
+ * Fetch claims belonging to the authenticated user (matched by email).
+ */
+export async function getMyClaims(): Promise<ClaimRecord[]> {
+  const res = await authFetch(`${API_URL}/offers/claims/mine`);
+  if (!res.ok) {
+    if (res.status === 401) return [];
+    const body = await res.text().catch(() => '');
+    throw new Error(`getMyClaims failed (${res.status}): ${body}`);
+  }
+  const data = (await res.json()) as { claims: ClaimRecord[] };
+  return data.claims;
 }

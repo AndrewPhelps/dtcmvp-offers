@@ -4,7 +4,6 @@ import { offers } from '../src/data/offers';
 import { partners } from '../src/data/partners';
 import { categories } from '../src/data/categories';
 import { tags } from '../src/data/tags';
-import { claims } from '../src/data/claims';
 
 const OUT = __dirname;
 
@@ -24,7 +23,6 @@ const toCsv = (headers: string[], rows: unknown[][]): string => {
 const partnerById = new Map(partners.map((p) => [p.id, p]));
 const categoryById = new Map(categories.map((c) => [c.id, c]));
 const tagById = new Map(tags.map((t) => [t.id, t]));
-const offerById = new Map(offers.map((o) => [o.id, o]));
 
 const offersRows = offers.map((o) => {
   const partner = partnerById.get(o.partnerId);
@@ -80,38 +78,6 @@ const offersCsv = toCsv(
 
 writeFileSync(join(OUT, 'offers.csv'), offersCsv);
 
-const claimsRows = claims.map((c) => {
-  const offer = offerById.get(c.offerId);
-  return [
-    c.id,
-    offer?.name ?? c.offerId,
-    c.brandName,
-    c.brandEmail,
-    JSON.stringify(c.formData),
-    c.status,
-    c.claimedAt,
-    c.reviewedAt ?? '',
-    c.notes ?? '',
-  ];
-});
-
-const claimsCsv = toCsv(
-  [
-    'Claim ID',
-    'Offer',
-    'Brand Name',
-    'Brand Email',
-    'Form Data (JSON)',
-    'Status',
-    'Claimed At',
-    'Reviewed At',
-    'Notes',
-  ],
-  claimsRows,
-);
-
-writeFileSync(join(OUT, 'claims.csv'), claimsCsv);
-
 const partnersRows = partners.map((p) => [p.name, p.website, p.description, p.logo ?? '']);
 
 const partnersCsv = toCsv(
@@ -121,4 +87,4 @@ const partnersCsv = toCsv(
 
 writeFileSync(join(OUT, 'partners-reference.csv'), partnersCsv);
 
-console.log(`Wrote ${offers.length} offers, ${claims.length} claims, ${partners.length} partners (reference)`);
+console.log(`Wrote ${offers.length} offers, ${partners.length} partners (reference)`);
