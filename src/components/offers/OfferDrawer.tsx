@@ -63,7 +63,7 @@ export default function OfferDrawer({ offer, partner, isOpen, onClose }: OfferDr
       <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl bg-white flex items-center justify-center flex-shrink-0">
         {partner.logo ? (
           <Image
-            src={`/logos/${partner.logo}`}
+            src={partner.logo}
             alt={`${partner.name} logo`}
             width={36}
             height={36}

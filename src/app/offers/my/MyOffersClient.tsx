@@ -214,7 +214,7 @@ export default function MyOffersClient({ offers, partners }: MyOffersClientProps
                           <div className="w-12 h-12 md:w-16 md:h-16 rounded-xl bg-white flex items-center justify-center flex-shrink-0 overflow-hidden">
                             {partner.logo ? (
                               <Image
-                                src={`/logos/${partner.logo}`}
+                                src={partner.logo}
                                 alt={partner.name}
                                 width={64}
                                 height={64}
@@ -315,7 +315,7 @@ export default function MyOffersClient({ offers, partners }: MyOffersClientProps
                           <div className="w-12 h-12 md:w-16 md:h-16 rounded-xl bg-white flex items-center justify-center flex-shrink-0 overflow-hidden">
                             {partner.logo ? (
                               <Image
-                                src={`/logos/${partner.logo}`}
+                                src={partner.logo}
                                 alt={partner.name}
                                 width={64}
                                 height={64}

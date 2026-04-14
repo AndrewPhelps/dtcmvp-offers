@@ -104,7 +104,7 @@ export default function OfferDetailClient({ offer, partner }: OfferDetailClientP
               <div className="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
                 {partner.logo ? (
                   <Image
-                    src={`/logos/${partner.logo}`}
+                    src={partner.logo}
                     alt={`${partner.name} logo`}
                     width={32}
                     height={32}

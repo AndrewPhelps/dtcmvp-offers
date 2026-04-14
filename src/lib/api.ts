@@ -9,7 +9,7 @@
  * `{ next: { revalidate: 3600 } }` but SSR is fine at current traffic.
  */
 
-import { Offer, FormField, OfferChampion } from '@/types';
+import { Offer, Partner, FormField, OfferChampion } from '@/types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://webhooks.dtcmvp.com/api';
 
@@ -21,6 +21,9 @@ interface ApiOffer {
   name: string;
   partner_airtable_id: string | null;
   partner_name: string | null;
+  partner_website: string | null;
+  partner_logo_url: string | null;
+  partner_description: string | null;
   short_description: string | null;
   full_description: string | null;
   video_url: string | null;
@@ -113,15 +116,45 @@ async function apiGet<T>(path: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+function partnerFromApiOffer(a: ApiOffer): Partner | null {
+  if (!a.partner_airtable_id) return null;
+  return {
+    id: a.partner_airtable_id,
+    name: a.partner_name || a.partner_airtable_id,
+    website: a.partner_website || '',
+    logo: a.partner_logo_url || undefined,
+    description: a.partner_description || '',
+  };
+}
+
 export async function getOffers(): Promise<Offer[]> {
   const data = await apiGet<{ offers: ApiOffer[]; count: number }>('/offers');
   return data.offers.map(mapApiOffer);
 }
 
-export async function getOfferBySlug(slug: string): Promise<Offer | null> {
+/**
+ * Fetch offers + derive the unique partner list (with logos) from the same
+ * response. The backend denormalizes partner info onto each offer, so one
+ * API call covers both views.
+ */
+export async function getOffersAndPartners(): Promise<{ offers: Offer[]; partners: Partner[] }> {
+  const data = await apiGet<{ offers: ApiOffer[]; count: number }>('/offers');
+  const offers = data.offers.map(mapApiOffer);
+  const partnerMap = new Map<string, Partner>();
+  for (const a of data.offers) {
+    const p = partnerFromApiOffer(a);
+    if (p && !partnerMap.has(p.id)) partnerMap.set(p.id, p);
+  }
+  return { offers, partners: Array.from(partnerMap.values()) };
+}
+
+export async function getOfferBySlug(slug: string): Promise<{ offer: Offer; partner: Partner | null } | null> {
   try {
     const data = await apiGet<{ offer: ApiOffer }>(`/offers/${encodeURIComponent(slug)}`);
-    return mapApiOffer(data.offer);
+    return {
+      offer: mapApiOffer(data.offer),
+      partner: partnerFromApiOffer(data.offer),
+    };
   } catch (err) {
     if (err instanceof Error && err.message.includes('404')) return null;
     throw err;

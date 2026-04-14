@@ -7,20 +7,11 @@
  */
 
 import MyOffersClient from './MyOffersClient';
-import { getOffers, getPartnerSummaries } from '@/lib/api';
-import { Partner } from '@/types';
+import { getOffersAndPartners } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
 
 export default async function MyOffersPage() {
-  const [offers, partnerRows] = await Promise.all([getOffers(), getPartnerSummaries()]);
-
-  const partners: Partner[] = partnerRows.map((p) => ({
-    id: p.airtableId,
-    name: p.name,
-    website: '',
-    description: '',
-  }));
-
+  const { offers, partners } = await getOffersAndPartners();
   return <MyOffersClient offers={offers} partners={partners} />;
 }

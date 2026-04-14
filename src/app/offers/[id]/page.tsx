@@ -21,9 +21,9 @@ interface OfferDetailPageProps {
 
 export default async function OfferDetailPage({ params }: OfferDetailPageProps) {
   const { id } = await params;
-  const offer = await getOfferBySlug(id);
+  const result = await getOfferBySlug(id);
 
-  if (!offer) {
+  if (!result) {
     return (
       <div className="min-h-screen">
         <Navbar />
@@ -48,13 +48,11 @@ export default async function OfferDetailPage({ params }: OfferDetailPageProps) 
     );
   }
 
-  // Minimal partner shape derived from the offer — enough for the detail view
-  // (name + website). Full partner record would require an extra API call;
-  // the backend doesn't expose `/partners/:id` yet. Website stays empty for
-  // now — the detail page only uses it if present.
-  const partner: Partner = {
+  const { offer, partner: apiPartner } = result;
+  // Fall back to a minimal partner shape if the offer has no partner link.
+  const partner: Partner = apiPartner || {
     id: offer.partnerId,
-    name: (offer as { partner_name?: string }).partner_name || offer.partnerId,
+    name: offer.partnerId,
     website: '',
     description: '',
   };

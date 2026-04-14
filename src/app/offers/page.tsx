@@ -9,24 +9,18 @@
  */
 
 import OffersMarketplaceClient from './OffersMarketplaceClient';
-import {
-  getOffers,
-  getCategorySummaries,
-  getPartnerSummaries,
-  getTagSummaries,
-} from '@/lib/api';
-import { Offer, Partner, Category, Tag } from '@/types';
+import { getOffersAndPartners, getCategorySummaries, getTagSummaries } from '@/lib/api';
+import { Category, Tag } from '@/types';
 import { categories as fallbackCategories } from '@/data/categories';
 
 // Always render fresh (honors hourly Airtable sync). Flip to revalidate later if needed.
 export const dynamic = 'force-dynamic';
 
 export default async function OffersPage() {
-  const [offers, categoryRows, tagRows, partnerRows] = await Promise.all([
-    getOffers(),
+  const [{ offers, partners }, categoryRows, tagRows] = await Promise.all([
+    getOffersAndPartners(),
     getCategorySummaries(),
     getTagSummaries(),
-    getPartnerSummaries(),
   ]);
 
   // The backend doesn't carry the legacy UI color-per-category mapping, so we
@@ -40,16 +34,9 @@ export default async function OffersPage() {
 
   const tags: Tag[] = tagRows.map((t) => ({ id: t.id, name: t.name }));
 
-  const partners: Partner[] = partnerRows.map((p) => ({
-    id: p.airtableId,
-    name: p.name,
-    website: '',
-    description: '',
-  }));
-
   return (
     <OffersMarketplaceClient
-      offers={offers as Offer[]}
+      offers={offers}
       partners={partners}
       categories={categories}
       tags={tags}
