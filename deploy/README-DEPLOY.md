@@ -4,7 +4,7 @@ Standalone marketplace frontend. Deployed to the DO droplet at `142.93.27.155` a
 
 | Port | Container |
 |---|---|
-| 3004 → container 3000 | `dtcmvp-offers-frontend` |
+| 3005 → container 3000 | `dtcmvp-offers-frontend` |
 
 Backend (`/api/offers/*`) lives in **dtcmvp-app** and is served by webhook-server-v2 at `webhooks.dtcmvp.com`. This frontend does not have its own backend.
 
@@ -70,7 +70,7 @@ As of 2026-04-14 the example is usable as-is on production — no secrets, only 
 ```bash
 docker compose up -d --build
 # Verify localhost:
-curl -I http://127.0.0.1:3004/
+curl -I http://127.0.0.1:3005/
 ```
 
 ### 6. Install nginx site + SSL
@@ -135,7 +135,7 @@ User's browser
 DO droplet nginx (port 443)
     │ proxy_pass
     ▼
-localhost:3004  →  dtcmvp-offers-frontend (Next.js 16 standalone)
+localhost:3005  →  dtcmvp-offers-frontend (Next.js 16 standalone)
                        │ fetch NEXT_PUBLIC_API_URL
                        ▼
                   https://webhooks.dtcmvp.com/api/offers/*

@@ -10,7 +10,7 @@ services:
     container_name: dtcmvp-offers-frontend
     ports:
       # Bind to localhost only — nginx handles external TLS on 443
-      - "127.0.0.1:3004:3000"
+      - "127.0.0.1:3005:3000"
     restart: unless-stopped
     healthcheck:
       # 127.0.0.1 (not localhost) — avoids alpine wget resolving to IPv6

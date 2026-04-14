@@ -50,7 +50,7 @@ Living doc for bringing the offers marketplace online. Two surfaces share one ba
 
 **Tasks:**
 - [ ] `Dockerfile` — multi-stage Next.js 16 standalone build (see cal-platform's frontend Dockerfile as reference; include `ENV HOSTNAME=0.0.0.0` to avoid healthcheck gotcha)
-- [ ] `docker-compose.yml` — single frontend service on host port 3004 (3000=dtcmvpete, 3001=brand-portal, 3002=cal-platform-frontend, 3003=webhook, 3004=offers)
+- [ ] `docker-compose.yml` — single frontend service on host port 3005 (3000=dtcmvpete, 3001=brand-portal, 3002=cal-platform-frontend, 3003=webhook, 3004=stanger, 3005=offers, 3010=smartlead)
 - [ ] `.env.production` template — `NEXT_PUBLIC_API_URL=https://webhooks.dtcmvp.com/api`
 - [ ] `deploy.sh` — git-pull-based (not rsync), preflight that refuses on dirty/unpushed state, follows dtcmvp-app's pattern
 - [ ] `--staging` flag in deploy.sh for per-branch staging envs at `{slug}.staging.dtcmvp.com`

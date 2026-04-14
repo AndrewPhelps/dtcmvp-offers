@@ -111,8 +111,8 @@ ssh "$SSH_TARGET" "cd $DROPLET_PATH && docker compose up -d --build"
 echo ""
 echo "[3/3] Verifying deployment..."
 sleep 4
-HEALTH=$(ssh "$SSH_TARGET" "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3004/ || echo ERR")
-echo "  http://127.0.0.1:3004/ → $HEALTH"
+HEALTH=$(ssh "$SSH_TARGET" "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3005/ || echo ERR")
+echo "  http://127.0.0.1:3005/ → $HEALTH"
 
 PUBLIC=$(curl -s -o /dev/null -w '%{http_code}' https://offers.dtcmvp.com/ || echo ERR)
 echo "  https://offers.dtcmvp.com/ → $PUBLIC"

@@ -1,5 +1,5 @@
 # Dockerfile — dtcmvp-offers (Next.js 16, standalone output)
-# Deployed to DO droplet 142.93.27.155, host port 3004 → container port 3000.
+# Deployed to DO droplet 142.93.27.155, host port 3005 → container port 3000.
 # Subdomain: offers.dtcmvp.com (nginx proxies 443 → localhost:3004).
 
 # ---------- Deps ----------
