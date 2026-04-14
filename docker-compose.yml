@@ -6,8 +6,6 @@ services:
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://webhooks.dtcmvp.com/api}
         NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://offers.dtcmvp.com}
-        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
         NEXT_PUBLIC_AUTH_API_URL: ${NEXT_PUBLIC_AUTH_API_URL:-https://api.dtcmvpete.com}
     container_name: dtcmvp-offers-frontend
     ports:

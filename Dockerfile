@@ -13,16 +13,14 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Public env vars — baked at build time (Next.js reads NEXT_PUBLIC_* at build).
+# Auth uses dtcmvp-2.0's pattern: all Supabase calls proxy through
+# api.dtcmvpete.com — frontend never talks to Supabase directly.
 ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_APP_URL
-ARG NEXT_PUBLIC_SUPABASE_URL
-ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
 ARG NEXT_PUBLIC_AUTH_API_URL
 
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
-ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
-ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
 ENV NEXT_PUBLIC_AUTH_API_URL=$NEXT_PUBLIC_AUTH_API_URL
 
 COPY --from=deps /app/node_modules ./node_modules

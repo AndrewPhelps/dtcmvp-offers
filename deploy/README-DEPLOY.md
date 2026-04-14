@@ -61,10 +61,9 @@ cd dtcmvp-offers
 
 ```bash
 cp .env.production.example .env.production
-vim .env.production  # fill in SUPABASE_URL + ANON_KEY (same as dtcmvp-2.0)
 ```
 
-Supabase values are in `~/brand-portal/.env.production` or `~/dtcmvpete/.env.production` — reuse the same project.
+As of 2026-04-14 the example is usable as-is on production — no secrets, only public URLs. Adjust only if you want to point at different backends (e.g. for local dev). Auth follows dtcmvp-2.0's proxy pattern: the frontend hits `api.dtcmvpete.com` which wraps Supabase server-side; no anon key in the browser.
 
 ### 5. First build
 
