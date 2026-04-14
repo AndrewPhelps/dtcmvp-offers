@@ -80,15 +80,19 @@ Live at **https://offers.dtcmvp.com**. Currently serves mock data from `src/data
 - [ ] `GET /api/offers/partner/claims` (auth) — claims on the partner's own offers
 - [ ] Admin endpoints (already exist) stay as-is
 
-### 4. Replace mock data in standalone frontend
-**Goal:** `src/data/*.ts` stops being the source; app fetches from `/api/offers/*`.
+### 4. Replace mock data in standalone frontend — ✅ DONE 2026-04-14 (partial)
 
-**Tasks:**
-- [ ] Replace `src/data/offers.ts` imports with `fetch('/api/offers')` calls (client-side, cached via SWR or React Query)
-- [ ] Replace `src/data/partners.ts` with `/api/offers/partners`
-- [ ] Replace `src/data/categories.ts` / `tags.ts` with their respective endpoints
-- [ ] Claim form submission → `POST /api/offers/claims` instead of `console.log`
-- [ ] `src/contexts/BrandContext.tsx` saved/claimed state → backed by `/api/offers/claims/mine` once auth is in
+Brand-facing routes now pull real Airtable-synced offers from the backend. Architecture: thin server components fetch + hand data to client components.
+
+- [x] `src/lib/api.ts` — typed fetchers + backend→frontend mappers
+- [x] `/offers` (marketplace grid) — real offers/categories/tags/partners
+- [x] `/offers/[slug]` — real offer detail
+- [x] `/offers/my` — resolves localStorage-saved slugs against live catalog
+- [x] Claim form → `POST /api/offers/claims` (collects name + email inline; shows errors on failure)
+- [x] BrandContext: removed hardcoded demo claims; recommendations now use offers pushed in from the marketplace page
+- [ ] Admin pages (`/admin/*`) — still on mock data. Low priority since VAs edit in Airtable directly. Revisit post-auth or delete the admin UI entirely.
+- [ ] `saved/claimed` state moves from localStorage → `/api/offers/claims/mine` (auth-backed). Deferred until step 2 lands.
+- [ ] `src/data/*.ts` mock files (offers/partners/claims/questionnaire/brandProfile) — still present but only used by admin pages + BrandContext's `brandProfile` (for recommendation priority). Safe to delete once admin is removed.
 
 ### 5. dtcmvp-2.0 integration
 **Goal:** offers pages embedded inside the unified frontend at `/offers`.
