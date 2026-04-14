@@ -45,20 +45,19 @@ Living doc for bringing the offers marketplace online. Two surfaces share one ba
 
 ## Outstanding work
 
-### 1. Standalone DO container (`dtcmvp-offers`)
-**Goal:** `offers.dtcmvp.com` backed by a Docker container on `142.93.27.155`.
+### 1. Standalone DO container (`dtcmvp-offers`) — ✅ DONE 2026-04-14
 
-**Tasks:**
-- [ ] `Dockerfile` — multi-stage Next.js 16 standalone build (see cal-platform's frontend Dockerfile as reference; include `ENV HOSTNAME=0.0.0.0` to avoid healthcheck gotcha)
-- [ ] `docker-compose.yml` — single frontend service on host port 3005 (3000=dtcmvpete, 3001=brand-portal, 3002=cal-platform-frontend, 3003=webhook, 3004=stanger, 3005=offers, 3010=smartlead)
-- [ ] `.env.production` template — `NEXT_PUBLIC_API_URL=https://webhooks.dtcmvp.com/api`
-- [ ] `deploy.sh` — git-pull-based (not rsync), preflight that refuses on dirty/unpushed state, follows dtcmvp-app's pattern
-- [ ] `--staging` flag in deploy.sh for per-branch staging envs at `{slug}.staging.dtcmvp.com`
-- [ ] Nginx site at `/etc/nginx/sites-available/dtcmvp-offers` proxying 443 → localhost:3004
-- [ ] SSL via certbot (`certbot --nginx -d offers.dtcmvp.com`)
-- [ ] DNS A record `offers.dtcmvp.com` → `142.93.27.155` (Namecheap — Peter does this)
-- [ ] Add offers to `~/staging-infra/apps.json` + templates for per-branch staging
-- [ ] GitHub deploy key for DO to pull this repo (read-only)
+Live at **https://offers.dtcmvp.com**. Currently serves mock data from `src/data/*` (section 4 replaces that with API calls). Cert expires 2026-07-13, auto-renew via certbot.
+
+- [x] `Dockerfile` — multi-stage Next.js 16 standalone build; `ENV HOSTNAME=0.0.0.0`
+- [x] `docker-compose.yml` — frontend on **host port 3005** (3000=dtcmvpete, 3001=brand-portal, 3002=cal-platform-frontend, 3003=webhook, 3004=stanger, 3005=offers, 3010=smartlead)
+- [x] `.env.production.example` — no secrets; usable as-is in prod (auth proxies through dtcmvpete, no Supabase keys needed client-side)
+- [x] `deploy/deploy.sh` — git-pull-based, preflight-checked
+- [ ] `--staging` flag in deploy.sh for per-branch staging envs at `{slug}.staging.dtcmvp.com` (deferred)
+- [x] Nginx site `/etc/nginx/sites-available/dtcmvp-offers` → localhost:3005 (Let's Encrypt SSL)
+- [x] DNS A record `offers.dtcmvp.com` → `142.93.27.155`
+- [ ] Add offers to `~/staging-infra/apps.json` + templates for per-branch staging (deferred)
+- [x] GitHub deploy key (read-only) `~/.ssh/github_dtcmvp_offers` on droplet, host alias `github.com-dtcmvp-offers`
 
 ### 2. Supabase auth
 **Goal:** partners sign in directly; brands follow an SSO link from brand-portal. Shared Supabase project (same one dtcmvp-2.0 uses).
