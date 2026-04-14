@@ -1,8 +1,8 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { offers } from '@/data/offers';
 import { brandProfile, getLoadingMessages } from '@/data/brandProfile';
+import { Offer } from '@/types';
 
 export type BrandClaimStatus = 'submitted' | 'intro_sent';
 
@@ -30,6 +30,10 @@ interface BrandContextType {
   savedOfferIds: string[];
   hiddenOfferIds: string[];
   claims: BrandClaim[];
+
+  // Offers available for recommendation (populated by the marketplace page
+  // from the API; empty on routes that don't load offers).
+  setAvailableOffers: (offers: Offer[]) => void;
 
   // Actions for saved offers
   saveOffer: (offerId: string) => void;
@@ -62,28 +66,20 @@ interface BrandContextType {
 
 const BrandContext = createContext<BrandContextType | undefined>(undefined);
 
-// Initial mock data - some offers already claimed/saved for demo
+// No demo claims/saves by default — real claims come from the POST /api/offers/claims flow.
 const initialState: BrandState = {
-  savedOfferIds: ['orita-audit', 'finsi-report'], // Demo: a couple saved offers
+  savedOfferIds: [],
   hiddenOfferIds: [],
-  claims: [
-    {
-      offerId: 'aix-audit',
-      status: 'intro_sent',
-      notes: 'Had a great call with the team. Starting audit next week.',
-      claimedAt: '2024-03-10T14:30:00Z',
-    },
-    {
-      offerId: 'polar-test',
-      status: 'submitted',
-      notes: '',
-      claimedAt: '2024-03-12T10:15:00Z',
-    },
-  ],
+  claims: [],
 };
 
 export function BrandProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<BrandState>(initialState);
+
+  // Offers available to the recommendation engine. Populated by the marketplace
+  // page on mount from the API. Empty array on other routes — safe, since
+  // recommendations only fire from the marketplace.
+  const [availableOffers, setAvailableOffers] = useState<Offer[]>([]);
 
   // Recommendation state
   const [recommendations, setRecommendations] = useState<RecommendationSet[]>([]);
@@ -95,7 +91,7 @@ export function BrandProvider({ children }: { children: ReactNode }) {
   // Generate AI-like recommendations based on brand profile
   const generateRecommendations = useCallback(() => {
     const claimedOfferIds = state.claims.map((c) => c.offerId);
-    const availableOffers = offers.filter(
+    const pool = availableOffers.filter(
       (o) => o.isActive && !state.hiddenOfferIds.includes(o.id) && !claimedOfferIds.includes(o.id)
     );
 
@@ -105,14 +101,14 @@ export function BrandProvider({ children }: { children: ReactNode }) {
       : ['operations', 'retention-loyalty', 'site-checkout'];
 
     const prioritizedOffers = [
-      ...availableOffers.filter((o) => priorityCategories.includes(o.categoryId)),
-      ...availableOffers.filter((o) => !priorityCategories.includes(o.categoryId)),
+      ...pool.filter((o) => priorityCategories.includes(o.categoryId)),
+      ...pool.filter((o) => !priorityCategories.includes(o.categoryId)),
     ];
 
     // Pick 2-3 offers
     const count = Math.min(Math.floor(Math.random() * 2) + 2, prioritizedOffers.length);
     return prioritizedOffers.slice(0, count);
-  }, [state.hiddenOfferIds, state.claims]);
+  }, [availableOffers, state.hiddenOfferIds, state.claims]);
 
   // Start analysis (with AI simulation)
   const startAnalysis = useCallback(() => {
@@ -275,6 +271,7 @@ export function BrandProvider({ children }: { children: ReactNode }) {
     savedOfferIds: state.savedOfferIds,
     hiddenOfferIds: state.hiddenOfferIds,
     claims: state.claims,
+    setAvailableOffers,
     saveOffer,
     unsaveOffer,
     isOfferSaved,

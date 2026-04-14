@@ -38,8 +38,9 @@ export default function OfferDrawer({ offer, partner, isOpen, onClose }: OfferDr
   const isSaved = isOfferSaved(offer.id);
   const isClaimed = isOfferClaimed(offer.id);
 
-  const handleClaimSubmit = (data: Record<string, string | boolean>) => {
-    console.log('Claim submitted:', { offerId: offer.id, data });
+  const handleClaimed = (_claimId: string) => {
+    // Track locally so the UI reflects the claim immediately (the
+    // authoritative record lives in Airtable/the backend).
     claimOffer(offer.id);
   };
 
@@ -204,9 +205,10 @@ export default function OfferDrawer({ offer, partner, isOpen, onClose }: OfferDr
                 </h3>
               )}
               <ClaimForm
-                formFields={offer.formFields}
+                offerSlug={offer.id}
                 offerName={offer.name}
-                onSubmit={handleClaimSubmit}
+                formFields={offer.formFields}
+                onClaimed={handleClaimed}
                 onSubmitted={() => setFormSubmitted(true)}
               />
             </div>
