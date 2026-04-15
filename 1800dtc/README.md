@@ -27,6 +27,23 @@ python3 -m venv .venv
 .venv/bin/python scraper.py status
 ```
 
+## After a scrape run: finalize for read-only mounting
+
+The scraper writes in WAL journal mode (fast concurrent writes for workers).
+Before shipping the DB to a read-only production mount (`offers.dtcmvp.com`
+bind-mounts it at `/app/data/1800dtc.db:ro`), convert it to DELETE journal
+mode so SQLite doesn't try to open a -wal file that no longer exists:
+
+```bash
+.venv/bin/python -c "import sqlite3; c=sqlite3.connect('1800dtc.db'); \
+  c.execute('PRAGMA wal_checkpoint(TRUNCATE)'); \
+  c.execute('PRAGMA journal_mode=DELETE'); c.close()"
+```
+
+Then `scp 1800dtc.db deploy@142.93.27.155:~/dtcmvp-offers/data/1800dtc.db`
+and the offers container will pick it up on next request
+(SQLite is opened lazily; no container restart needed).
+
 ## Database layout
 
 Schema lives in `schema.sql`. Key tables:

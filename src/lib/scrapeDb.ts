@@ -13,8 +13,10 @@ let _db: Database.Database | null = null;
 
 function db(): Database.Database {
   if (_db) return _db;
+  // Read-only on a potentially :ro bind mount. The DB is shipped in
+  // journal_mode=DELETE (see scraper checkpoint step) so there's no -wal
+  // file to open and no lock files to create.
   _db = new Database(DB_PATH, { readonly: true, fileMustExist: true });
-  _db.pragma('journal_mode = WAL');
   return _db;
 }
 
