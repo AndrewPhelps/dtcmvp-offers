@@ -126,6 +126,7 @@ Not part of the partner/brand marketplace; gated by `UserProfile.is_admin`.
 - Backed by `better-sqlite3` reading `/app/data/1800dtc.db` (bind-mounted, gitignored, scp'd out-of-band — see `deploy/README-DEPLOY.md`)
 - Features: searchable/sortable/paginated table, category chip filters, verified-only toggle, row-click drawer with overview, tiers, screenshots, YouTube demos, brand logos, case studies, and out-links to affiliate + 1800dtc source
 - Files: `src/app/scrape-results/*`, `src/app/api/scrape-results/apps/*`, `src/lib/scrapeDb.ts`, `src/lib/serverAuth.ts`
+- **Monthly auto-refresh** (host cron on DO, 04:00 UTC on the 1st): `1800dtc/run-monthly.sh` re-scrapes, snapshots into `scrape_snapshots`, diffs vs last run, posts a Slack digest (NEW / VERIFIED_TRUE / CASE_STUDY_ADDED / PRICING_CHANGED / BRAND_COUNT_JUMP), atomically swaps the new DB in, restarts the offers container
 
 ---
 

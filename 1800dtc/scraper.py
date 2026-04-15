@@ -18,18 +18,31 @@ Subcommands:
   init                    create db + schema
   enumerate               phase A (pages 1..94)
   worker                  phase B (claim + scrape detail pages)
+  monthly                 all-in-one: enumerate + workers + snapshot + diff
+                          + Slack digest + atomic swap into the live DB
   inspect-listing <page>  parse one grid page + print (no db writes)
   inspect-detail <slug>   parse one detail page + print (no db writes)
   status                  counts per queue status
+  diff                    print the diff between the last two runs
+
+Env vars:
+  SCRAPE_DB_PATH          override the DB path (default: ./1800dtc.db)
+  SLACK_BOT_TOKEN         bot token for posting monthly digests
+  SLACK_DIGEST_CHANNEL    channel ID (default: C08QRA47JMD = #dtcmvp-mvc)
+  BRAND_COUNT_JUMP_MIN    minimum absolute brand-count increase to flag
+                          (default 50)
+  BRAND_COUNT_JUMP_PCT    minimum % brand-count increase to flag (default 25)
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import logging
 import os
 import re
+import shutil
 import sqlite3
 import sys
 import time
@@ -45,9 +58,17 @@ from bs4 import BeautifulSoup, Tag
 # ─── Paths / constants ──────────────────────────────────────────────
 
 ROOT = Path(__file__).parent
-DB_PATH = ROOT / "1800dtc.db"
+DB_PATH = Path(os.environ.get("SCRAPE_DB_PATH") or (ROOT / "1800dtc.db"))
 SCHEMA_PATH = ROOT / "schema.sql"
 LOG_PATH = ROOT / "scraper.log"
+
+# Atomic-swap working copy. `monthly` scrapes here, then renames on success.
+WORKING_DB_PATH = DB_PATH.with_suffix(".next.db")
+PREV_DB_PATH = DB_PATH.with_suffix(".prev.db")
+
+SLACK_DIGEST_CHANNEL = os.environ.get("SLACK_DIGEST_CHANNEL", "C08QRA47JMD")  # #dtcmvp-mvc
+BRAND_COUNT_JUMP_MIN = int(os.environ.get("BRAND_COUNT_JUMP_MIN", "50"))
+BRAND_COUNT_JUMP_PCT = int(os.environ.get("BRAND_COUNT_JUMP_PCT", "25"))
 
 BASE = "https://1800dtc.com"
 LISTINGS_URL = f"{BASE}/best-shopify-apps"
@@ -80,8 +101,18 @@ log = setup_logging()
 
 # ─── DB helpers ─────────────────────────────────────────────────────
 
+# The `monthly` command scrapes into a working copy and atomically swaps
+# it in at the end. To avoid threading a db path through every helper,
+# we keep a module-level override that connect() reads.
+_active_db_path: Path = DB_PATH
+
+def set_active_db(path: Path) -> None:
+    global _active_db_path
+    _active_db_path = path
+    log.info("active db set to %s", path)
+
 def connect() -> sqlite3.Connection:
-    conn = sqlite3.connect(DB_PATH, timeout=30, isolation_level=None)
+    conn = sqlite3.connect(_active_db_path, timeout=30, isolation_level=None)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode = WAL")
     conn.execute("PRAGMA busy_timeout = 10000")
@@ -92,7 +123,7 @@ def init_db() -> None:
     schema = SCHEMA_PATH.read_text()
     with connect() as conn:
         conn.executescript(schema)
-    log.info("initialized db at %s", DB_PATH)
+    log.info("initialized db at %s", _active_db_path)
 
 # ─── HTTP fetch with cache ──────────────────────────────────────────
 
@@ -749,6 +780,265 @@ def mark_failed(slug: str, err: str, *, retryable: bool) -> None:
              WHERE slug = ?
         """, (new_status, err[:500], slug))
 
+# ─── Snapshots + diff + Slack digest ───────────────────────────────
+
+def _stable_hash(values: Iterable[str]) -> str:
+    items = sorted(v.strip() for v in values if v and v.strip())
+    h = hashlib.sha1()
+    for v in items:
+        h.update(v.encode("utf-8"))
+        h.update(b"\0")
+    return h.hexdigest()[:16]
+
+def take_snapshot(run_id: int) -> int:
+    """Write one scrape_snapshots row per app. Returns row count."""
+    with connect() as conn:
+        rows = conn.execute("""
+            SELECT
+              a.slug, a.verified, a.rating, a.review_count, a.brand_count,
+              (SELECT COUNT(*) FROM app_categories WHERE slug = a.slug)  AS category_count,
+              (SELECT COUNT(*) FROM app_tags       WHERE slug = a.slug)  AS tag_count,
+              (SELECT COUNT(*) FROM pricing_tiers  WHERE slug = a.slug)  AS pricing_tier_count,
+              (SELECT COUNT(*) FROM media          WHERE slug = a.slug)  AS media_count,
+              (SELECT COUNT(*) FROM media          WHERE slug = a.slug AND kind = 'video') AS video_count,
+              (SELECT COUNT(*) FROM brands_using   WHERE slug = a.slug)  AS brand_logo_count,
+              (SELECT COUNT(*) FROM case_studies   WHERE slug = a.slug)  AS case_study_count
+            FROM apps a
+        """).fetchall()
+
+        # Pull linked lists for hashing in one go, grouped by slug.
+        cat_by_slug: dict[str, list[str]] = {}
+        for r in conn.execute("SELECT slug, category_name FROM app_categories"):
+            cat_by_slug.setdefault(r["slug"], []).append(r["category_name"])
+        tag_by_slug: dict[str, list[str]] = {}
+        for r in conn.execute("SELECT slug, tag_name FROM app_tags"):
+            tag_by_slug.setdefault(r["slug"], []).append(r["tag_name"])
+        price_by_slug: dict[str, list[str]] = {}
+        for r in conn.execute(
+            "SELECT slug, tier_name, price_text, period, features_json "
+            "FROM pricing_tiers ORDER BY slug, position"
+        ):
+            key = f"{r['tier_name']}|{r['price_text']}|{r['period']}|{r['features_json']}"
+            price_by_slug.setdefault(r["slug"], []).append(key)
+        case_by_slug: dict[str, list[str]] = {}
+        for r in conn.execute("SELECT slug, url FROM case_studies"):
+            if r["url"]:
+                case_by_slug.setdefault(r["slug"], []).append(r["url"])
+
+        inserted = 0
+        for r in rows:
+            slug = r["slug"]
+            conn.execute("""
+                INSERT INTO scrape_snapshots(
+                    run_id, slug, verified, rating, review_count, brand_count,
+                    category_count, tag_count, pricing_tier_count,
+                    media_count, video_count, brand_logo_count, case_study_count,
+                    categories_hash, tags_hash, pricing_hash, case_study_urls_hash
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                run_id, slug, r["verified"], r["rating"], r["review_count"], r["brand_count"],
+                r["category_count"], r["tag_count"], r["pricing_tier_count"],
+                r["media_count"], r["video_count"], r["brand_logo_count"], r["case_study_count"],
+                _stable_hash(cat_by_slug.get(slug, [])),
+                _stable_hash(tag_by_slug.get(slug, [])),
+                _stable_hash(price_by_slug.get(slug, [])),
+                _stable_hash(case_by_slug.get(slug, [])),
+            ))
+            inserted += 1
+        return inserted
+
+@dataclass
+class ChangeEvent:
+    kind: str        # NEW | REMOVED | VERIFIED_TRUE | VERIFIED_FALSE
+                     # | CASE_STUDY_ADDED | PRICING_CHANGED
+                     # | BRAND_COUNT_JUMP | REVIEWS_JUMP
+    slug: str
+    name: str | None
+    detail: str
+    # numeric deltas where relevant
+    before: Any = None
+    after: Any = None
+
+def diff_runs(prev_run_id: int, cur_run_id: int) -> list[ChangeEvent]:
+    """Compare two scrape_snapshots runs and emit change events."""
+    with connect() as conn:
+        # Pull both snapshots as dicts keyed by slug
+        def rows_for(rid: int) -> dict[str, sqlite3.Row]:
+            return {
+                r["slug"]: r
+                for r in conn.execute(
+                    "SELECT * FROM scrape_snapshots WHERE run_id = ?", (rid,)
+                )
+            }
+        prev = rows_for(prev_run_id)
+        cur = rows_for(cur_run_id)
+        name_by_slug = {
+            r["slug"]: r["name"]
+            for r in conn.execute("SELECT slug, name FROM apps")
+        }
+
+    events: list[ChangeEvent] = []
+
+    # NEW: slugs in cur but not prev
+    for slug in cur.keys() - prev.keys():
+        events.append(ChangeEvent(
+            kind="NEW", slug=slug, name=name_by_slug.get(slug),
+            detail="first appearance on 1800dtc",
+        ))
+    # REMOVED: slugs in prev but not cur
+    for slug in prev.keys() - cur.keys():
+        events.append(ChangeEvent(
+            kind="REMOVED", slug=slug, name=name_by_slug.get(slug),
+            detail="no longer listed",
+        ))
+    # Per-slug field changes
+    for slug in cur.keys() & prev.keys():
+        p, c = prev[slug], cur[slug]
+        name = name_by_slug.get(slug)
+        if (p["verified"] or 0) == 0 and (c["verified"] or 0) == 1:
+            events.append(ChangeEvent(
+                kind="VERIFIED_TRUE", slug=slug, name=name,
+                detail="flipped verified=true (likely became a 1800dtc client)",
+            ))
+        elif (p["verified"] or 0) == 1 and (c["verified"] or 0) == 0:
+            events.append(ChangeEvent(
+                kind="VERIFIED_FALSE", slug=slug, name=name,
+                detail="flipped verified=false",
+            ))
+        if (c["case_study_count"] or 0) > (p["case_study_count"] or 0):
+            events.append(ChangeEvent(
+                kind="CASE_STUDY_ADDED", slug=slug, name=name,
+                detail=f"case studies {p['case_study_count']} → {c['case_study_count']}",
+                before=p["case_study_count"], after=c["case_study_count"],
+            ))
+        elif (p["case_study_urls_hash"] or "") != (c["case_study_urls_hash"] or "") \
+             and (c["case_study_count"] or 0) >= 1:
+            events.append(ChangeEvent(
+                kind="CASE_STUDY_ADDED", slug=slug, name=name,
+                detail="case study url changed",
+            ))
+        if (p["pricing_hash"] or "") != (c["pricing_hash"] or ""):
+            events.append(ChangeEvent(
+                kind="PRICING_CHANGED", slug=slug, name=name,
+                detail=f"tiers {p['pricing_tier_count']} → {c['pricing_tier_count']}",
+                before=p["pricing_tier_count"], after=c["pricing_tier_count"],
+            ))
+        pb = p["brand_count"] or 0
+        cb = c["brand_count"] or 0
+        if cb > pb:
+            abs_jump = cb - pb
+            pct_jump = (abs_jump / pb * 100) if pb > 0 else 100.0
+            if abs_jump >= BRAND_COUNT_JUMP_MIN or pct_jump >= BRAND_COUNT_JUMP_PCT:
+                events.append(ChangeEvent(
+                    kind="BRAND_COUNT_JUMP", slug=slug, name=name,
+                    detail=f"brands {pb} → {cb} (+{abs_jump}, +{pct_jump:.0f}%)",
+                    before=pb, after=cb,
+                ))
+    return events
+
+def last_two_run_ids() -> tuple[int | None, int | None]:
+    with connect() as conn:
+        rows = conn.execute("""
+            SELECT DISTINCT run_id FROM scrape_snapshots
+            ORDER BY run_id DESC LIMIT 2
+        """).fetchall()
+    if len(rows) < 2:
+        return (None, rows[0]["run_id"] if rows else None)
+    return (rows[1]["run_id"], rows[0]["run_id"])
+
+def format_digest(events: list[ChangeEvent], run_id: int, app_count: int) -> str:
+    """Markdown-ish message for Slack chat.postMessage."""
+    if not events:
+        return (
+            f"*:mag: 1800dtc monthly scrape — run #{run_id}*\n"
+            f"{app_count:,} apps scraped, *no meaningful changes* since last run."
+        )
+
+    from collections import defaultdict
+    by_kind: dict[str, list[ChangeEvent]] = defaultdict(list)
+    for e in events:
+        by_kind[e.kind].append(e)
+
+    KIND_HEADERS = [
+        ("VERIFIED_TRUE", ":white_check_mark: *Flipped to verified* (likely new 1800dtc clients)"),
+        ("CASE_STUDY_ADDED", ":scroll: *New / updated case study* (likely new 1800dtc clients)"),
+        ("NEW", ":new: *New listings*"),
+        ("BRAND_COUNT_JUMP", ":chart_with_upwards_trend: *Big brand-count jumps*"),
+        ("PRICING_CHANGED", ":moneybag: *Pricing changed*"),
+        ("REMOVED", ":x: *Removed from listings*"),
+        ("VERIFIED_FALSE", ":warning: *Flipped to unverified*"),
+    ]
+
+    lines = [
+        f"*:mag: 1800dtc monthly scrape — run #{run_id}*",
+        f"{app_count:,} apps scraped, {len(events)} change events.",
+        "",
+    ]
+    for kind, header in KIND_HEADERS:
+        items = by_kind.get(kind, [])
+        if not items:
+            continue
+        lines.append(header + f" ({len(items)})")
+        for e in items[:20]:
+            display = e.name or e.slug
+            slug_link = f"<https://offers.dtcmvp.com/scrape-results|view>"
+            source_link = f"<https://1800dtc.com/tool/{e.slug}|1800dtc>"
+            lines.append(f"• *{display}* — {e.detail}  ({slug_link} · {source_link})")
+        if len(items) > 20:
+            lines.append(f"_…and {len(items) - 20} more_")
+        lines.append("")
+    return "\n".join(lines).rstrip()
+
+def post_slack_digest(message: str) -> dict:
+    """POST to Slack chat.postMessage; returns {ok, error}."""
+    token = os.environ.get("SLACK_BOT_TOKEN")
+    if not token:
+        log.warning("SLACK_BOT_TOKEN not set — skipping Slack digest post")
+        return {"ok": False, "error": "no_token"}
+    r = requests.post(
+        "https://slack.com/api/chat.postMessage",
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json; charset=utf-8",
+        },
+        data=json.dumps({
+            "channel": SLACK_DIGEST_CHANNEL,
+            "text": message,
+            "unfurl_links": False,
+            "unfurl_media": False,
+        }),
+        timeout=15,
+    )
+    try:
+        result = r.json()
+    except Exception:
+        result = {"ok": False, "error": f"non-json response (status {r.status_code})"}
+    if not result.get("ok"):
+        log.error("Slack post failed: %s", result)
+    else:
+        log.info("Slack digest posted to %s (ts=%s)", SLACK_DIGEST_CHANNEL, result.get("ts"))
+    return result
+
+def finalize_db_for_shipping() -> None:
+    """Convert WAL → DELETE journal mode and checkpoint so the DB can be
+    opened by the offers container on a :ro bind mount."""
+    with connect() as conn:
+        conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        conn.execute("PRAGMA journal_mode=DELETE")
+
+def atomic_swap(working: Path, live: Path, backup: Path) -> None:
+    """Promote the working copy to live. Existing live → backup."""
+    if live.exists():
+        if backup.exists():
+            backup.unlink()
+        live.rename(backup)
+    working.rename(live)
+    # tidy WAL sidecars if any lingered (safe no-op on DELETE mode dbs)
+    for side in (".db-wal", ".db-shm"):
+        sidecar = Path(str(live) + side.replace(".db", ""))
+        if sidecar.exists():
+            sidecar.unlink()
+
 # ─── Commands ───────────────────────────────────────────────────────
 
 def cmd_init(_: argparse.Namespace) -> None:
@@ -869,6 +1159,119 @@ def cmd_inspect_detail(args: argparse.Namespace) -> None:
         out["extras_by_section"][e.section] += 1
     print(json.dumps(out, indent=2, ensure_ascii=False))
 
+def cmd_monthly(args: argparse.Namespace) -> None:
+    """All-in-one monthly refresh: copy → scrape → snapshot → diff → swap → Slack."""
+    started = time.time()
+    log.info("monthly run starting (live=%s, working=%s)", DB_PATH, WORKING_DB_PATH)
+
+    # 1) Prep working copy. If no prior live DB, create from scratch.
+    if WORKING_DB_PATH.exists():
+        WORKING_DB_PATH.unlink()
+    for side in (".next.db-wal", ".next.db-shm"):
+        p = Path(str(DB_PATH).replace(".db", side))
+        if p.exists():
+            p.unlink()
+    if DB_PATH.exists():
+        shutil.copy2(DB_PATH, WORKING_DB_PATH)
+        log.info("copied live → working")
+    set_active_db(WORKING_DB_PATH)
+    init_db()  # apply any new schema (IF NOT EXISTS)
+
+    # 2) Reset queue so every slug re-scrapes this run. New slugs found by
+    #    enumerate will be inserted by save_listings().
+    with connect() as conn:
+        conn.execute("""
+            UPDATE scrape_queue
+               SET status = 'pending',
+                   worker_id = NULL,
+                   claimed_at = NULL,
+                   completed_at = NULL,
+                   attempts = 0,
+                   last_error = NULL,
+                   last_error_at = NULL
+        """)
+    # Clear the HTTP cache — we want fresh pages for the diff to be meaningful.
+    with connect() as conn:
+        conn.execute("DELETE FROM raw_pages")
+    log.info("reset scrape_queue + raw_pages")
+
+    # 3) Open a master 'monthly' run row and sub-runs for enumerate/worker.
+    with connect() as conn:
+        monthly_run_id = conn.execute(
+            "INSERT INTO scrape_runs(run_type, notes) VALUES ('monthly', ?) RETURNING id",
+            (f"working={WORKING_DB_PATH.name}",),
+        ).fetchone()["id"]
+    log.info("monthly run_id=%d", monthly_run_id)
+
+    # 4) Enumerate all listing pages (force-fetch)
+    enum_args = argparse.Namespace(start=1, end=TOTAL_LISTING_PAGES, force=True)
+    cmd_enumerate(enum_args)
+
+    # 5) Single-worker drain. Simpler + polite-enough for monthly at 4am.
+    #    Takes ~12-14 min. Pass --force so worker re-fetches detail pages.
+    worker_args = argparse.Namespace(worker_id=f"monthly-{monthly_run_id}",
+                                     limit=None, force=True)
+    cmd_worker(worker_args)
+
+    # 6) Take the snapshot bound to THIS monthly run
+    inserted = take_snapshot(monthly_run_id)
+    log.info("snapshot: %d rows bound to run #%d", inserted, monthly_run_id)
+
+    # 7) Diff against the previous snapshot if there is one
+    prev_run_id, cur_run_id = last_two_run_ids()
+    events: list[ChangeEvent] = []
+    if prev_run_id is None:
+        log.info("no prior snapshot — first monthly run, no diff")
+    else:
+        events = diff_runs(prev_run_id, cur_run_id or monthly_run_id)
+        log.info("diff vs run #%d: %d events", prev_run_id, len(events))
+
+    app_count = inserted
+
+    # 8) Update the monthly run row with totals
+    elapsed = int(time.time() - started)
+    with connect() as conn:
+        conn.execute("""
+            UPDATE scrape_runs
+               SET finished_at = datetime('now'),
+                   items_parsed = ?,
+                   notes = ?
+             WHERE id = ?
+        """, (app_count,
+              f"events={len(events)} elapsed={elapsed}s", monthly_run_id))
+
+    # 9) Finalize journal mode so live readers on a :ro mount can open it
+    finalize_db_for_shipping()
+    set_active_db(DB_PATH)  # flip module default back; no new connections yet
+
+    # 10) Compose + post the digest
+    digest = format_digest(events, monthly_run_id, app_count)
+    log.info("digest:\n%s", digest)
+    if args.dry_run:
+        log.info("--dry-run: skipping atomic swap + Slack post")
+        print(digest)
+        return
+    if args.skip_slack:
+        log.info("--skip-slack: not posting digest")
+    else:
+        post_slack_digest(digest)
+
+    # 11) Promote working DB to live (atomic on same FS)
+    atomic_swap(WORKING_DB_PATH, DB_PATH, PREV_DB_PATH)
+    log.info("atomic swap complete: working → live (prev backed up to %s)", PREV_DB_PATH.name)
+    log.info("monthly run done in %ds", elapsed)
+
+def cmd_diff(args: argparse.Namespace) -> None:
+    prev_run_id, cur_run_id = last_two_run_ids()
+    if prev_run_id is None or cur_run_id is None:
+        print("Need at least two snapshot runs to diff.")
+        return
+    events = diff_runs(prev_run_id, cur_run_id)
+    digest = format_digest(events, cur_run_id, app_count=0)
+    print(digest)
+    if args.post:
+        post_slack_digest(digest)
+
 def cmd_status(_: argparse.Namespace) -> None:
     with connect() as conn:
         qc = {r["status"]: r["c"] for r in conn.execute(
@@ -921,6 +1324,19 @@ def main() -> None:
 
     s = sub.add_parser("status", help="queue + run stats")
     s.set_defaults(func=cmd_status)
+
+    m = sub.add_parser("monthly",
+                       help="end-to-end monthly refresh: scrape + snapshot + diff + Slack + swap")
+    m.add_argument("--dry-run", action="store_true",
+                   help="do the scrape + diff, print the digest, but don't Slack or swap")
+    m.add_argument("--skip-slack", action="store_true",
+                   help="run + swap but skip the Slack post")
+    m.set_defaults(func=cmd_monthly)
+
+    df = sub.add_parser("diff",
+                        help="print the diff between the last two snapshot runs")
+    df.add_argument("--post", action="store_true", help="also post to Slack")
+    df.set_defaults(func=cmd_diff)
 
     args = p.parse_args()
     if args.cmd == "init":

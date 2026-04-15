@@ -27,6 +27,36 @@ python3 -m venv .venv
 .venv/bin/python scraper.py status
 ```
 
+## Monthly refresh (on DO droplet)
+
+Production runs `./run-monthly.sh` via host cron on the 1st of each month
+(4am UTC). The script:
+
+1. Git-pulls the offers repo so the scraper code is current
+2. Refreshes the Python venv
+3. Runs `scraper.py monthly` pointed at the LIVE DB at `~/dtcmvp-offers/data/1800dtc.db`
+4. `monthly` copies live → `1800dtc.next.db`, re-scrapes every listing,
+   snapshots into `scrape_snapshots`, diffs against the previous snapshot,
+   posts a Slack digest of changes to `#dtcmvp-mvc`, and atomically renames
+   the working copy into place (previous DB moves to `1800dtc.prev.db`
+   as a backup)
+5. Restarts the `dtcmvp-offers-frontend` container so the Next.js app's
+   cached sqlite handle picks up the new file
+
+Setup + invocation documented in `deploy/README-DEPLOY.md`.
+
+Change events the digest surfaces:
+
+| Event | Meaning |
+|---|---|
+| `NEW` | slug appeared for the first time |
+| `REMOVED` | slug no longer in 1800dtc's listings |
+| `VERIFIED_TRUE` | the "verified / paying client" badge flipped on |
+| `VERIFIED_FALSE` | the verified badge flipped off |
+| `CASE_STUDY_ADDED` | a new featured case study appeared (strong signal of new 1800dtc client) |
+| `PRICING_CHANGED` | the pricing-tier composition hash changed |
+| `BRAND_COUNT_JUMP` | brand logos ≥+50 OR ≥+25% vs last snapshot (tunable via env) |
+
 ## After a scrape run: finalize for read-only mounting
 
 The scraper writes in WAL journal mode (fast concurrent writes for workers).

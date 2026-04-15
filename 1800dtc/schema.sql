@@ -140,7 +140,7 @@ CREATE INDEX IF NOT EXISTS idx_scrape_queue_status ON scrape_queue(status);
 -- Run log for operational visibility.
 CREATE TABLE IF NOT EXISTS scrape_runs (
   id              INTEGER PRIMARY KEY AUTOINCREMENT,
-  run_type        TEXT NOT NULL,   -- 'enumerate' | 'worker'
+  run_type        TEXT NOT NULL,   -- 'enumerate' | 'worker' | 'monthly'
   worker_id       TEXT,
   started_at      TEXT NOT NULL DEFAULT (datetime('now')),
   finished_at     TEXT,
@@ -149,3 +149,32 @@ CREATE TABLE IF NOT EXISTS scrape_runs (
   errors          INTEGER DEFAULT 0,
   notes           TEXT
 );
+
+-- Point-in-time snapshot of each app's key signal fields, keyed by
+-- the parent scrape_runs row. The monthly diff step joins the two
+-- most recent run_ids per slug and emits change events where any
+-- of these fields differ.
+CREATE TABLE IF NOT EXISTS scrape_snapshots (
+  run_id                INTEGER NOT NULL REFERENCES scrape_runs(id) ON DELETE CASCADE,
+  slug                  TEXT NOT NULL,
+  verified              INTEGER,
+  rating                REAL,
+  review_count          INTEGER,
+  brand_count           INTEGER,
+  category_count        INTEGER,
+  tag_count             INTEGER,
+  pricing_tier_count    INTEGER,
+  media_count           INTEGER,
+  video_count           INTEGER,
+  brand_logo_count      INTEGER,
+  case_study_count      INTEGER,
+  -- Stable hashes of the normalized list-of-values for each grouped field,
+  -- so we can detect composition changes without diffing every row.
+  categories_hash       TEXT,
+  tags_hash             TEXT,
+  pricing_hash          TEXT,
+  case_study_urls_hash  TEXT,
+  created_at            TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (run_id, slug)
+);
+CREATE INDEX IF NOT EXISTS idx_scrape_snapshots_slug ON scrape_snapshots(slug, run_id DESC);

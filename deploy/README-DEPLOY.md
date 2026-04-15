@@ -136,6 +136,50 @@ scp /Users/peter/Documents/GitHub/dtcmvp-offers/1800dtc/1800dtc.db \
 If the file isn't present, the `/scrape-results` page renders a clear error
 ("Couldn't open the scrape database") with the expected path.
 
+### Monthly auto-refresh (host cron)
+
+`1800dtc/run-monthly.sh` runs as a droplet-level cron on the 1st of each
+month. It re-scrapes everything, snapshots into `scrape_snapshots`, diffs
+against last month, posts a Slack digest, and atomically swaps the new DB
+into place. ~14 minutes single-threaded; low-impact at 04:00 UTC.
+
+**One-time setup on the droplet:**
+
+```bash
+ssh deploy@142.93.27.155
+cd ~/dtcmvp-offers/1800dtc
+
+# Python venv + deps (the wrapper script auto-creates these on first run,
+# but doing it manually the first time lets you verify):
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+
+# Add Slack token to .env.production at the repo root so the wrapper picks
+# it up (or export SLACK_BOT_TOKEN in the cron line below). Without it the
+# monthly run still happens but the Slack digest is skipped.
+echo "SLACK_BOT_TOKEN=xoxb-..." >> ~/dtcmvp-offers/.env.production
+
+# Dry-run end-to-end to confirm everything wires up before setting the cron:
+./run-monthly.sh --dry-run
+# ^ expect: "dry-run: skipping atomic swap + Slack post" and a digest printed.
+
+# Install the cron (runs 04:00 UTC on the 1st of every month):
+crontab -l 2>/dev/null > /tmp/ct && echo "0 4 1 * * /home/deploy/dtcmvp-offers/1800dtc/run-monthly.sh >> /home/deploy/dtcmvp-offers/1800dtc/cron.log 2>&1" >> /tmp/ct && crontab /tmp/ct
+```
+
+**Monitoring:**
+- `tail -f ~/dtcmvp-offers/1800dtc/scraper.log` — detailed run log
+- `tail -f ~/dtcmvp-offers/1800dtc/cron.log` — cron wrapper stdout/stderr
+- Slack `#dtcmvp-mvc` — monthly digest with NEW / VERIFIED_TRUE / CASE_STUDY_ADDED / BRAND_COUNT_JUMP events
+
+**Run on-demand:**
+
+```bash
+ssh deploy@142.93.27.155 '~/dtcmvp-offers/1800dtc/run-monthly.sh'
+# or dry-run only (no swap, no Slack):
+ssh deploy@142.93.27.155 '~/dtcmvp-offers/1800dtc/run-monthly.sh --dry-run'
+```
+
 ---
 
 ## Staging environments (TODO)

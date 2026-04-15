@@ -1,4 +1,5 @@
 import Database from 'better-sqlite3';
+import fs from 'fs';
 import path from 'path';
 
 // SQLite file is bind-mounted into the container at /app/data/1800dtc.db
@@ -7,16 +8,28 @@ import path from 'path';
 const DB_PATH = process.env.SCRAPE_DB_PATH
   ?? path.join(process.cwd(), '1800dtc', '1800dtc.db');
 
-// Single long-lived connection per Node process. better-sqlite3 is
-// synchronous and the DB is read-only for us.
+// Cache one connection per Node process. The monthly cron atomically
+// replaces the DB file, which swaps the inode. Our cached handle still
+// points at the OLD inode — so watch the file's mtime and re-open when
+// it changes. Cheap: stat runs on each call, re-open runs once per swap.
 let _db: Database.Database | null = null;
+let _dbMtimeMs: number | null = null;
 
 function db(): Database.Database {
-  if (_db) return _db;
+  const mtime = fs.statSync(DB_PATH).mtimeMs;
+  if (_db && _dbMtimeMs === mtime) return _db;
+  if (_db) {
+    try {
+      _db.close();
+    } catch {
+      // swallow; the new open below will surface real errors
+    }
+  }
   // Read-only on a potentially :ro bind mount. The DB is shipped in
   // journal_mode=DELETE (see scraper checkpoint step) so there's no -wal
   // file to open and no lock files to create.
   _db = new Database(DB_PATH, { readonly: true, fileMustExist: true });
+  _dbMtimeMs = mtime;
   return _db;
 }
 
