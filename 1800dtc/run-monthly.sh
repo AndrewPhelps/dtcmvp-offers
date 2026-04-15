@@ -24,16 +24,19 @@ PY="$VENV/bin/python"
 
 cd "$SCRIPT_DIR"
 
-LOG="$SCRIPT_DIR/scraper.log"
+# Wrapper writes its own lifecycle events to cron.log; the Python process
+# logs to scraper.log via its own FileHandler. We deliberately do NOT
+# `tee` Python stdout into scraper.log — that'd duplicate every line.
+WLOG="$SCRIPT_DIR/cron.log"
 ts() { date -u +"%Y-%m-%dT%H:%M:%SZ"; }
-log() { echo "[$(ts)] $*" | tee -a "$LOG"; }
+log() { echo "[$(ts)] $*" | tee -a "$WLOG"; }
 
 log "=== run-monthly.sh starting ==="
 
 # 1) Pull latest scraper code (repo has a read-only deploy key on the droplet)
 cd "$REPO_ROOT"
 if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-    git pull --ff-only origin master 2>&1 | tee -a "$LOG" || log "git pull failed — continuing with existing checkout"
+    git pull --ff-only origin master 2>&1 | tee -a "$WLOG" || log "git pull failed — continuing with existing checkout"
 fi
 cd "$SCRIPT_DIR"
 
@@ -43,7 +46,7 @@ if [ ! -x "$PY" ]; then
     python3 -m venv "$VENV"
     "$VENV/bin/pip" install --quiet --upgrade pip
 fi
-"$VENV/bin/pip" install --quiet -r requirements.txt 2>&1 | tee -a "$LOG" || log "pip install had warnings"
+"$VENV/bin/pip" install --quiet -r requirements.txt 2>&1 | tee -a "$WLOG" || log "pip install had warnings"
 
 # 3) Load Slack bot token (reuse the offers container's .env if present)
 if [ -f "$REPO_ROOT/.env.production" ]; then
@@ -62,9 +65,11 @@ fi
 export SCRAPE_DB_PATH="$LIVE_DB"
 
 log "scraper.py monthly starting (SCRAPE_DB_PATH=$SCRAPE_DB_PATH)"
+# Python writes its own scraper.log via FileHandler; we just capture
+# stdout to cron.log so a wrapper-only tail tells the story.
 set +e
-"$PY" scraper.py monthly "$@" 2>&1 | tee -a "$LOG"
-rc=${PIPESTATUS[0]}
+"$PY" scraper.py monthly "$@" >> "$WLOG" 2>&1
+rc=$?
 set -e
 
 log "scraper.py monthly exited rc=$rc"
@@ -75,7 +80,7 @@ log "scraper.py monthly exited rc=$rc"
 #    admin-only page that nobody hits at cron time.)
 if [ "$rc" -eq 0 ] && command -v docker >/dev/null 2>&1; then
     log "restarting dtcmvp-offers-frontend to pick up swapped DB"
-    (cd "$REPO_ROOT" && docker compose restart frontend 2>&1 | tee -a "$LOG") || log "docker restart failed (non-fatal)"
+    (cd "$REPO_ROOT" && docker compose restart frontend 2>&1 | tee -a "$WLOG") || log "docker restart failed (non-fatal)"
 fi
 
 log "=== run-monthly.sh done rc=$rc ==="

@@ -114,8 +114,12 @@ def set_active_db(path: Path) -> None:
 def connect() -> sqlite3.Connection:
     conn = sqlite3.connect(_active_db_path, timeout=30, isolation_level=None)
     conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode = WAL")
-    conn.execute("PRAGMA busy_timeout = 10000")
+    # NOTE: we deliberately do NOT set `journal_mode = WAL` here. WAL is a
+    # file-level setting that persists after it's set once (in init_db), so
+    # re-issuing it on every connection is redundant and — worse — it
+    # counts as a writer operation that can race with finalize's switch
+    # back to DELETE. Let new connections inherit the file's mode.
+    conn.execute("PRAGMA busy_timeout = 30000")
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
@@ -123,6 +127,9 @@ def init_db() -> None:
     schema = SCHEMA_PATH.read_text()
     with connect() as conn:
         conn.executescript(schema)
+        # Set WAL once at init. Persists on the file; every later
+        # connect() inherits it automatically.
+        conn.execute("PRAGMA journal_mode = WAL")
     log.info("initialized db at %s", _active_db_path)
 
 # ─── HTTP fetch with cache ──────────────────────────────────────────
@@ -1021,10 +1028,32 @@ def post_slack_digest(message: str) -> dict:
 
 def finalize_db_for_shipping() -> None:
     """Convert WAL → DELETE journal mode and checkpoint so the DB can be
-    opened by the offers container on a :ro bind mount."""
-    with connect() as conn:
-        conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
-        conn.execute("PRAGMA journal_mode=DELETE")
+    opened by the offers container on a :ro bind mount.
+
+    Uses a fresh, direct sqlite3 connection (bypassing connect()) so no
+    prior pragmas linger. Retries the mode change a few times because
+    even right after a checkpoint, a stale reader state can briefly hold
+    a SHARED lock that blocks journal_mode changes.
+    """
+    last_err: Exception | None = None
+    for attempt in range(5):
+        conn = sqlite3.connect(_active_db_path, timeout=30, isolation_level=None)
+        try:
+            conn.execute("PRAGMA busy_timeout = 30000")
+            ck = conn.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone()
+            mode = conn.execute("PRAGMA journal_mode = DELETE").fetchone()
+            log.info("finalize: checkpoint=%s, journal_mode=%s (attempt %d)",
+                     tuple(ck) if ck else None, tuple(mode) if mode else None, attempt + 1)
+            if mode and mode[0] == "delete":
+                return
+            last_err = RuntimeError(f"journal_mode set to {mode[0] if mode else 'unknown'} (wanted delete)")
+        except sqlite3.OperationalError as e:
+            last_err = e
+            log.warning("finalize attempt %d failed: %s — retrying", attempt + 1, e)
+        finally:
+            conn.close()
+        time.sleep(1 + attempt * 2)
+    raise RuntimeError(f"finalize_db_for_shipping could not set DELETE mode: {last_err}")
 
 def atomic_swap(working: Path, live: Path, backup: Path) -> None:
     """Promote the working copy to live. Existing live → backup."""
