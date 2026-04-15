@@ -59,40 +59,45 @@ Live at **https://offers.dtcmvp.com**. Currently serves mock data from `src/data
 - [ ] Add offers to `~/staging-infra/apps.json` + templates for per-branch staging (deferred)
 - [x] GitHub deploy key (read-only) `~/.ssh/github_dtcmvp_offers` on droplet, host alias `github.com-dtcmvp-offers`
 
-### 2. Supabase auth
-**Goal:** partners sign in directly; brands follow an SSO link from brand-portal. Shared Supabase project (same one dtcmvp-2.0 uses).
+### 2. Supabase auth — ✅ DONE 2026-04-14
 
-**Tasks:**
-- [ ] Add `/login` page — OTP + password, same pattern as dtcmvp-2.0's `src/app/login/`
-- [ ] Add `AuthContext` (React Context) mirroring dtcmvp-2.0's — restores session from cookies, periodic refresh, mutex
-- [ ] Middleware at `src/middleware.ts` to gate routes → `/login` if no session
-- [ ] SSO token handler: `/login?sso=<token>` validates via Supabase and logs user in (brand-portal will link here)
-- [ ] Admin redirect URL added to Supabase auth settings: `https://offers.dtcmvp.com/auth/callback` + `https://*.staging.dtcmvp.com/auth/callback`
-- [ ] In brand-portal: add "Discover partner offers" button that generates an SSO token and redirects to `offers.dtcmvp.com/login?sso=...`
+Mirrors dtcmvp-2.0 verbatim — all auth flows proxy through `api.dtcmvpete.com` via `/api/auth/[...path]`. No direct Supabase calls from the browser.
 
-### 3. Partner-scoped backend endpoints
-**Goal:** partners (app dev users, identified by `partner_airtable_id` on their Supabase profile) can only see/edit their own offers and claims on their offers.
+- [x] `/login` page — partner OTP + password, offers theme
+- [x] `/brand/[contactId]` page — brand first-name verification (mirrors dtcmvp-2.0's `/brand/[contactId]` flow; reuses the same `POST /auth/brand-login` endpoint)
+- [x] `src/contexts/AuthContext.tsx` — cookie restore, 45-min periodic refresh, visibility-change refresh, mutex + debounce on refresh
+- [x] `src/middleware.ts` gates `/`, `/offers/*`, `/questionnaire` on the `supabase.auth.token` cookie; `/login` and `/brand/*` stay public
+- [x] `src/lib/auth.ts` — `sendOTP`, `verifyOTP`, `loginWithPassword`, `brandLogin`, `refreshAccessToken`, `getCurrentUser`, `signOut`, `authFetch` helper
+- [x] `src/app/api/auth/[...path]/route.ts` — server-side proxy. `AUTH_API_URL` passed as runtime env via docker-compose
+- [x] `AuthProvider` wraps the root layout
+- [~] SSO token handler (`?sso=<token>`) — **skipped.** Brand-portal and offers are on different TLDs (`dtcmvp.com` vs `dtcmvpete.com`) so cookies can't share, but brands re-authenticate on offers with a single name input via the `/brand/[contactId]` route. No SSO exchange needed; the URL path IS the credential + name is the "security"
+- [ ] Supabase redirect URL config — TODO: add `https://offers.dtcmvp.com` to Supabase auth settings if/when we move to direct Supabase (currently everything flows through api.dtcmvpete.com which already has the redirect)
 
-**Tasks in `dtcmvp-app/handlers/offers/`:**
-- [ ] `GET /api/offers/partner/mine` (auth, user_type=partner) — offers where `partner_airtable_id = req.user.partner_airtable_id`
-- [ ] `POST /api/offers/partner` (auth) — create an offer; writes to Airtable with Partner linked to user's company
-- [ ] `PUT /api/offers/partner/:slug` (auth) — update, only if offer.partner_airtable_id matches user
-- [ ] `GET /api/offers/partner/claims` (auth) — claims on the partner's own offers
-- [ ] Admin endpoints (already exist) stay as-is
+### 3. Partner-scoped backend endpoints — ✅ DONE 2026-04-14 (read-only)
 
-### 4. Replace mock data in standalone frontend — ✅ DONE 2026-04-14 (partial)
+Scope intentionally narrowed: partners don't create/edit offers yet. Even admins edit in Airtable. So only read endpoints needed.
 
-Brand-facing routes now pull real Airtable-synced offers from the backend. Architecture: thin server components fetch + hand data to client components.
+**Done in `dtcmvp-app/handlers/offers/`:**
+- [x] `GET /api/offers/partner/mine` (auth, user_type=partner|admin) — all of the partner's offers including drafts/archived, scoped by `req.user.partner_airtable_id`
+- [x] `GET /api/offers/partner/claims` (auth) — claims on the partner's own offers (joins `offers_claims` → `offers_offers` on partner_airtable_id). Filters: `?status=`
+- [x] `POST /api/offers/claims` — now **auth-required**; identity (contact + company airtable IDs) comes from the session profile with email-lookup fallback
+- [x] `sqlite-client.js` → new `getClaimsForPartner(partnerAirtableId, { status })`
+- [ ] `POST /api/offers/partner` / `PUT /api/offers/partner/:slug` — **deferred.** VAs edit in Airtable; partner-facing CRUD comes later if needed
+
+### 4. Replace mock data in standalone frontend — ✅ DONE 2026-04-14
+
+Brand-facing routes pull real Airtable-synced offers from the backend. Admin UI deleted rather than gated — VAs edit in Airtable directly.
 
 - [x] `src/lib/api.ts` — typed fetchers + backend→frontend mappers
 - [x] `/offers` (marketplace grid) — real offers/categories/tags/partners
 - [x] `/offers/[slug]` — real offer detail
-- [x] `/offers/my` — resolves localStorage-saved slugs against live catalog
-- [x] Claim form → `POST /api/offers/claims` (collects name + email inline; shows errors on failure)
-- [x] BrandContext: removed hardcoded demo claims; recommendations now use offers pushed in from the marketplace page
-- [ ] Admin pages (`/admin/*`) — still on mock data. Low priority since VAs edit in Airtable directly. Revisit post-auth or delete the admin UI entirely.
-- [ ] `saved/claimed` state moves from localStorage → `/api/offers/claims/mine` (auth-backed). Deferred until step 2 lands.
-- [ ] `src/data/*.ts` mock files (offers/partners/claims/questionnaire/brandProfile) — still present but only used by admin pages + BrandContext's `brandProfile` (for recommendation priority). Safe to delete once admin is removed.
+- [x] `/offers/my` — claims hydrated from `GET /api/offers/claims/mine` on login (saved/hidden stay in localStorage — device-level prefs)
+- [x] Claim form → `POST /api/offers/claims`; identity comes from session (inline name/email fields removed)
+- [x] BrandContext: loads claims from API on user-available, optimistic updates on new claim
+- [x] `/admin/*` pages **deleted** (9 routes removed) — pure mock-data with no backend writes
+- [x] `src/data/claims.ts` deleted (only admin used it); `airtable/generate-csvs.ts` trimmed
+- [ ] `updateClaimNotes` / `markIntroSent` in BrandContext are still client-only — they update local state but don't persist. Needs a backend endpoint for claim notes/status edits before the "Add Outcome" button on `/offers/my` does anything real.
+- [ ] Remaining `src/data/*.ts` files (offers/partners/categories/tags/questionnaire/brandProfile) still used by `/questionnaire` + `BrandContext` recommendations + a few lookup helpers. Safe to delete once those are rewired to the API — low priority.
 
 ### 5. dtcmvp-2.0 integration
 **Goal:** offers pages embedded inside the unified frontend at `/offers`.
@@ -104,17 +109,28 @@ Brand-facing routes now pull real Airtable-synced offers from the backend. Archi
 - [ ] Share existing AuthContext (Supabase already wired)
 - [ ] ChatBar integration: SeanVoice agent can recommend offers based on meeting data (later, tool-addition in agent)
 
-### 6. Nice-to-haves (post-launch)
-- [ ] Form-builder UI in admin so VAs don't hand-edit JSON
+### 5b. brand-portal launch link
+- [x] CTA added to `brand.dtcmvp.com/[contactId]` linking to `offers.dtcmvp.com/brand/{contactId}` — commit `498295e` on 2026-04-14
+- [x] **Reverted** in commit `cf22112` (2026-04-14) — offers marketplace isn't launched yet, bring back when ready
+- [ ] Re-enable the CTA at launch (the two `<a>` tags can be wrapped back into a flex container the way they were)
+
+### 6. Partner-facing dashboard (future)
+- [ ] `/partner` landing page in offers standalone that calls `GET /partner/mine` + `GET /partner/claims` — table of their offers + claims with read-only status. Backend endpoints are already live.
+
+### 7. Nice-to-haves (post-launch)
+- [ ] Form-builder UI (post-launch admin) so VAs don't hand-edit JSON
 - [ ] Slack notification to `#dtcmvp-cs` on new claim (mirror pattern from feedback-links)
 - [ ] Convert Airtable Sample Deliverable attachment URLs → CDN-cached files (avoid Airtable bandwidth)
+- [ ] Backend endpoints for editing claim notes + intro-sent status so `/offers/my` "Add Outcome" persists
 
 ---
 
 ## Gotchas worth remembering
 
 - **dtcmvp-2.0 staging hits production backends.** When testing chat/offers from `main.staging.dtcmvp.com`, you're hitting `webhooks.dtcmvp.com` → writing to real Airtable. Same will be true for offers.
-- **Claim POST is public** (no auth required) so brands can claim without signing up. The Airtable write happens on the server; rate-limited to 100/min per project.
+- **Claim POST is auth-required** (as of 2026-04-14). Identity comes from the session — no name/email in the body. For brand users (`user_type='brand'`), `req.user.airtable_contact_id` + `req.user.partner_airtable_id` (= brand's company) feed the Airtable link fields directly. For admin/partner users, we fall back to email-based contact/company lookup so admins can test claims.
+- **Cross-subdomain cookies don't carry** — `brand.dtcmvp.com` and `offers.dtcmvp.com` share the parent domain but `brand.dtcmvpete.com` and `offers.dtcmvp.com` don't. Brand re-entry on offers uses the `/brand/[contactId]` route (same flow as dtcmvp-2.0's `/brand/[contactId]`), not an SSO token.
+- **partner_airtable_id is overloaded on `req.user`** — it maps to `user_profiles.airtable_company_id`. For partner users that's their partner's company; for brand users it's the BRAND's company. Use `req.user.user_type` to disambiguate.
 - **Hourly sync pulls claims too** — so admin edits in Airtable (status/notes) flow down to SQLite. App-originated claims write to both and don't need to wait for the next sync to appear locally.
 - **Status + Is Active** are both stored. Public list filters on both (`status='active' AND is_active=1`). Archiving an offer means flipping Status to `archived` in Airtable.
 - **Slug is URL key; Name is primary display field.** Don't change the primary to Slug — breaks link-field readability in Airtable.
@@ -124,24 +140,35 @@ Brand-facing routes now pull real Airtable-synced offers from the backend. Archi
 ## File map
 
 ```
-dtcmvp-offers/                           # this repo — frontend (will deploy to DO)
-├── airtable/                            # CSV seed + generator (done)
-│   ├── generate-csvs.ts
+dtcmvp-offers/                           # frontend, deployed to offers.dtcmvp.com
+├── airtable/                            # seed scaffolding (done, retained for re-seed)
+│   ├── generate-csvs.ts                 # claims references removed 2026-04-14
 │   ├── offers.csv
-│   ├── claims.csv
 │   └── README.md
 ├── src/
-│   ├── app/offers/                      # (exists — currently mock data)
-│   ├── data/                            # (TODO: replace imports with API calls)
-│   └── contexts/BrandContext.tsx        # (TODO: back with API)
+│   ├── app/
+│   │   ├── login/page.tsx               # partner OTP + password
+│   │   ├── brand/[contactId]/page.tsx   # brand name verification
+│   │   ├── offers/                      # real API-backed marketplace
+│   │   ├── api/auth/[...path]/route.ts  # proxy → api.dtcmvpete.com
+│   │   └── questionnaire/               # still mock-data, low-priority
+│   ├── contexts/
+│   │   ├── AuthContext.tsx              # session + refresh
+│   │   └── BrandContext.tsx             # claims hydrated from API
+│   ├── lib/
+│   │   ├── auth.ts                      # token lifecycle + authFetch
+│   │   └── api.ts                       # offers/claims fetchers
+│   ├── middleware.ts                    # gates routes on cookie
+│   └── data/                            # remaining mocks (no claims.ts)
 └── OFFERS_ROLLOUT_PLAN.md               # this file
 
-dtcmvp-app/                              # backend (deployed)
+dtcmvp-app/                              # backend (deployed to DO)
 ├── handlers/offers/
-│   ├── index.js                         # routes
-│   ├── sqlite-client.js                 # DB queries + schema init
+│   ├── index.js                         # routes (public + auth + partner + admin)
+│   ├── sqlite-client.js                 # DB queries + getClaimsForPartner
 │   ├── airtable-client.js               # Airtable API
 │   └── sync-runner.js                   # Airtable → SQLite
+├── middleware/auth.js                   # attaches req.user from Supabase JWT
 ├── jobs/offers-sync-hourly.js           # PM2 cron wrapper
 ├── config/projects.json                 # "offers" project registered
 └── ecosystem.docker.config.js           # offers-sync-hourly cron at :15
@@ -149,4 +176,4 @@ dtcmvp-app/                              # backend (deployed)
 
 ---
 
-*Last updated: 2026-04-13*
+*Last updated: 2026-04-15*
