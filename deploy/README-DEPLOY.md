@@ -113,6 +113,31 @@ git add . && git commit -m "..." && git push origin master
 
 ---
 
+## `/scrape-results` admin viewer — scrape DB sync
+
+The admin-only `/scrape-results` page reads from `/app/data/1800dtc.db` inside
+the container, which is bind-mounted from `~/dtcmvp-offers/data/` on the host.
+The DB is gitignored (~300 MB) so it ships out-of-band.
+
+**First time per droplet OR whenever the scrape is rerun:**
+
+```bash
+# From local MacBook:
+ssh deploy@142.93.27.155 'mkdir -p ~/dtcmvp-offers/data'
+scp /Users/peter/Documents/GitHub/dtcmvp-offers/1800dtc/1800dtc.db \
+    deploy@142.93.27.155:~/dtcmvp-offers/data/1800dtc.db
+
+# Then redeploy so the container picks up the new mount target (if it's
+# the first time — subsequent updates just overwrite the file in place,
+# no restart needed; SQLite is opened read-only on first request).
+./deploy/deploy.sh
+```
+
+If the file isn't present, the `/scrape-results` page renders a clear error
+("Couldn't open the scrape database") with the expected path.
+
+---
+
 ## Staging environments (TODO)
 
 The droplet has a shared staging-infra at `~/staging-infra/` that lets any branch deploy to `{slug}.staging.dtcmvp.com`. Adding dtcmvp-offers to that setup:

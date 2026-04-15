@@ -117,6 +117,18 @@ Brand-facing routes pull real Airtable-synced offers from the backend. Admin UI 
 ### 6. Partner-facing dashboard (future)
 - [ ] `/partner` landing page in offers standalone that calls `GET /partner/mine` + `GET /partner/claims` — table of their offers + claims with read-only status. Backend endpoints are already live.
 
+### 6b. Admin tools — /scrape-results viewer (2026-04-15)
+
+Internal-only page for browsing the 1,126 apps we scraped from 1800dtc.com.
+Not part of the partner/brand marketplace; gated by `UserProfile.is_admin`.
+
+- Route: `/scrape-results` (offers.dtcmvp.com, admin-only)
+- Backed by `better-sqlite3` reading `/app/data/1800dtc.db` (bind-mounted, gitignored, scp'd out-of-band — see `deploy/README-DEPLOY.md`)
+- Features: searchable/sortable/paginated table, category chip filters, verified-only toggle, row-click drawer with overview, tiers, screenshots, YouTube demos, brand logos, case studies, and out-links to affiliate + 1800dtc source
+- Files: `src/app/scrape-results/*`, `src/app/api/scrape-results/apps/*`, `src/lib/scrapeDb.ts`, `src/lib/serverAuth.ts`
+
+---
+
 ### 7. Nice-to-haves (post-launch)
 - [ ] Form-builder UI (post-launch admin) so VAs don't hand-edit JSON
 - [ ] Slack notification to `#dtcmvp-cs` on new claim (mirror pattern from feedback-links)

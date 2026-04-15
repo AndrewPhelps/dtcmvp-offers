@@ -18,3 +18,7 @@ OFFERS_ROLLOUT_PLAN.md
 airtable/
 deploy/
 docs/
+# Scraper lives beside the app but never ships inside the image.
+# The scrape DB is bind-mounted from the host at runtime instead.
+1800dtc/
+data/

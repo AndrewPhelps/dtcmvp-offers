@@ -27,5 +27,7 @@ export const config = {
     '/offers/:path*',
     '/questionnaire/:path*',
     '/questionnaire',
+    '/scrape-results/:path*',
+    '/scrape-results',
   ],
 };

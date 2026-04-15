@@ -5,12 +5,18 @@
 # ---------- Deps ----------
 FROM node:20-alpine AS deps
 WORKDIR /app
+# better-sqlite3 is a native module — alpine has no build toolchain by default.
+# python3/make/g++ let npm build the .node binding from source when no prebuild
+# is available for musl.
+RUN apk add --no-cache python3 make g++
 COPY package.json package-lock.json* ./
 RUN npm ci
 
 # ---------- Builder ----------
 FROM node:20-alpine AS builder
 WORKDIR /app
+# Same toolchain in case the Next.js build triggers any native rebuilds.
+RUN apk add --no-cache python3 make g++
 
 # Public env vars — baked at build time (Next.js reads NEXT_PUBLIC_* at build).
 # Auth uses dtcmvp-2.0's pattern: all Supabase calls proxy through

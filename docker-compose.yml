@@ -11,9 +11,16 @@ services:
       # Server-side only — consumed by the /api/auth/* Next.js route handler
       # that proxies browser auth requests. Browser never sees this.
       AUTH_API_URL: ${AUTH_API_URL:-https://api.dtcmvpete.com}
+      # /scrape-results reads from a read-only scrape DB mounted via volumes.
+      SCRAPE_DB_PATH: /app/data/1800dtc.db
     ports:
       # Bind to localhost only — nginx handles external TLS on 443
       - "127.0.0.1:3005:3000"
+    volumes:
+      # Bind-mount the host's data dir containing 1800dtc.db. The file is
+      # scp'd to the droplet out-of-band (see deploy/README-DEPLOY.md) — too
+      # large for git. Read-only is enough; nothing here is a write target.
+      - ./data:/app/data:ro
     restart: unless-stopped
     healthcheck:
       # 127.0.0.1 (not localhost) — avoids alpine wget resolving to IPv6

@@ -41,3 +41,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# scrape data mounted into the container at /app/data (scp'd out-of-band)
+/data/
