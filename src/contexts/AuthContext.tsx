@@ -15,8 +15,8 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Paths that don't require authentication. Brands without a session
-// belong on /brand/[contactId]; anonymous partners belong on /login.
-const PUBLIC_PATHS = ['/login', '/brand'];
+// belong on /b/[contactId]; anonymous partners belong on /login.
+const PUBLIC_PATHS = ['/login', '/b'];
 
 function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'));

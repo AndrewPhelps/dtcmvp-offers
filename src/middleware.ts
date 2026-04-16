@@ -5,7 +5,13 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (pathname === '/login') return NextResponse.next();
-  if (pathname.startsWith('/brand/') || pathname === '/brand') return NextResponse.next();
+  if (pathname.startsWith('/b/') || pathname === '/b') return NextResponse.next();
+
+  // Redirect old /brand/ paths to /b/ (301) so existing links in inboxes work
+  if (pathname.startsWith('/brand/') || pathname === '/brand') {
+    const newPath = pathname.replace(/^\/brand/, '/b');
+    return NextResponse.redirect(new URL(newPath + request.nextUrl.search, request.url), 301);
+  }
 
   const supabaseToken = request.cookies.get('supabase.auth.token')?.value;
 
