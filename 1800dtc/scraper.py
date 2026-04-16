@@ -28,7 +28,9 @@ Subcommands:
 Env vars:
   SCRAPE_DB_PATH          override the DB path (default: ./1800dtc.db)
   SLACK_BOT_TOKEN         bot token for posting monthly digests
-  SLACK_DIGEST_CHANNEL    channel ID (default: C08QRA47JMD = #dtcmvp-mvc)
+  SLACK_DIGEST_CHANNEL    channel ID (default: C09N33PJRAT = #dtcmvp-alerts)
+  SLACK_DIGEST_MENTIONS   space-separated user IDs to @-mention in the
+                          digest header (default: Jacob + Peter)
   BRAND_COUNT_JUMP_MIN    minimum absolute brand-count increase to flag
                           (default 50)
   BRAND_COUNT_JUMP_PCT    minimum % brand-count increase to flag (default 25)
@@ -68,7 +70,13 @@ LOG_PATH = ROOT / "scraper.log"
 WORKING_DB_PATH = DB_PATH.with_suffix(".next.db")
 PREV_DB_PATH = DB_PATH.with_suffix(".prev.db")
 
-SLACK_DIGEST_CHANNEL = os.environ.get("SLACK_DIGEST_CHANNEL", "C08QRA47JMD")  # #dtcmvp-mvc
+SLACK_DIGEST_CHANNEL = os.environ.get("SLACK_DIGEST_CHANNEL", "C09N33PJRAT")  # #dtcmvp-alerts
+# Mentions prepended to every digest so the right humans get pinged.
+# Override with SLACK_DIGEST_MENTIONS env var (whitespace-separated user IDs).
+SLACK_DIGEST_MENTIONS = os.environ.get(
+    "SLACK_DIGEST_MENTIONS",
+    "U09PDQRNVEZ U09FG6T7N84",  # Jacob, Peter
+).split()
 BRAND_COUNT_JUMP_MIN = int(os.environ.get("BRAND_COUNT_JUMP_MIN", "50"))
 BRAND_COUNT_JUMP_PCT = int(os.environ.get("BRAND_COUNT_JUMP_PCT", "25"))
 
@@ -967,11 +975,17 @@ def last_two_run_ids() -> tuple[int | None, int | None]:
         return (None, rows[0]["run_id"] if rows else None)
     return (rows[1]["run_id"], rows[0]["run_id"])
 
+def _mentions_prefix() -> str:
+    return " ".join(f"<@{u}>" for u in SLACK_DIGEST_MENTIONS).strip()
+
 def format_digest(events: list[ChangeEvent], run_id: int, app_count: int) -> str:
     """Markdown-ish message for Slack chat.postMessage."""
+    mentions = _mentions_prefix()
+    header = (mentions + " " if mentions else "") + f"*:mag: 1800dtc monthly scrape — run #{run_id}*"
+
     if not events:
         return (
-            f"*:mag: 1800dtc monthly scrape — run #{run_id}*\n"
+            f"{header}\n"
             f"{app_count:,} apps scraped, *no meaningful changes* since last run."
         )
 
@@ -991,7 +1005,7 @@ def format_digest(events: list[ChangeEvent], run_id: int, app_count: int) -> str
     ]
 
     lines = [
-        f"*:mag: 1800dtc monthly scrape — run #{run_id}*",
+        header,
         f"{app_count:,} apps scraped, {len(events)} change events.",
         "",
     ]
