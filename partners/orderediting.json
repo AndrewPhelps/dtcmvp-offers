@@ -1,0 +1,71 @@
+{
+  "slug": "orderediting",
+  "partnerName": "Order Editing",
+  "partnerUrl": "https://orderediting.com",
+  "tagline": "Self-serve post-purchase order edits for Shopify",
+  "tags": ["post-purchase", "cx", "upsell"],
+  "pricingMonthly": null,
+  "tier": 0,
+  "benefits": [
+    {
+      "id": "support_reduction",
+      "label": "Support ticket deflection",
+      "description": "When customers can edit their own orders, they stop emailing support about it.",
+      "formula": "annualOrders * editTicketRate * costPerTicket * reductionRate",
+      "brandInputs": ["annualOrders"],
+      "swagDefaults": {
+        "editTicketRate": {
+          "value": 0.015,
+          "label": "% of orders that generate an edit-related ticket",
+          "source": "industry avg (Gorgias CX benchmarks)"
+        },
+        "costPerTicket": {
+          "value": 2.00,
+          "label": "Cost per support ticket",
+          "source": "industry avg (Zendesk CX report)"
+        },
+        "reductionRate": {
+          "value": 0.80,
+          "label": "Ticket reduction from self-serve editing",
+          "source": "dtcmvp estimate (partner claims up to 98%, Oh Polly case study)"
+        }
+      }
+    },
+    {
+      "id": "upsell_revenue",
+      "label": "Post-purchase upsell revenue",
+      "description": "The editing flow surfaces add-on items — a net-new revenue stream.",
+      "formula": "annualOrders * upsellRate * (aov * upsellPctOfAov)",
+      "brandInputs": ["annualOrders", "aov"],
+      "swagDefaults": {
+        "upsellRate": {
+          "value": 0.015,
+          "label": "% of orders that convert an upsell",
+          "source": "dtcmvp estimate (partner cites Origin USA $22k/2mo, David Protein ~$1k/day)"
+        },
+        "upsellPctOfAov": {
+          "value": 0.40,
+          "label": "Upsell value as % of AOV",
+          "source": "dtcmvp estimate (typical add-on is ~40% of original cart)"
+        }
+      }
+    }
+  ],
+  "sources": [
+    "https://orderediting.com — homepage + features",
+    "Oh Polly case study: 98% reduction in order-change enquiries (2,000 to 40/month)",
+    "Origin USA: $22,000 upsell revenue in 2 months",
+    "David Protein: ~$1,000/day attributed to Order Editing"
+  ],
+  "notes": "Site does not mention return prevention or processing-fee recovery. Those benefits may exist but are not publicly supported — omitted from this SWAG. Pricing not visible on site (hidden behind demo booking).",
+  "generatedAt": "2026-04-16",
+  "_sampleBrand": {
+    "inputs": { "annualOrders": 250000, "aov": 120 },
+    "results": {
+      "support_reduction": 6000,
+      "upsell_revenue": 180000,
+      "totalAnnualValue": 186000,
+      "at8xTarget": { "maxAnnualPrice": 23250, "maxMonthlyPrice": 1937.50 }
+    }
+  }
+}
