@@ -37,6 +37,8 @@ Env vars:
 from __future__ import annotations
 
 import argparse
+import contextlib
+import gc
 import hashlib
 import json
 import logging
@@ -111,17 +113,29 @@ def set_active_db(path: Path) -> None:
     _active_db_path = path
     log.info("active db set to %s", path)
 
-def connect() -> sqlite3.Connection:
+@contextlib.contextmanager
+def connect():
+    """Open a sqlite3 connection and GUARANTEE it closes on exit.
+
+    Python's built-in `sqlite3.Connection.__enter__/__exit__` commits or
+    rolls back on exit but does NOT close the connection — leaking one
+    per `with` block. Over a full scrape that's thousands of live
+    connections, each holding a SHARED lock on the DB file, which
+    blocks the final `PRAGMA journal_mode = DELETE`. This wrapper
+    explicitly closes in `finally` so callers using the familiar
+    `with connect() as conn:` pattern actually release the connection.
+    """
     conn = sqlite3.connect(_active_db_path, timeout=30, isolation_level=None)
-    conn.row_factory = sqlite3.Row
-    # NOTE: we deliberately do NOT set `journal_mode = WAL` here. WAL is a
-    # file-level setting that persists after it's set once (in init_db), so
-    # re-issuing it on every connection is redundant and — worse — it
-    # counts as a writer operation that can race with finalize's switch
-    # back to DELETE. Let new connections inherit the file's mode.
-    conn.execute("PRAGMA busy_timeout = 30000")
-    conn.execute("PRAGMA foreign_keys = ON")
-    return conn
+    try:
+        conn.row_factory = sqlite3.Row
+        # WAL is a file-level setting set once in init_db — re-issuing
+        # it on every connection is redundant and can race with the
+        # finalize step's switch back to DELETE.
+        conn.execute("PRAGMA busy_timeout = 30000")
+        conn.execute("PRAGMA foreign_keys = ON")
+        yield conn
+    finally:
+        conn.close()
 
 def init_db() -> None:
     schema = SCHEMA_PATH.read_text()
@@ -1269,7 +1283,11 @@ def cmd_monthly(args: argparse.Namespace) -> None:
         """, (app_count,
               f"events={len(events)} elapsed={elapsed}s", monthly_run_id))
 
-    # 9) Finalize journal mode so live readers on a :ro mount can open it
+    # 9) Finalize journal mode so live readers on a :ro mount can open it.
+    #    Force a GC first so any sqlite3.Connection that escaped a with
+    #    block (from older code paths) releases its SHARED lock — the
+    #    PRAGMA journal_mode switch needs exclusive access to the DB.
+    gc.collect()
     finalize_db_for_shipping()
     set_active_db(DB_PATH)  # flip module default back; no new connections yet
 
