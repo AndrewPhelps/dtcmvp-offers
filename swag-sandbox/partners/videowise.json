@@ -1,0 +1,94 @@
+{
+  "slug": "videowise",
+  "partnerName": "Videowise",
+  "partnerUrl": "https://www.videowise.com",
+  "tagline": "Shoppable video commerce platform with live shopping and AI-powered content",
+  "tags": ["video", "conversion", "ugc", "live-shopping", "content"],
+  "pricingMonthly": null,
+  "pricingIntel": {
+    "summary": "Pricing not publicly listed. Likely scales with video views, traffic, or feature tier",
+    "details": [
+      "No visible pricing on the website",
+      "Platform covers shoppable video, live shopping, social commerce, creator management",
+      "Enterprise-level brands featured (Dr Squatch, Skullcandy, Tibi)"
+    ],
+    "costDrivers": [
+      "Video views or impressions served, the primary usage metric for video platforms",
+      "Feature tier: live shopping, AI clip generation, social commerce likely gated by plan",
+      "Traffic volume, since more sessions with embedded video means more platform usage"
+    ],
+    "sourceUrl": "https://www.videowise.com/pricing"
+  },
+  "tier": 0,
+  "benefits": [
+    {
+      "id": "new_conversions",
+      "label": "New customers from video-driven conversion lift",
+      "description": "Shoppable video on product pages engages visitors who would otherwise bounce. These are net-new conversions from people who were not going to buy without the video.",
+      "type": "revenue-generation",
+      "formula": "monthlyWebTraffic * baselineConversionRate * conversionLiftPct * aov * 12",
+      "brandInputs": ["monthlyWebTraffic", "aov"],
+      "swagDefaults": {
+        "baselineConversionRate": {
+          "value": 0.025,
+          "label": "Current site conversion rate",
+          "source": "industry avg (Shopify avg: 1.5-3.5%)"
+        },
+        "conversionLiftPct": {
+          "value": 0.05,
+          "label": "% conversion rate increase from shoppable video",
+          "source": "Videowise case studies: Skullcandy +7.9% RPS, Dr Squatch +3.2%, Travelpro +7.9%, Walkee Paws +8%. Real-world range is 3-8%. We SWAG 5% (mid-range)."
+        }
+      }
+    },
+    {
+      "id": "larger_carts",
+      "label": "Larger carts from existing buyers",
+      "description": "Customers who were already going to buy see products in context through video, leading to bundle purchases and add-ons. This lifts average order value on orders that would have happened anyway.",
+      "type": "revenue-generation",
+      "formula": "annualOrders * aov * aovLiftPct",
+      "brandInputs": ["annualOrders", "aov"],
+      "swagDefaults": {
+        "aovLiftPct": {
+          "value": 0.05,
+          "label": "% increase in AOV from video-driven cross-sell",
+          "source": "Videowise claims '28% increased AOV' but case studies show 3-7% AOV lifts (Dr Dennis Gross +7%). We SWAG 5% (mid-range of actual results)."
+        }
+      }
+    }
+  ],
+  "sources": [
+    "https://www.videowise.com (homepage)",
+    "Videowise claims: '+12% conversion rate increase' and '35% increased conversion rates'",
+    "Videowise claims: '28% increased average order value'",
+    "Videowise claims: '20% increased revenue per session'",
+    "Skullcandy: +7.9% revenue per session",
+    "Tibi: +$2.8M new revenue from live shopping",
+    "Dalstrong: +22% revenue per session",
+    "Wonderskin: +30% conversion rate",
+    "Dr Squatch: +26% conversion rate spikes",
+    "Travelpro: +7.9% avg CVR, +$269k revenue",
+    "Kind Patches: +14.78% CVR, $700K+ sales"
+  ],
+  "narrative": {
+    "headline": "Videowise could add {totalValue}/yr to {brandName} through shoppable video.",
+    "byDepartment": {
+      "Marketing / Growth": "For {contactName} and the marketing team: shoppable video turns your existing content library into a conversion engine. The {revenueTotal}/yr revenue opportunity comes from two places: new customers who convert because video gave them the confidence to buy, and existing customers who add more to their cart after seeing products in context.",
+      "Ecommerce / DTC": "For {contactName} on the ecom side: this is a conversion rate and AOV play. Videowise case studies show 7-30% conversion lifts and up to 28% AOV increases. For {brandName} at your current traffic levels, that translates to {totalValue}/yr in added revenue.",
+      "Creative / Brand": "For {contactName} and the creative team: Videowise turns video assets you already have (product shoots, UGC, creator content) into shoppable experiences on your site. The ROI story is strong: {totalValue}/yr in additional revenue, which justifies investing more in video production.",
+      "Retention / CRM": "For {contactName} on the retention side: shoppable video in email and SMS flows can lift click-through and conversion on your owned channels. The {benefit_larger_carts}/yr in larger carts comes from customers who already trust your brand seeing products in a richer context.",
+      "Finance / Accounting": "For {contactName} reviewing the budget: at {brandName}'s {targetMultiple} target ROI, you should pay no more than {maxMonthly}/mo for a video commerce platform. The {totalValue}/yr value estimate comes from two independent sources: new customer conversions and increased cart sizes from existing buyers.",
+      "Founder & CEO": "For {contactName}: Videowise adds {totalValue}/yr to {brandName} by making your site's video content shoppable. That breaks down to {benefit_new_conversions}/yr in new customer revenue and {benefit_larger_carts}/yr in larger carts. At your {targetMultiple} target, the ceiling is {maxMonthly}/mo.",
+      "Other": "Videowise adds {totalValue}/yr to {brandName} by turning video content into a shoppable experience. New customers convert because video builds buying confidence, and existing customers spend more after seeing products in action."
+    },
+    "byCategory": {
+      "Apparel & Fashion": "Apparel brands see some of the strongest video commerce results because clothing needs to be seen in motion: fit, drape, styling options. Videowise case studies include fashion brands like Tibi (+$2.8M from live shopping). Expect the conversion lift to land toward the higher end of our estimate for {brandName}.",
+      "Beauty & Cosmetics": "Beauty is a natural fit for video commerce: tutorials, application demos, before/after reveals. Brands like Dr Squatch saw +26% conversion rate spikes with Videowise. For {brandName}, the upsell angle is especially strong because beauty shoppers respond well to 'complete the routine' video recommendations.",
+      "Food & Drink": "Food and beverage brands benefit from video that shows preparation, unboxing, and lifestyle context. The conversion lift tends to be moderate (food purchases are more habitual), but the AOV increase can be significant when video showcases bundles, subscriptions, or limited editions.",
+      "Home & Electronics": "Home and electronics brands see strong AOV lifts from video because these are considered purchases where customers want to see the product in a real environment. Video walkthroughs, size comparisons, and feature demos reduce purchase anxiety and drive larger carts.",
+      "Other": "Video commerce performance varies by category, but the core mechanics are universal: visitors who engage with video convert at higher rates and buy more. These numbers use industry-wide benchmarks. Your specific category may push them higher or lower."
+    }
+  },
+  "notes": "Benefit 1 (new conversions) and Benefit 2 (larger carts) target different audiences: non-buyers vs existing buyers. No double-counting. Revenue per session metrics from case studies reflect the combined effect of both.",
+  "generatedAt": "2026-04-16"
+}

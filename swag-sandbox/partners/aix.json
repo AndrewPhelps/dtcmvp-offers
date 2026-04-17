@@ -1,0 +1,101 @@
+{
+  "slug": "aix",
+  "partnerName": "AIX",
+  "partnerUrl": "https://agencyaix.com",
+  "tagline": "Amazon growth agency for DTC brands focused on profitability, not just revenue",
+  "tags": ["amazon", "advertising", "agency", "marketplace", "growth"],
+  "pricingMonthly": null,
+  "pricingIntel": {
+    "summary": "Flat monthly fees starting at $1,500/mo for strategy, $3,000/mo for ad management, $4,500/mo for full Amazon management",
+    "details": [
+      "Strategy and Support: starting at $1,500/mo",
+      "Ad Optimization and Management: starting at $3,000/mo",
+      "Total Amazon Management: starting at $4,500/mo",
+      "Month-to-month, no contracts, no revenue share",
+      "Flat fee model means cost does not scale with your revenue"
+    ],
+    "costDrivers": [
+      "Service tier selected (strategy only vs full management)",
+      "Catalog complexity (more SKUs may require higher tier)",
+      "Flat fee means your cost stays the same as revenue grows, improving ROI over time"
+    ],
+    "sourceUrl": "https://agencyaix.com"
+  },
+  "tier": 0,
+  "benefits": [
+    {
+      "id": "ad_efficiency",
+      "label": "Ad spend efficiency from TACOS reduction",
+      "description": "AIX's framework optimizes your Amazon advertising so a smaller share of revenue goes to ads. Reducing TACOS from a typical 20%+ to the 7-15% range means you keep more of every dollar earned on Amazon.",
+      "type": "cost-saving",
+      "formula": "amazonRevenue * (currentTacos - targetTacos)",
+      "brandInputs": [],
+      "swagDefaults": {
+        "amazonRevenue": {
+          "value": 1200000,
+          "label": "Annual Amazon revenue ($)",
+          "source": "dtcmvp estimate for a mid-size DTC brand on Amazon"
+        },
+        "currentTacos": {
+          "value": 0.22,
+          "label": "Current TACOS (total ad cost of sales)",
+          "source": "industry avg (Amazon TACOS for unoptimized accounts: 18-30%)"
+        },
+        "targetTacos": {
+          "value": 0.12,
+          "label": "Target TACOS after optimization",
+          "source": "AIX case studies: skincare 7.3%, fragrance 15.2%, supplements <7%. We SWAG 12% as a moderate target."
+        }
+      }
+    },
+    {
+      "id": "organic_revenue_growth",
+      "label": "Organic sales growth from improved ranking",
+      "description": "Better ad strategy drives keyword ranking, which increases organic (free) sales. AIX case studies show organic share reaching 42-73% of total revenue, meaning the majority of sales eventually come without ad spend.",
+      "type": "revenue-generation",
+      "formula": "amazonRevenue * organicLiftPct",
+      "brandInputs": [],
+      "swagDefaults": {
+        "amazonRevenue": {
+          "value": 1200000,
+          "label": "Annual Amazon revenue ($)",
+          "source": "dtcmvp estimate for a mid-size DTC brand on Amazon"
+        },
+        "organicLiftPct": {
+          "value": 0.25,
+          "label": "% increase in organic (non-ad) revenue from better ranking",
+          "source": "dtcmvp estimate (AIX case studies show 42-73% organic share; we model a 25% lift in organic revenue conservatively)"
+        }
+      }
+    }
+  ],
+  "sources": [
+    "https://agencyaix.com (homepage)",
+    "https://agencyaix.com/case-studies",
+    "Skincare brand: $0 to $330K/mo in 10 months, TACOS 7.3%, organic share 59%, 39x order growth",
+    "Energy drink brand: $8.8K to $753K/mo, TACOS 21.5%, organic share 73.4%, CVR 25.4%",
+    "Fragrance brand: $70K to $329K/mo in 10 months, TACOS 15.2%, organic share 42-45%",
+    "Supplement brand: $1M revenue in 6 months, TACOS <7%, organic share 68%",
+    "Luxury laundry brand: $51K to $441K/mo in 32 months, 8.6x revenue growth, organic share 53.6%"
+  ],
+  "narrative": {
+    "headline": "AIX could add {totalValue}/yr to {brandName}'s Amazon channel.",
+    "byDepartment": {
+      "Ecommerce / DTC": "For {contactName} on the ecom side: Amazon is either a growth engine or a money pit depending on how it's managed. AIX's case studies show brands getting to 42-73% organic share, meaning the majority of sales come without ad spend. For {brandName}, the {costSavingsTotal}/yr in ad efficiency savings alone could justify the agency fee.",
+      "Marketing / Growth": "For {contactName} and the marketing team: AIX treats Amazon as a profitability channel, not just a revenue channel. The TACOS reduction from ~22% to ~12% means more margin on every sale, while the organic ranking improvements create compounding returns that outlast any ad campaign.",
+      "Performance / Paid": "For {contactName} on the paid side: if your Amazon TACOS is above 15%, you're likely overspending. AIX's framework identifies wasted spend and shifts budget toward keywords that drive incremental (not cannibalized) demand. The {costSavingsTotal}/yr in efficiency gains are real margin dollars.",
+      "Finance / Accounting": "For {contactName} reviewing the budget: AIX charges a flat monthly fee ($1.5K-$4.5K/mo) with no revenue share, so your cost stays fixed as revenue grows. At {targetMultiple} target, {brandName} should pay no more than {maxMonthly}/mo for Amazon management. Their flat fee model means ROI improves as you scale.",
+      "Founder & CEO": "For {contactName}: AIX adds {totalValue}/yr to {brandName}'s Amazon business across ad efficiency ({costSavingsTotal}/yr saved) and channel growth ({revenueTotal}/yr added). At your {targetMultiple} target, the ceiling is {maxMonthly}/mo. Their flat-fee model means the math gets better every quarter.",
+      "Other": "AIX adds {totalValue}/yr to {brandName}'s Amazon channel by reducing wasted ad spend, growing organic rankings, and scaling total revenue. Flat monthly fees mean cost stays fixed as revenue grows."
+    },
+    "byCategory": {
+      "Apparel & Fashion": "Apparel brands on Amazon face intense competition and high advertising costs. AIX's organic ranking strategy is especially valuable for {brandName} because fashion keywords are expensive and organic share directly reduces your dependence on paid placements.",
+      "Beauty & Cosmetics": "Beauty is one of the strongest categories on Amazon. AIX's skincare case study (7.3% TACOS, 59% organic, 39x order growth) is directly relevant to {brandName}. Beauty brands that nail organic ranking on Amazon can build a flywheel that compounds quarter over quarter.",
+      "Health & Wellness": "The supplement case study ($1M in 6 months, <7% TACOS, 68% organic) is the most relevant benchmark for {brandName}. Health and wellness brands on Amazon benefit heavily from repeat purchases, so building organic ranking creates a compounding customer base.",
+      "Food & Drink": "The energy drink case study ($753K/mo, 73.4% organic share) shows what's possible for food and beverage brands. Amazon's Subscribe and Save program amplifies the value of organic ranking because each subscriber acquired organically generates recurring revenue with zero ad cost.",
+      "Other": "Amazon performance varies by category, but the core mechanics are universal: reduce wasted ad spend, build organic ranking, and let the flywheel compound. AIX's case studies span beauty, supplements, food, and fragrance."
+    }
+  },
+  "notes": "AIX is an agency (done-for-you service), not a SaaS tool. The SWAG uses Amazon-specific inputs (Amazon revenue, TACOS) rather than standard Shopify metrics. Brands not yet on Amazon should treat the 'revenue scaling' benefit as the primary value. The flat-fee pricing model means ROI improves as Amazon revenue grows.",
+  "generatedAt": "2026-04-17"
+}

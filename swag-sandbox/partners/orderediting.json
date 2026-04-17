@@ -1,0 +1,88 @@
+{
+  "slug": "orderediting",
+  "partnerName": "Order Editing",
+  "partnerUrl": "https://orderediting.com",
+  "tagline": "Self-serve post-purchase order edits for Shopify",
+  "tags": ["post-purchase", "cx", "upsell"],
+  "pricingMonthly": null,
+  "tier": 0,
+  "benefits": [
+    {
+      "id": "support_reduction",
+      "label": "Support ticket deflection",
+      "description": "When customers can edit their own orders, they stop emailing support about it.",
+      "type": "cost-saving",
+      "formula": "annualOrders * editTicketRate * costPerTicket * reductionRate",
+      "brandInputs": ["annualOrders"],
+      "swagDefaults": {
+        "editTicketRate": {
+          "value": 0.015,
+          "label": "% of orders that generate an edit-related ticket",
+          "source": "industry avg (Gorgias CX benchmarks)"
+        },
+        "costPerTicket": {
+          "value": 2.00,
+          "label": "Cost per support ticket",
+          "source": "industry avg (Zendesk CX report)"
+        },
+        "reductionRate": {
+          "value": 0.80,
+          "label": "Ticket reduction from self-serve editing",
+          "source": "dtcmvp estimate (partner claims up to 98%, Oh Polly case study)"
+        }
+      }
+    },
+    {
+      "id": "upsell_revenue",
+      "label": "Post-purchase upsell revenue",
+      "description": "The editing flow surfaces add-on items, creating a net-new revenue stream.",
+      "type": "revenue-generation",
+      "formula": "annualOrders * upsellRate * (aov * upsellPctOfAov)",
+      "brandInputs": ["annualOrders", "aov"],
+      "swagDefaults": {
+        "upsellRate": {
+          "value": 0.015,
+          "label": "% of orders that convert an upsell",
+          "source": "dtcmvp estimate (partner cites Origin USA $22k/2mo, David Protein ~$1k/day)"
+        },
+        "upsellPctOfAov": {
+          "value": 0.40,
+          "label": "Upsell value as % of AOV",
+          "source": "dtcmvp estimate (typical add-on is ~40% of original cart)"
+        }
+      }
+    }
+  ],
+  "sources": [
+    "https://orderediting.com. homepage + features",
+    "Oh Polly case study: 98% reduction in order-change enquiries (2,000 to 40/month)",
+    "Origin USA: $22,000 upsell revenue in 2 months",
+    "David Protein: ~$1,000/day attributed to Order Editing"
+  ],
+  "narrative": {
+    "headline": "Order Editing could add {totalValue}/yr to {brandName} through self-serve order edits.",
+    "byDepartment": {
+      "CX / Support": "For {contactName} on the CX team: Order Editing eliminates the most repetitive ticket type (order changes). The {costSavingsTotal}/yr in savings comes from customers fixing their own orders instead of contacting support. Your agents get to focus on real problems.",
+      "Ecommerce / DTC": "For {contactName} on the ecom side: Order Editing is a dual play. {costSavingsTotal}/yr in ticket deflection plus {revenueTotal}/yr in upsell revenue from the self-serve editing flow. Customers who edit their orders also add items.",
+      "Marketing / Growth": "For {contactName} and the marketing team: the upsell side of Order Editing adds {revenueTotal}/yr by surfacing add-on products during the order edit flow. This is net-new revenue from customers who already bought.",
+      "Founder & CEO": "For {contactName}: Order Editing adds {totalValue}/yr to {brandName} across support savings ({costSavingsTotal}/yr) and upsell revenue ({revenueTotal}/yr). At your {targetMultiple} target, the ceiling is {maxMonthly}/mo.",
+      "Other": "Order Editing adds {totalValue}/yr to {brandName} by letting customers edit their own orders (saving CX time) and surfacing upsell opportunities during the edit flow."
+    },
+    "byCategory": {
+      "Apparel & Fashion": "Apparel brands see the highest order-edit rates because of sizing, color, and address changes. {brandName}'s ticket deflection savings are likely above our baseline SWAG. Oh Polly (a fashion brand) saw a 98% reduction in edit-related inquiries.",
+      "Food & Drink": "Food and beverage brands benefit from order edits when customers want to swap flavors, adjust quantities, or add items before shipment. The upsell opportunity is strong because add-on products are natural complements.",
+      "Other": "Order edit rates vary by category. Brands with configurable products (size, color, quantity) see the highest ticket deflection. {brandName}'s actual edit rate depends on product complexity."
+    }
+  },
+  "notes": "Site does not mention return prevention or processing-fee recovery. Those benefits may exist but are not publicly supported. omitted from this SWAG. Pricing not visible on site (hidden behind demo booking).",
+  "generatedAt": "2026-04-16",
+  "_sampleBrand": {
+    "inputs": { "annualOrders": 250000, "aov": 120 },
+    "results": {
+      "support_reduction": 6000,
+      "upsell_revenue": 180000,
+      "totalAnnualValue": 186000,
+      "at8xTarget": { "maxAnnualPrice": 23250, "maxMonthlyPrice": 1937.50 }
+    }
+  }
+}

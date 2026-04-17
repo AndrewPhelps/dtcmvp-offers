@@ -1,0 +1,119 @@
+{
+  "slug": "postpilot",
+  "partnerName": "PostPilot",
+  "partnerUrl": "https://www.postpilot.com",
+  "tagline": "Automated direct mail for Shopify covering acquisition, retargeting, and retention",
+  "tags": ["direct-mail", "retention", "acquisition", "winback"],
+  "pricingMonthly": null,
+  "pricingIntel": {
+    "summary": "As low as $0.50 per card including postage. No monthly platform fee visible",
+    "details": [
+      "Per-card pricing starting at $0.50 (includes postage)",
+      "No visible monthly subscription or platform fee",
+      "Pricing likely scales with volume and card format (postcard vs. catalog)",
+      "Full-service option available (strategy, creative, execution, optimization)"
+    ],
+    "costDrivers": [
+      "Volume of cards mailed. cost is per-piece, so total scales linearly",
+      "Card format. postcards vs. letters vs. catalogs at different price points",
+      "Targeting scope. larger audience segments = more cards = higher cost",
+      "Managed service. hands-off execution may carry a premium"
+    ],
+    "sourceUrl": "https://www.postpilot.com/pricing"
+  },
+  "tier": 0,
+  "benefits": [
+    {
+      "id": "lapsed_reactivation",
+      "label": "Lapsed customer reactivation",
+      "description": "Direct mail reaches customers who've stopped opening emails. A physical card in the mailbox cuts through digital fatigue and brings back lapsed buyers.",
+      "type": "revenue-generation",
+      "formula": "(annualOrders / repeatRate) * churnRate * reactivationRate * aov",
+      "brandInputs": ["annualOrders", "aov"],
+      "swagDefaults": {
+        "repeatRate": {
+          "value": 1.8,
+          "label": "Average orders per customer per year",
+          "source": "dtcmvp estimate (DTC repeat purchase rate: 1.5-2.5x)"
+        },
+        "churnRate": {
+          "value": 0.35,
+          "label": "% of customers who lapse annually",
+          "source": "dtcmvp estimate (30-50% annual churn typical for DTC)"
+        },
+        "reactivationRate": {
+          "value": 0.03,
+          "label": "% of mailed lapsed customers who purchase",
+          "source": "dtcmvp estimate (PostPilot case studies show 1.2-6% conversion, we SWAG 3%)"
+        }
+      }
+    },
+    {
+      "id": "acquisition_roas",
+      "label": "New customer acquisition via direct mail",
+      "description": "PostPilot's AcquisitionAI targets lookalike prospects with postcards. Case studies show 3.8-11.5x ROAS on acquisition campaigns.",
+      "type": "revenue-generation",
+      "formula": "monthlyMailBudget * acquisitionRoas * 12",
+      "brandInputs": [],
+      "swagDefaults": {
+        "monthlyMailBudget": {
+          "value": 2500,
+          "label": "Monthly direct mail spend on acquisition",
+          "source": "dtcmvp estimate ($1k-5k/month typical for mid-size DTC acquisition campaigns)"
+        },
+        "acquisitionRoas": {
+          "value": 4.0,
+          "label": "ROAS on acquisition direct mail",
+          "source": "dtcmvp estimate (PostPilot claims 3.8-11.5x across case studies, we SWAG 4x conservatively)"
+        }
+      }
+    },
+    {
+      "id": "email_unreachable",
+      "label": "Revenue from email-unreachable customers",
+      "description": "30-50% of your email list has stopped opening. Direct mail is the only channel that reaches them physically. This is revenue you cannot capture digitally.",
+      "type": "revenue-generation",
+      "formula": "emailListSize * emailUnreachablePct * mailConversionRate * aov",
+      "brandInputs": ["emailListSize", "aov"],
+      "swagDefaults": {
+        "emailUnreachablePct": {
+          "value": 0.35,
+          "label": "% of email list that no longer opens emails",
+          "source": "industry avg (email open rates ~40-50%, meaning 50-60% don't open regularly, 30-40% are effectively unreachable)"
+        },
+        "mailConversionRate": {
+          "value": 0.02,
+          "label": "% of mailed email-unreachable contacts who purchase",
+          "source": "dtcmvp estimate (direct mail conversion: 1-4%, conservative for re-engagement)"
+        }
+      }
+    }
+  ],
+  "sources": [
+    "https://www.postpilot.com. homepage",
+    "Dr. Squatch case study: 10X+ ROAS, 6% conversion rate",
+    "KURU Footwear: 11.5X ROAS, 4.5% conversion",
+    "Caden Lane: 3.8X ROAS, 1.2% conversion (cold prospecting)",
+    "PostPilot claims: 'As low as $.50 per card, including postage'",
+    "User testimonial: 'Our first campaign we saw a 1000% ROI'"
+  ],
+  "narrative": {
+    "headline": "PostPilot could add {totalValue}/yr to {brandName} through direct mail.",
+    "byDepartment": {
+      "Retention / CRM": "For {contactName} on the retention side: PostPilot reaches the 30-50% of your email list that has stopped opening. Direct mail reactivates lapsed customers that no digital channel can touch. The {benefit_lapsed_reactivation}/yr in reactivation revenue comes from customers {brandName} has already paid to acquire.",
+      "Marketing / Growth": "For {contactName} and the marketing team: direct mail is the channel your competitors are not using. PostPilot's acquisition campaigns deliver 3.8-11.5x ROAS based on case studies, and the reactivation play brings back customers that email has lost for {brandName}.",
+      "Performance / Paid": "For {contactName} on the paid side: direct mail acquisition through PostPilot gives {brandName} a physical channel with measurable ROAS. At our conservative 4x SWAG, {benefit_acquisition_roas}/yr in acquisition revenue complements your digital spend.",
+      "Finance / Accounting": "For {contactName} reviewing the budget: PostPilot is a per-card cost model (starting at $0.50/card), not a monthly SaaS fee. {brandName}'s total spend scales with volume mailed. At {targetMultiple} target, the ceiling is {maxMonthly}/mo across all direct mail programs.",
+      "Founder & CEO": "For {contactName}: PostPilot adds {totalValue}/yr to {brandName} through lapsed customer reactivation, new customer acquisition, and reaching email-unreachable contacts. At your {targetMultiple} target, the ceiling is {maxMonthly}/mo.",
+      "Other": "PostPilot adds {totalValue}/yr to {brandName} by reaching customers that email cannot: lapsed buyers, email-fatigued contacts, and new lookalike prospects through physical mail."
+    },
+    "byCategory": {
+      "Apparel & Fashion": "Apparel brands see strong direct mail performance because fashion is visual and seasonal. A well-timed postcard featuring new arrivals or a VIP discount drives {brandName}'s lapsed customers back at higher conversion rates than digital retargeting.",
+      "Beauty & Cosmetics": "Beauty brands benefit from direct mail for VIP retention and winback campaigns. A physical card with a personalized offer feels premium in a way that email cannot match, which aligns with how beauty customers expect to be treated.",
+      "Home & Electronics": "Home and electronics brands see high AOV on direct mail conversions because these are considered purchases. A postcard that arrives at the right moment can tip a buyer who has been browsing but has not committed online.",
+      "Other": "Direct mail performance varies by category, but the core insight is universal: 30-50% of your email list is unreachable digitally. Physical mail is the only channel that gets to them."
+    }
+  },
+  "notes": "PostPilot's cost model is per-card, not a monthly SaaS fee. Total cost scales with volume mailed. The lapsed customer benefit is the strongest starting point for most brands. it targets a segment that email literally cannot reach. The acquisition benefit requires a monthly mail budget commitment.",
+  "generatedAt": "2026-04-16"
+}

@@ -21,24 +21,34 @@ If no URL is provided, ask for one. If a partner name is given without a URL, do
 
 ## The exercise (5 steps)
 
-### Step 1 — Read the website
+### Step 1 — Read the website (waterfall order)
 
-Fetch the partner's site using WebFetch. Hit 3-5 pages:
-- Homepage
-- Features or product page
-- Pricing page (if it exists)
-- Case studies or customer stories
-- Any page with ROI claims, calculators, or testimonials
+Fetch the partner's site using WebFetch. **Follow this priority order** — the best possible SWAG comes from the highest-quality source available:
 
-For each page, extract:
+**Priority 1: Look for an existing ROI calculator on the partner's site.**
+Check the homepage, footer nav, resources section, and tools/calculator pages. Common URL patterns: `/roi-calculator`, `/revenue-calculator`, `/savings-calculator`, `/tools/*`. If found, this is a Tier 1 opportunity — their own math is the strongest source we can cite. Note the URL and flag it immediately. Even if we don't do a full Tier 1 scrape of the JS, knowing the calculator exists and what inputs it asks for tells us how the partner thinks about their own value.
+
+**Priority 2: Case studies with hard numbers.**
+Fetch `/case-studies`, `/customers`, `/success-stories`, or any linked customer page. Named brands + specific metrics ($X revenue, Y% lift, Zx ROAS) are the next best thing to a calculator. These give us real-world benchmarks to anchor our SWAGs.
+
+**Priority 3: Pricing page.**
+Fetch `/pricing`. Even if exact dollar amounts are hidden, the pricing MODEL (per-ticket, per-contact, per-order, flat tier) tells us what drives cost and lets us build better pricing intel for the brand.
+
+**Priority 4: Features / product page.**
+Fetch `/features`, `/product`, `/how-it-works`. This is where we identify the quantifiable benefits (what the app actually does that has dollar value).
+
+**Priority 5: Homepage claims and testimonials.**
+Often has the headline claims ("34x ROI", "reduces tickets 60%") and social proof, but less specific than case studies.
+
+**For each page, extract:**
 - **What does this app do?** (1-2 sentences)
 - **What merchant-facing benefits do they claim?** (support reduction, upsell, return prevention, revenue lift, time savings, etc.)
 - **Any quantitative claims?** ("reduces tickets by 85%", "$22k upsell revenue in 2 months", "3.5x ROI")
 - **Named case studies with numbers?** (brand name + specific metric)
-- **Pricing?** (monthly cost, tiers, free trial)
-- **Any published ROI calculator on their site?** (if yes, note the URL — this is a Tier 1 opportunity)
+- **Pricing model and amounts?** (monthly cost, tiers, per-unit pricing, free trial)
+- **Published ROI calculator?** (URL, what inputs it asks for, what it outputs)
 
-**Important:** Only extract numbers that are actually on the site. Do NOT invent or estimate at this stage. That comes in Step 3.
+**Important:** Only extract numbers that are actually on the site. Do NOT invent or estimate at this stage. That comes in Step 3. The waterfall above is about finding the BEST numbers the partner has already published — partners will appreciate brands having access to their own data presented fairly.
 
 ### Step 2 — Identify quantifiable benefits
 
@@ -74,16 +84,59 @@ For each SWAG default, choose a reasonable, slightly conservative number. Better
 
 Write the formula explicitly. Use simple arithmetic — multiplication, addition, percentages. No complex models.
 
-**Standard brand profile fields** (these are collected once during onboarding and reused across all SWAGs):
-- `annualOrders` — annual order volume
-- `aov` — average order value ($)
-- `returnRate` — return rate as a decimal (e.g., 0.15 for 15%)
-- `avgCostPerItem` — average cost per item / COGS ($)
-- `monthlyWebTraffic` — monthly website visitors (optional, used by some SWAGs)
-- `emailListSize` — email subscriber count (optional)
-- `smsListSize` — SMS subscriber count (optional)
+**Brand inputs come in three tiers.** Know what's available before writing formulas — use Tier 1 fields whenever possible so the SWAG works immediately from the brand's onboarding data.
 
-Only require the fields this specific partner's SWAG actually uses. Don't ask for all of them.
+**Tier 1 — Onboarding metrics (collected once, available for every SWAG):**
+These are the fields every brand fills in when they create their profile. Build your formulas around these first.
+
+| Field | Type | Example | Who uses it |
+|---|---|---|---|
+| `annualOrders` | number | 250,000 | Nearly every SWAG |
+| `aov` | dollars | $120 | Nearly every SWAG |
+| `monthlyWebTraffic` | number | 200,000 | Checkout, chat, conversion tools |
+| `emailListSize` | number | 50,000 | Email/retention tools |
+| `smsListSize` | number | 20,000 | SMS tools |
+| `returnRate` | decimal | 0.15 | Returns, post-purchase, CX tools |
+| `avgCostPerItem` | dollars | $50 | Upsell, margin-dependent tools |
+| `primaryCategory` | string | "apparel" | Helps pick better SWAG defaults |
+
+**Tier 2 — Common SWAGs the brand can override (saved to profile when they do):**
+These are industry defaults we guess at. The brand sees our SWAG on first visit. If they override it, the new value saves to their profile and carries forward to every future SWAG that uses it.
+
+| Default | Typical SWAG | Who uses it |
+|---|---|---|
+| Cost per support ticket | $2–5 | CX tools (Gorgias, OE) |
+| Ticket rate (% of orders) | 1.5–5% | CX tools |
+| Site conversion rate | 2–3.5% | Checkout/conversion tools |
+| Martech spend as % of revenue | 2–5% | Platform consolidation plays |
+| Customer repeat rate | 1.5–2x | Retention, direct mail, loyalty |
+| Churn rate (annual) | 30–50% | Winback, reactivation tools |
+| Hourly cost of ops/CX labor | $25–40 | Time-saving benefits |
+
+Put these in `swagDefaults` on the benefit, NOT in `brandInputs`. They are guesses, not things we ask for.
+
+**Tier 3 — Partner-specific inputs (asked inline on that partner's page):**
+Some partners need a metric no one else uses. These get prompted inline before the SWAG computes. Once the brand answers, it saves to their profile.
+
+Examples:
+- Number of active affiliates/creators (Superfiliate)
+- Monthly ad spend (affiliate/paid-media tools)
+- Direct mail budget (PostPilot)
+- Current email revenue (Klaviyo, for gap analysis)
+
+Use Tier 3 sparingly. If you can derive it from Tier 1 fields + a SWAG, do that instead. Only add a Tier 3 input when the SWAG would be meaningless without it.
+
+**Rule: only list Tier 1 fields in `brandInputs`.** Tier 2 goes in `swagDefaults`. Tier 3 goes in a `partnerSpecificInputs` array on the spec (not yet implemented in the renderer — coming soon).
+
+**C. What type of benefit is this?**
+
+Every benefit must be classified as one of three types. This determines how it's displayed and grouped in the SWAG page — cost savings, revenue generation, and time savings are fundamentally different value stories and should not be lumped together.
+
+- `"cost-saving"` — the app reduces a cost the brand is currently paying. Support ticket deflection, return prevention, processing fee avoidance. Framed as "saves you $X/yr."
+- `"revenue-generation"` — the app creates new revenue the brand isn't currently earning. Upsell, email/SMS flows, affiliate sales, conversion lift. Framed as "adds $X/yr."
+- `"time-saving"` — the app automates manual work, freeing up team hours. Warehouse time, manual CX triage, campaign setup. Framed as "frees up $X/yr" (valued at hours × hourly rate).
+
+The SWAG page groups benefits by type, shows a color-coded subtotal for each group, and rolls them into a "Total impact" number. This makes it immediately clear to a brand how much they're saving vs. how much new revenue they'd earn.
 
 ### Step 4 — Write the spec file
 
@@ -103,6 +156,7 @@ Output a JSON spec file following this exact format. Save it to `partners/[slug]
       "id": "support_reduction",
       "label": "Support ticket deflection",
       "description": "When customers can edit their own orders, they stop emailing support about it.",
+      "type": "cost-saving",
       "formula": "annualOrders * editTicketRate * costPerTicket * reductionRate",
       "brandInputs": ["annualOrders"],
       "swagDefaults": {
@@ -127,6 +181,7 @@ Output a JSON spec file following this exact format. Save it to `partners/[slug]
       "id": "upsell_revenue",
       "label": "Post-purchase upsell revenue",
       "description": "The editing flow surfaces add-on items — a net-new revenue stream.",
+      "type": "revenue-generation",
       "formula": "annualOrders * upsellRate * (aov * upsellPctOfAov)",
       "brandInputs": ["annualOrders", "aov"],
       "swagDefaults": {
@@ -184,6 +239,40 @@ Sample brand (250k orders, $120 AOV):
 
 If the total feels wildly high or low, revisit your SWAG defaults. A healthy total annual value for a Shopify app is typically $5k–$500k depending on the app category and brand size. If you're above $1M or below $1k for a 250k-order brand, something is probably off.
 
+### Overlap check (MANDATORY, do not skip)
+
+This is the most common mistake in SWAG generation. You MUST test every pair of benefits before presenting the spec. If you get this wrong, the SWAG loses all credibility with anyone who thinks about it for 10 seconds.
+
+**The test:** For every pair of benefits A and B, ask: **"Is B a subset of A, a component of A, or measuring the same effect as A from a different angle?"** If yes to any, you have overlap. Fix it before presenting.
+
+**The golden rule: every benefit must target a different audience OR a different mechanism. Not both from the same bucket.**
+
+Good splits (independent, no overlap):
+- **Different audiences:** "new conversions from non-buyers" vs "larger carts from existing buyers" (Videowise). Two different groups of people.
+- **Different mechanisms:** "email revenue" vs "SMS revenue" (Klaviyo). Same customers potentially, but reached through independent channels.
+- **Different cost centers:** "ad spend efficiency" vs "organic revenue growth" (AIX). One is saving money on paid, the other is earning money for free. Independent levers.
+- **Different stages:** "support ticket deflection" vs "post-purchase upsell" (Order Editing). One saves cost pre-resolution, the other earns revenue post-purchase.
+
+Bad splits (overlapping, must fix):
+- **Metric vs outcome:** "conversion lift" + "revenue per session" = same effect measured two ways. RPS IS the outcome of conversion lift. Pick one.
+- **Component vs total:** "organic growth" + "total revenue growth" = organic IS a component of total. The total includes the organic. Pick the more specific one.
+- **Same audience, same moment:** "checkout upsell" + "post-purchase upsell" might overlap if both fire on the same order. Verify they target different moments.
+- **Restatement:** "AOV increase" + "larger carts" = literally the same thing with different names.
+
+**Mandatory self-check before presenting:**
+
+For each benefit, write one sentence answering: "This benefit captures value from [specific audience] through [specific mechanism] that is NOT counted in any other benefit because [reason]."
+
+If you cannot write that sentence clearly, you have overlap. Collapse the overlapping benefits into one.
+
+**Real examples from our library:**
+
+Videowise (FIXED): Had 3 benefits that were all measuring "video makes people buy more." Collapsed to 2: new customers who convert because of video (audience: non-buyers) + existing buyers who add more to their cart (audience: existing buyers). Independent audiences.
+
+AIX (FIXED): Had 3 benefits where "total Amazon revenue growth" overlapped with "organic sales growth" because organic IS a component of total. Collapsed to 2: ad spend efficiency (cost-saving on paid channel) + organic revenue growth (revenue from free channel). Independent mechanisms.
+
+**If in doubt, fewer benefits is better.** Two honest benefits are more credible than three where one is secretly a subset of another. Brands will notice.
+
 ## Sourcing tiers
 
 - **Tier 0** (default): Pure public info. Read the site, apply our formulas.
@@ -201,8 +290,11 @@ If during Step 1 you discover a live calculator on the partner's site, mention i
 
 ## Common pitfalls
 
+- **Don't ship overlapping benefits.** This is the number one credibility killer. Run the mandatory overlap check in Step 5 for EVERY pair of benefits. If you can't clearly explain why two benefits are independent (different audience or different mechanism), collapse them into one. Two honest benefits beat three inflated ones.
 - **Don't invent benefits.** If the site doesn't claim it, don't SWAG it. Stick to what's publicly observable.
-- **Don't use the partner's claimed numbers at face value.** Discount them 10-20% for the SWAG default. The brand can override upward if they believe the claim.
+- **Anchor SWAGs to case study results, not marketing headlines.** Partners put their best number in the headline ("28% AOV increase!") but case studies with named brands and specific metrics tell the real story. If 5 case studies show 3-8% lifts, your SWAG should sit in the mid-range of those real results (around 5%), not above the highest one. Case studies are already cherry-picked happy customers, so the mid-range of case study data is already an optimistic SWAG. The headline claim is the theoretical ceiling that a brand can override to if they believe it. When there are no case studies and only a headline claim, be more conservative and note the low confidence. A brand who clicks "research this with your AI" will see what real users report, and our SWAG needs to hold up against that.
 - **Don't require brand inputs that aren't standard.** If a benefit needs "% of customers who use Apple Pay" — that's not a standard profile field. Either SWAG it or skip the benefit.
 - **Don't make the formula complex.** If you need more than 5-6 variables in a single formula, you're overcomplicating it. Split into two benefits or simplify.
 - **Don't skip the sanity check.** The sample-brand math catches formula errors and absurd SWAG defaults before they go live.
+- **Never use hyphens as punctuation.** No double hyphens (`--`), no em dashes, no en dashes in any copy that renders on the page (descriptions, labels, notes, taglines, sources). Use commas, periods, parentheses, or rewrite the sentence. This is a dtcmvp brand rule. The only acceptable hyphens are in compound words (e.g., "post-purchase", "one-click").
+- **No AI speak.** Copy should read like a human wrote it, not a language model. Avoid: "leveraging", "utilizing", "comprehensive", "cutting-edge", "state-of-the-art", "seamlessly", "robust". Write plainly.

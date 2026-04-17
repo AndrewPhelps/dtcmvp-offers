@@ -1,0 +1,105 @@
+{
+  "slug": "klaviyo",
+  "partnerName": "Klaviyo",
+  "partnerUrl": "https://www.klaviyo.com",
+  "tagline": "Email, SMS, and push marketing in one B2C CRM platform",
+  "tags": ["email", "sms", "crm", "marketing", "retention"],
+  "pricingMonthly": null,
+  "pricingIntel": {
+    "summary": "Free up to 250 contacts. Paid plans scale with list size. expect $700-1,500/mo for 50k-100k contacts",
+    "details": [
+      "Free: up to 250 profiles, 500 emails/mo, 150 SMS credits",
+      "Paid tiers scale with contact list size (not publicly listed per-tier)",
+      "Separate SMS credits purchased on top of email plan",
+      "Enterprise pricing for large lists / high volume"
+    ],
+    "costDrivers": [
+      "Contact list size. the primary pricing lever, jumps significantly at 50k, 100k, 250k thresholds",
+      "SMS volume. credits purchased separately, $0.01-0.05/message depending on country",
+      "Add-on products. Reviews, Customer Hub, CDP features are separate line items"
+    ],
+    "sourceUrl": "https://www.klaviyo.com/pricing"
+  },
+  "tier": 0,
+  "benefits": [
+    {
+      "id": "email_revenue",
+      "label": "Email channel revenue",
+      "description": "Automated flows (welcome, abandoned cart, post-purchase, winback) and campaigns generate attributable revenue from your existing email list. Industry benchmarks show well-run email programs drive 25-40% of total ecommerce revenue.",
+      "type": "revenue-generation",
+      "formula": "emailListSize * revenuePerSubscriber * 12",
+      "brandInputs": ["emailListSize"],
+      "swagDefaults": {
+        "revenuePerSubscriber": {
+          "value": 3.00,
+          "label": "Monthly revenue per email subscriber",
+          "source": "industry benchmark ($2-5/subscriber/month for active Shopify brands, Klaviyo benchmarks report)"
+        }
+      }
+    },
+    {
+      "id": "sms_revenue",
+      "label": "SMS channel revenue",
+      "description": "SMS flows and campaigns reach customers in a higher-engagement channel. Brands adding SMS to their existing email program typically see incremental revenue that email alone doesn't capture.",
+      "type": "revenue-generation",
+      "formula": "smsListSize * revenuePerSmsSubscriber * 12",
+      "brandInputs": ["smsListSize"],
+      "swagDefaults": {
+        "revenuePerSmsSubscriber": {
+          "value": 1.50,
+          "label": "Monthly revenue per SMS subscriber",
+          "source": "industry benchmark ($1-3/subscriber/month, Postscript/Klaviyo data)"
+        }
+      }
+    },
+    {
+      "id": "tech_consolidation",
+      "label": "Tech stack consolidation",
+      "description": "Replacing multiple point solutions (separate ESP, SMS tool, CDP, reviews platform) with one platform reduces total martech spend. Klaviyo case studies cite 18-30% savings.",
+      "type": "cost-saving",
+      "formula": "annualOrders * aov * martechSpendPct * consolidationSavings",
+      "brandInputs": ["annualOrders", "aov"],
+      "swagDefaults": {
+        "martechSpendPct": {
+          "value": 0.03,
+          "label": "Martech spend as % of revenue",
+          "source": "dtcmvp estimate (DTC brands typically spend 2-5% of revenue on martech tooling)"
+        },
+        "consolidationSavings": {
+          "value": 0.20,
+          "label": "% savings from consolidating tools",
+          "source": "Klaviyo case studies: Daily Harvest 18%, Dollar Shave Club 30%"
+        }
+      }
+    }
+  ],
+  "sources": [
+    "https://www.klaviyo.com. homepage",
+    "https://www.klaviyo.com/pricing. free tier details, paid plans scale with list size",
+    "Daily Harvest case study: '18% savings in tech costs'",
+    "Dollar Shave Club case study: '30% lower total cost of ownership'",
+    "Tatcha case study: '20% YoY growth in ecommerce revenue'",
+    "Princess Polly case study: '2.8X global revenue growth'",
+    "193,000+ brands using Klaviyo across 100 countries"
+  ],
+  "narrative": {
+    "headline": "Klaviyo could drive {revenueTotal}/yr in channel revenue and save {costSavingsTotal}/yr for {brandName}.",
+    "byDepartment": {
+      "Retention / CRM": "For {contactName} on the retention side: this is your bread and butter. Klaviyo's email and SMS flows are where owned-channel revenue lives. The {revenueTotal}/yr estimate reflects what a well-run program should generate from {brandName}'s list size. If you are already running flows, the gap between your current attribution and this benchmark is your optimization opportunity.",
+      "Marketing / Growth": "For {contactName} and the marketing team: Klaviyo is the engine behind your owned channels. The {revenueTotal}/yr represents email + SMS attributed revenue at industry benchmarks. The {costSavingsTotal}/yr in tech consolidation comes from replacing point solutions with one platform.",
+      "Finance / Accounting": "For {contactName} reviewing the budget: Klaviyo's value to {brandName} comes from two places: {revenueTotal}/yr in channel revenue (email + SMS attribution) and {costSavingsTotal}/yr from consolidating your martech stack. At {targetMultiple} target, the ceiling is {maxMonthly}/mo.",
+      "Ecommerce / DTC": "For {contactName} on the ecom side: Klaviyo powers your owned channels. The email program alone should drive the majority of {revenueTotal}/yr. SMS adds incremental reach to customers who do not open email. Together, they should account for 25-40% of {brandName}'s total revenue.",
+      "Founder & CEO": "For {contactName}: Klaviyo is {brandName}'s owned-channel revenue engine. {revenueTotal}/yr from email + SMS, plus {costSavingsTotal}/yr in martech consolidation. At your {targetMultiple} target, the ceiling is {maxMonthly}/mo.",
+      "Other": "Klaviyo drives {revenueTotal}/yr in email and SMS revenue for {brandName}, plus {costSavingsTotal}/yr in tech stack consolidation savings."
+    },
+    "byCategory": {
+      "Apparel & Fashion": "Apparel brands typically see the highest email revenue per subscriber because of seasonal collections, new arrivals, and style-based segmentation. {brandName}'s email program should be one of the strongest revenue channels in the business.",
+      "Beauty & Cosmetics": "Beauty brands benefit from lifecycle flows (replenishment reminders, routine builders, shade-match follow-ups) that drive repeat purchases. SMS performs especially well in beauty because product launches create urgency that email alone cannot capture.",
+      "Food & Drink": "Food and beverage brands see strong subscription and replenishment revenue from email flows. SMS is effective for flash sales and limited drops. {brandName}'s higher order frequency means each subscriber touch is more likely to convert.",
+      "Health & Wellness": "Health and wellness brands see high lifetime value from email-driven subscription flows. Replenishment cadences (supplements, vitamins) are a natural fit for automated flows that Klaviyo handles well.",
+      "Other": "These numbers use industry benchmarks for revenue per subscriber. {brandName}'s actual email and SMS performance depends on list engagement, flow sophistication, and send frequency."
+    }
+  },
+  "notes": "Klaviyo is foundational martech. nearly every DTC brand uses it or a direct competitor. The SWAG shows what your email + SMS channels should generate and what you could save by consolidating tools. Pricing is list-size-dependent and not publicly enumerated; expect it to scale with your contact database.",
+  "generatedAt": "2026-04-16"
+}
