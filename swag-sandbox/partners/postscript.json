@@ -24,8 +24,8 @@
   "benefits": [
     {
       "id": "sms_flow_revenue",
-      "label": "SMS flow and campaign revenue",
-      "description": "Automated flows (welcome, abandoned cart, post-purchase, winback) and targeted campaigns generate attributable revenue from your SMS subscriber list.",
+      "label": "Attributed Revenue (SMS)",
+      "description": "SMS flows and campaigns. Automated flows (welcome, abandoned cart, post-purchase, winback) and targeted campaigns generate attributable revenue from your SMS subscriber list.",
       "type": "revenue-generation",
       "formula": "smsListSize * revenuePerSmsSubscriber * 12",
       "brandInputs": ["smsListSize"],
@@ -39,8 +39,8 @@
     },
     {
       "id": "list_growth_value",
-      "label": "SMS list growth from onsite opt-in",
-      "description": "Postscript's onsite opt-in tools (popups, checkout collection, 130M+ subscriber network) grow your SMS list faster than building it yourself. New subscribers generate revenue from day one.",
+      "label": "List Growth Revenue",
+      "description": "Onsite opt-in tools. Postscript's popups, checkout collection, and 130M+ subscriber network grow your SMS list faster than building it yourself. New subscribers generate revenue from day one.",
       "type": "revenue-generation",
       "formula": "monthlyWebTraffic * optInRate * revenuePerNewSubscriber * 12",
       "brandInputs": ["monthlyWebTraffic"],
@@ -59,8 +59,8 @@
     },
     {
       "id": "ai_flow_optimization",
-      "label": "AI-driven flow revenue lift",
-      "description": "AI Infinity Testing continuously optimizes your SMS flows (subject lines, timing, copy), adding incremental revenue on top of your baseline.",
+      "label": "Flow Optimization",
+      "description": "AI-driven SMS lift. AI Infinity Testing continuously optimizes your flows (subject lines, timing, copy), adding incremental revenue on top of your baseline.",
       "type": "revenue-generation",
       "formula": "smsListSize * revenuePerSmsSubscriber * 12 * aiLiftPct",
       "brandInputs": ["smsListSize"],

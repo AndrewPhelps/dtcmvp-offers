@@ -23,8 +23,8 @@
   "benefits": [
     {
       "id": "affiliate_revenue",
-      "label": "Affiliate and influencer-driven revenue",
-      "description": "Creators promote your brand through cobranded landing pages, affiliate links, and social content. Case studies show affiliates driving 5-10% of total brand revenue.",
+      "label": "Attributed Revenue (Affiliate)",
+      "description": "Creator-driven sales. Affiliates and influencers promote your brand through cobranded landing pages, affiliate links, and social content. Case studies show affiliates driving 5-10% of total brand revenue.",
       "type": "revenue-generation",
       "formula": "annualOrders * aov * affiliateRevenuePct * (1 - commissionRate)",
       "brandInputs": ["annualOrders", "aov"],
@@ -32,7 +32,12 @@
         "affiliateRevenuePct": {
           "value": 0.05,
           "label": "% of total revenue driven by affiliate/influencer channel",
-          "source": "Superfiliate case studies: '5-10% of total revenue', Epic Gardening 58% Q3-Q4 growth"
+          "source": "Superfiliate case studies: Graza food 3x ROAS on LPs, Cymbiotika supplements 1,400 affiliates, Viva Raw food $2M+ GMV, Epic Gardening home 58% growth, Omnilux beauty 22% new customer revenue",
+          "byCategory": {
+            "Food & Drink": 0.07,
+            "Beauty & Cosmetics": 0.08,
+            "Health & Wellness": 0.06
+          }
         },
         "commissionRate": {
           "value": 0.15,
@@ -43,8 +48,8 @@
     },
     {
       "id": "cobranded_lp_revenue",
-      "label": "Cobranded landing page conversion lift",
-      "description": "Personalized landing pages per creator convert at higher rates than generic product pages because the visitor already trusts the creator who sent them.",
+      "label": "CVR Lift",
+      "description": "Cobranded landing pages. Personalized pages per creator convert at higher rates than generic product pages because the visitor already trusts the creator who sent them.",
       "type": "revenue-generation",
       "formula": "annualOrders * aov * affiliateRevenuePct * cobrandedLift",
       "brandInputs": ["annualOrders", "aov"],
@@ -52,7 +57,12 @@
         "affiliateRevenuePct": {
           "value": 0.05,
           "label": "% of revenue through affiliate channel (same as above)",
-          "source": "Superfiliate case studies"
+          "source": "Superfiliate case studies",
+          "byCategory": {
+            "Food & Drink": 0.07,
+            "Beauty & Cosmetics": 0.08,
+            "Health & Wellness": 0.06
+          }
         },
         "cobrandedLift": {
           "value": 0.20,
@@ -63,8 +73,8 @@
     },
     {
       "id": "ops_time_savings",
-      "label": "Program management time savings",
-      "description": "Automated creator discovery, outreach via IG DMs, payout processing, and reporting replace manual spreadsheet management.",
+      "label": "Workflow Automation",
+      "description": "Program management time savings. Automated creator discovery, outreach via IG DMs, payout processing, and reporting replace manual spreadsheet management.",
       "type": "time-saving",
       "formula": "weeklyHoursSaved * hourlyOpsCost * 52",
       "brandInputs": [],

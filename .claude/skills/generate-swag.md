@@ -138,6 +138,87 @@ Every benefit must be classified as one of three types. This determines how it's
 
 The SWAG page groups benefits by type, shows a color-coded subtotal for each group, and rolls them into a "Total impact" number. This makes it immediately clear to a brand how much they're saving vs. how much new revenue they'd earn.
 
+**D. Label the benefit using the canonical vocabulary (MANDATORY).**
+
+Cross-tool comparability is a core value of dtcmvp. When a brand looks at Klaviyo and Postscript side-by-side and both claim "Attributed Revenue (SMS)", they can compare apples to apples. If one says "SMS flow and campaign revenue" and the other says "SMS revenue" and a third says "text message attributed sales", you've killed the comparison.
+
+Every benefit's `label` field must be one of the canonical labels below. The long form goes in `description`.
+
+**Revenue generation:**
+| Label | Measures |
+|---|---|
+| `CVR Lift` | net-new conversions (non-buyers who now buy) |
+| `AOV Lift` | bigger carts from existing buyers |
+| `Repeat Rate Lift` | customers buying more often |
+| `LTV Lift` | longer customer lifecycle value |
+| `Cart Recovery` | abandoned checkouts recaptured |
+| `Upsell Revenue` | post-purchase add-on revenue |
+| `Subscription Revenue` | one-time → recurring unlock |
+| `Attributed Revenue (Channel)` | channel-specific (Email, SMS, Affiliate, DM, Organic, Display) — ALWAYS name the channel in parens |
+| `Winback Revenue` | lapsed customer reactivation |
+| `Retention Revenue` | keeping existing customers engaged |
+| `List Growth Revenue` | new subscribers onboarded via partner tools |
+| `Ad Revenue` | display/ad-network revenue (e.g., thank-you page ad placements) |
+| `Organic Revenue` | SEO/ranking-driven revenue growth (for marketplace/search partners) |
+| `Flow Optimization` | incremental lift on existing flows (AI optimization, A/B testing) |
+
+**Cost savings:**
+| Label | Measures |
+|---|---|
+| `Ticket Deflection` | CS labor cost avoided |
+| `Return Prevention` | return cost avoided |
+| `ROAS Improvement` | ad spend efficiency (paid channels) |
+| `Fee Avoidance` | processing / Shopify / other fees avoided |
+| `Shipping Optimization` | fulfillment cost reduction |
+| `Tool Consolidation` | replacing multiple point solutions with one |
+
+**Time savings:**
+| Label | Measures |
+|---|---|
+| `Workflow Automation` | manual hours automated |
+
+**Rules:**
+- Use exact casing and wording. `CVR Lift` not `cvr lift` or `CVR lift`.
+- If genuinely none fit, stop and ask the user to approve a new canonical label before inventing one. Every new label permanently expands the vocabulary, so bar is high.
+- `Attributed Revenue` ALWAYS needs a channel in parens. `Attributed Revenue` alone is meaningless.
+- The long-form partner-specific explanation goes in `description`, not `label`. Label is the metric. Description explains the mechanism.
+
+**E. Tier the SWAG defaults by category when case studies support it.**
+
+Every `swagDefaults` entry can optionally include a `byCategory` map. The engine resolves `byCategory[brand.primaryCategory]` first and falls back to `value` if no category-specific number exists.
+
+```json
+"conversionLiftPct": {
+  "value": 0.05,                    // fallback (blended mid-range, all brands)
+  "byCategory": {
+    "Apparel & Fashion": 0.07,
+    "Beauty & Cosmetics": 0.06,
+    "Home & Electronics": 0.05
+  },
+  "label": "% conversion rate increase",
+  "source": "..."
+}
+```
+
+**When to add `byCategory`:**
+- Partner publishes case studies in multiple categories AND the results differ meaningfully (>20% variance across categories)
+- You can clearly attribute each case study to one of our 9 categories
+
+**When NOT to add `byCategory`:**
+- Partner only has generic claims (no named brands)
+- Case studies cluster in one category — just use `value` and note the single-category skew in `source`
+- You're guessing — if you don't have evidence, don't split
+
+Audit each case study and tag it with its category when updating `sources[]`. Example: "Dr Squatch (Beauty): +3.2% CVR, +26% CVR spike" rather than just "Dr Squatch: +3.2%".
+
+**The resolution priority (what the engine actually does):**
+
+1. User override (entered manually in SWAG Defaults panel) — always wins
+2. `byCategory[brand.primaryCategory]` — if present
+3. `value` — fallback
+
+When `byCategory` fires, the UI shows an "adjusted for [Category]" hint next to the source.
+
 ### Step 4 — Write the spec file
 
 Output a JSON spec file following this exact format. Save it to `partners/[slug].json` in the repo.
@@ -154,8 +235,8 @@ Output a JSON spec file following this exact format. Save it to `partners/[slug]
   "benefits": [
     {
       "id": "support_reduction",
-      "label": "Support ticket deflection",
-      "description": "When customers can edit their own orders, they stop emailing support about it.",
+      "label": "Ticket Deflection",
+      "description": "Self-serve order edits. When customers can edit their own orders, they stop emailing support about it.",
       "type": "cost-saving",
       "formula": "annualOrders * editTicketRate * costPerTicket * reductionRate",
       "brandInputs": ["annualOrders"],
@@ -173,14 +254,17 @@ Output a JSON spec file following this exact format. Save it to `partners/[slug]
         "reductionRate": {
           "value": 0.80,
           "label": "Ticket reduction from self-serve editing",
-          "source": "dtcmvp estimate (partner claims up to 98%, Oh Polly case study)"
+          "source": "dtcmvp estimate (partner claims up to 98%, Oh Polly apparel case study)",
+          "byCategory": {
+            "Apparel & Fashion": 0.90
+          }
         }
       }
     },
     {
       "id": "upsell_revenue",
-      "label": "Post-purchase upsell revenue",
-      "description": "The editing flow surfaces add-on items — a net-new revenue stream.",
+      "label": "Upsell Revenue",
+      "description": "Post-purchase add-ons. The editing flow surfaces upsell items, creating a net-new revenue stream from customers who already bought.",
       "type": "revenue-generation",
       "formula": "annualOrders * upsellRate * (aov * upsellPctOfAov)",
       "brandInputs": ["annualOrders", "aov"],
@@ -214,9 +298,11 @@ Output a JSON spec file following this exact format. Save it to `partners/[slug]
 - `pricingMonthly` is null if not found on the site — that's fine, the target-ROI flip works without it
 - `tier` is 0 (dtcmvp SWAG from public info), 1 (partner-aligned, absorbed their calculator), or 2 (partner-authored, used private data)
 - Every `swagDefaults` entry must have a `source` string — even "dtcmvp estimate" counts
+- `label` on each benefit must be from the canonical vocabulary in Step 3D. No inventing.
+- `byCategory` is optional on any `swagDefaults` entry — add it when case studies span categories with meaningfully different results
 - `formula` uses the exact variable names from `brandInputs` + `swagDefaults` keys. Keep it readable arithmetic.
 - `brandInputs` only lists fields from the standard brand profile (see Step 3). Don't invent new profile fields.
-- `sources` lists URLs and specific claims so anyone can verify
+- `sources` lists URLs and specific claims so anyone can verify. Tag each case study with its category when known: "Dr Squatch (Beauty): +3.2% CVR".
 
 ### Step 5 — Verify the math
 
@@ -267,9 +353,9 @@ If you cannot write that sentence clearly, you have overlap. Collapse the overla
 
 **Real examples from our library:**
 
-Videowise (FIXED): Had 3 benefits that were all measuring "video makes people buy more." Collapsed to 2: new customers who convert because of video (audience: non-buyers) + existing buyers who add more to their cart (audience: existing buyers). Independent audiences.
+Videowise (FIXED): Had 3 benefits that were all measuring "video makes people buy more." Collapsed to 2: `CVR Lift` (audience: non-buyers who now buy) + `AOV Lift` (audience: existing buyers who add more to their cart). Independent audiences, different canonical labels — cleanly non-overlapping.
 
-AIX (FIXED): Had 3 benefits where "total Amazon revenue growth" overlapped with "organic sales growth" because organic IS a component of total. Collapsed to 2: ad spend efficiency (cost-saving on paid channel) + organic revenue growth (revenue from free channel). Independent mechanisms.
+AIX (FIXED): Had 3 benefits where "total Amazon revenue growth" overlapped with "organic sales growth" because organic IS a component of total. Collapsed to 2: `ROAS Improvement` (cost-saving on paid channel) + `Organic Revenue` (revenue from free channel). Independent mechanisms.
 
 **If in doubt, fewer benefits is better.** Two honest benefits are more credible than three where one is secretly a subset of another. Brands will notice.
 

@@ -26,8 +26,8 @@
   "benefits": [
     {
       "id": "ticket_automation",
-      "label": "Support ticket automation",
-      "description": "AI resolves routine inquiries (order status, returns, shipping) without a human agent, cutting your CX labor cost.",
+      "label": "Ticket Deflection",
+      "description": "Automated CX. AI resolves routine inquiries (order status, returns, shipping) without a human agent, cutting your support labor cost.",
       "type": "cost-saving",
       "formula": "annualOrders * ticketRate * costPerTicket * automationRate",
       "brandInputs": ["annualOrders"],
@@ -35,7 +35,13 @@
         "ticketRate": {
           "value": 0.05,
           "label": "% of orders that generate a support ticket",
-          "source": "industry avg (Gorgias benchmark: 4-8% depending on category)"
+          "source": "industry avg (Gorgias benchmark: 4-8% depending on category)",
+          "byCategory": {
+            "Apparel & Fashion": 0.07,
+            "Food & Drink": 0.06,
+            "Beauty & Cosmetics": 0.05,
+            "Home & Electronics": 0.06
+          }
         },
         "costPerTicket": {
           "value": 4.00,
@@ -51,8 +57,8 @@
     },
     {
       "id": "sales_conversion",
-      "label": "Sales conversion from AI shopping assistant",
-      "description": "Proactive chat engages browsing visitors with tailored product recommendations, converting browsers into buyers.",
+      "label": "CVR Lift",
+      "description": "AI shopping assistant. Proactive chat engages browsing visitors with tailored product recommendations, converting browsers into buyers who would have otherwise left.",
       "type": "revenue-generation",
       "formula": "monthlyWebTraffic * chatEngagementRate * incrementalConversionRate * aov * 12",
       "brandInputs": ["monthlyWebTraffic", "aov"],

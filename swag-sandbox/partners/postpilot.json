@@ -25,8 +25,8 @@
   "benefits": [
     {
       "id": "lapsed_reactivation",
-      "label": "Lapsed customer reactivation",
-      "description": "Direct mail reaches customers who've stopped opening emails. A physical card in the mailbox cuts through digital fatigue and brings back lapsed buyers.",
+      "label": "Winback Revenue",
+      "description": "Lapsed customer reactivation via direct mail. A physical card in the mailbox cuts through digital fatigue and brings back customers who have stopped buying.",
       "type": "revenue-generation",
       "formula": "(annualOrders / repeatRate) * churnRate * reactivationRate * aov",
       "brandInputs": ["annualOrders", "aov"],
@@ -50,8 +50,8 @@
     },
     {
       "id": "acquisition_roas",
-      "label": "New customer acquisition via direct mail",
-      "description": "PostPilot's AcquisitionAI targets lookalike prospects with postcards. Case studies show 3.8-11.5x ROAS on acquisition campaigns.",
+      "label": "Attributed Revenue (DM)",
+      "description": "New customer acquisition via direct mail. PostPilot's AcquisitionAI targets lookalike prospects with postcards. Case studies show 3.8-11.5x ROAS on acquisition campaigns.",
       "type": "revenue-generation",
       "formula": "monthlyMailBudget * acquisitionRoas * 12",
       "brandInputs": [],
@@ -64,14 +64,18 @@
         "acquisitionRoas": {
           "value": 4.0,
           "label": "ROAS on acquisition direct mail",
-          "source": "dtcmvp estimate (PostPilot claims 3.8-11.5x across case studies, we SWAG 4x conservatively)"
+          "source": "dtcmvp estimate (PostPilot case studies: Dr Squatch 10x+ beauty, KURU 11.5x apparel, Caden Lane 3.8x apparel cold). We SWAG 4x conservatively as blended fallback.",
+          "byCategory": {
+            "Beauty & Cosmetics": 10.0,
+            "Apparel & Fashion": 7.0
+          }
         }
       }
     },
     {
       "id": "email_unreachable",
-      "label": "Revenue from email-unreachable customers",
-      "description": "30-50% of your email list has stopped opening. Direct mail is the only channel that reaches them physically. This is revenue you cannot capture digitally.",
+      "label": "Retention Revenue",
+      "description": "Reach email-unreachable customers. 30-50% of your email list has stopped opening. Direct mail is the only channel that reaches them physically. This is revenue you cannot capture digitally.",
       "type": "revenue-generation",
       "formula": "emailListSize * emailUnreachablePct * mailConversionRate * aov",
       "brandInputs": ["emailListSize", "aov"],

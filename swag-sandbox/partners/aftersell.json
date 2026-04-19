@@ -24,8 +24,8 @@
   "benefits": [
     {
       "id": "post_purchase_upsell",
-      "label": "Post-purchase one-click upsell revenue",
-      "description": "After checkout, customers see a one-click upsell offer before the thank-you page. No re-entering payment info, just frictionless add-on purchases.",
+      "label": "Upsell Revenue",
+      "description": "Post-purchase one-click upsells. After checkout, customers see an add-on offer before the thank-you page — no re-entering payment info, just frictionless additional purchases.",
       "type": "revenue-generation",
       "formula": "annualOrders * upsellTakeRate * (aov * upsellPctOfAov)",
       "brandInputs": ["annualOrders", "aov"],
@@ -33,7 +33,12 @@
         "upsellTakeRate": {
           "value": 0.04,
           "label": "% of orders that accept the post-purchase upsell",
-          "source": "industry benchmark (post-purchase upsell acceptance rates: 3-8% depending on offer relevance)"
+          "source": "industry benchmark (post-purchase upsell acceptance rates: 3-8% depending on offer relevance)",
+          "byCategory": {
+            "Beauty & Cosmetics": 0.06,
+            "Apparel & Fashion": 0.05,
+            "Health & Wellness": 0.05
+          }
         },
         "upsellPctOfAov": {
           "value": 0.35,
@@ -44,8 +49,8 @@
     },
     {
       "id": "checkout_optimization",
-      "label": "Checkout conversion lift",
-      "description": "Cart and checkout enhancements (trust badges, urgency timers, recommended bundles) reduce abandonment and increase average cart size.",
+      "label": "CVR Lift",
+      "description": "Checkout and cart enhancements (trust badges, urgency timers, recommended bundles) reduce abandonment and recover conversions that would have been lost.",
       "type": "revenue-generation",
       "formula": "monthlyWebTraffic * baselineConversionRate * conversionLiftPct * aov * 12",
       "brandInputs": ["monthlyWebTraffic", "aov"],
@@ -64,8 +69,8 @@
     },
     {
       "id": "thank_you_page_revenue",
-      "label": "Thank-you page ad revenue (Rokt Thanks)",
-      "description": "Non-competing brand ads on your thank-you page generate pure profit per order, monetizing a page that otherwise just says 'thanks.'",
+      "label": "Ad Revenue",
+      "description": "Rokt Thanks ads. Non-competing brand ads on your thank-you page generate pure profit per order, monetizing a page that otherwise just says 'thanks.'",
       "type": "revenue-generation",
       "formula": "annualOrders * revenuePerOrder",
       "brandInputs": ["annualOrders"],

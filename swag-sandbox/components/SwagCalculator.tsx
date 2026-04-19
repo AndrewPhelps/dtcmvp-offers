@@ -97,7 +97,8 @@ export default function SwagCalculator({ spec }: { spec: SwagSpec }) {
   const [breakdownOpen, setBreakdownOpen] = useState(true)
 
   const results = useMemo(() => {
-    // Build a modified spec with any SWAG overrides applied
+    // Build a modified spec with any SWAG overrides applied.
+    // User override wins over byCategory — we strip byCategory when overriding.
     const modSpec: SwagSpec = {
       ...spec,
       benefits: spec.benefits.map((b) => ({
@@ -106,7 +107,7 @@ export default function SwagCalculator({ spec }: { spec: SwagSpec }) {
           Object.entries(b.swagDefaults).map(([k, v]) => [
             k,
             swagOverrides[`${b.id}.${k}`] !== undefined
-              ? { ...v, value: swagOverrides[`${b.id}.${k}`] }
+              ? { ...v, value: swagOverrides[`${b.id}.${k}`], byCategory: undefined }
               : v,
           ])
         ),
@@ -369,8 +370,13 @@ export default function SwagCalculator({ spec }: { spec: SwagSpec }) {
                 >
                   {Object.entries(benefit.swagDefaults).map(([key, def]) => {
                     const overrideKey = `${benefit.id}.${key}`
-                    const currentVal = swagOverrides[overrideKey] ?? def.value
+                    const categoryValue = def.byCategory?.[profile.primaryCategory]
+                    const effectiveDefault = categoryValue ?? def.value
+                    const currentVal = swagOverrides[overrideKey] ?? effectiveDefault
                     const isPercent = currentVal <= 1 && def.label.toLowerCase().includes('%')
+                    const hint = categoryValue !== undefined
+                      ? `adjusted for ${profile.primaryCategory} · ${def.source}`
+                      : def.source
                     return (
                       <InputField
                         key={key}
@@ -381,7 +387,7 @@ export default function SwagCalculator({ spec }: { spec: SwagSpec }) {
                         prefix={!isPercent && currentVal >= 1 ? '$' : undefined}
                         step={isPercent ? 1 : 0.5}
                         accentColor="blue"
-                        hint={def.source}
+                        hint={hint}
                       />
                     )
                   })}

@@ -25,8 +25,8 @@
   "benefits": [
     {
       "id": "ad_efficiency",
-      "label": "Ad spend efficiency from TACOS reduction",
-      "description": "AIX's framework optimizes your Amazon advertising so a smaller share of revenue goes to ads. Reducing TACOS from a typical 20%+ to the 7-15% range means you keep more of every dollar earned on Amazon.",
+      "label": "ROAS Improvement",
+      "description": "TACOS reduction on Amazon. AIX's framework optimizes Amazon advertising so a smaller share of revenue goes to ads. Reducing TACOS from a typical 20%+ to the 7-15% range means you keep more of every dollar earned.",
       "type": "cost-saving",
       "formula": "amazonRevenue * (currentTacos - targetTacos)",
       "brandInputs": [],
@@ -44,14 +44,19 @@
         "targetTacos": {
           "value": 0.12,
           "label": "Target TACOS after optimization",
-          "source": "AIX case studies: skincare 7.3%, fragrance 15.2%, supplements <7%. We SWAG 12% as a moderate target."
+          "source": "AIX case studies: skincare 7.3%, fragrance 15.2%, supplements <7%, energy drink 21.5%. We SWAG 12% as a moderate target.",
+          "byCategory": {
+            "Beauty & Cosmetics": 0.10,
+            "Health & Wellness": 0.08,
+            "Food & Drink": 0.15
+          }
         }
       }
     },
     {
       "id": "organic_revenue_growth",
-      "label": "Organic sales growth from improved ranking",
-      "description": "Better ad strategy drives keyword ranking, which increases organic (free) sales. AIX case studies show organic share reaching 42-73% of total revenue, meaning the majority of sales eventually come without ad spend.",
+      "label": "Organic Revenue",
+      "description": "Sales growth from improved Amazon ranking. Better ad strategy drives keyword ranking, which increases organic (free) sales. AIX case studies show organic share reaching 42-73% of total revenue, meaning the majority of sales eventually come without ad spend.",
       "type": "revenue-generation",
       "formula": "amazonRevenue * organicLiftPct",
       "brandInputs": [],

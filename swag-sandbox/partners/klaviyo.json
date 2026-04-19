@@ -24,8 +24,8 @@
   "benefits": [
     {
       "id": "email_revenue",
-      "label": "Email channel revenue",
-      "description": "Automated flows (welcome, abandoned cart, post-purchase, winback) and campaigns generate attributable revenue from your existing email list. Industry benchmarks show well-run email programs drive 25-40% of total ecommerce revenue.",
+      "label": "Attributed Revenue (Email)",
+      "description": "Email flows and campaigns. Automated flows (welcome, abandoned cart, post-purchase, winback) generate attributable revenue from your existing list. Industry benchmarks show well-run email programs drive 25-40% of total ecommerce revenue.",
       "type": "revenue-generation",
       "formula": "emailListSize * revenuePerSubscriber * 12",
       "brandInputs": ["emailListSize"],
@@ -39,8 +39,8 @@
     },
     {
       "id": "sms_revenue",
-      "label": "SMS channel revenue",
-      "description": "SMS flows and campaigns reach customers in a higher-engagement channel. Brands adding SMS to their existing email program typically see incremental revenue that email alone doesn't capture.",
+      "label": "Attributed Revenue (SMS)",
+      "description": "SMS flows and campaigns. Reach customers in a higher-engagement channel. Brands adding SMS to their existing email program typically see incremental revenue that email alone doesn't capture.",
       "type": "revenue-generation",
       "formula": "smsListSize * revenuePerSmsSubscriber * 12",
       "brandInputs": ["smsListSize"],
@@ -54,8 +54,8 @@
     },
     {
       "id": "tech_consolidation",
-      "label": "Tech stack consolidation",
-      "description": "Replacing multiple point solutions (separate ESP, SMS tool, CDP, reviews platform) with one platform reduces total martech spend. Klaviyo case studies cite 18-30% savings.",
+      "label": "Tool Consolidation",
+      "description": "Stack consolidation savings. Replacing multiple point solutions (separate ESP, SMS tool, CDP, reviews platform) with one platform reduces total martech spend. Klaviyo case studies cite 18-30% savings.",
       "type": "cost-saving",
       "formula": "annualOrders * aov * martechSpendPct * consolidationSavings",
       "brandInputs": ["annualOrders", "aov"],
@@ -68,7 +68,11 @@
         "consolidationSavings": {
           "value": 0.20,
           "label": "% savings from consolidating tools",
-          "source": "Klaviyo case studies: Daily Harvest 18%, Dollar Shave Club 30%"
+          "source": "Klaviyo case studies: Daily Harvest 18% (food), Dollar Shave Club 30% (beauty), Tatcha 20% (beauty)",
+          "byCategory": {
+            "Food & Drink": 0.18,
+            "Beauty & Cosmetics": 0.25
+          }
         }
       }
     }

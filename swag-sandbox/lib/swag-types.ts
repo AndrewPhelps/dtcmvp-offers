@@ -1,9 +1,10 @@
 // ─── SWAG Spec: the contract between the skill and the renderer ───
 
 export type SwagDefault = {
-  value: number
+  value: number                             // fallback (blended mid-range across all case studies)
   label: string
   source: string
+  byCategory?: Record<string, number>       // optional category-specific values (Apparel & Fashion, Beauty & Cosmetics, etc.). Engine resolves to byCategory[profile.primaryCategory] when present, falls back to value.
 }
 
 export type BenefitType = 'cost-saving' | 'revenue-generation' | 'time-saving'

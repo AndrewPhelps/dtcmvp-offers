@@ -23,8 +23,8 @@
   "benefits": [
     {
       "id": "new_conversions",
-      "label": "New customers from video-driven conversion lift",
-      "description": "Shoppable video on product pages engages visitors who would otherwise bounce. These are net-new conversions from people who were not going to buy without the video.",
+      "label": "CVR Lift",
+      "description": "Net-new conversions from visitors who would have bounced. Shoppable video on product pages engages people who were not going to buy without the video.",
       "type": "revenue-generation",
       "formula": "monthlyWebTraffic * baselineConversionRate * conversionLiftPct * aov * 12",
       "brandInputs": ["monthlyWebTraffic", "aov"],
@@ -37,14 +37,19 @@
         "conversionLiftPct": {
           "value": 0.05,
           "label": "% conversion rate increase from shoppable video",
-          "source": "Videowise case studies: Skullcandy +7.9% RPS, Dr Squatch +3.2%, Travelpro +7.9%, Walkee Paws +8%. Real-world range is 3-8%. We SWAG 5% (mid-range)."
+          "source": "Videowise case studies: Skullcandy +7.9% RPS, Dr Squatch +3.2%, Travelpro +7.9%, Walkee Paws +8%. Real-world range is 3-8%. We SWAG 5% (mid-range).",
+          "byCategory": {
+            "Apparel & Fashion": 0.07,
+            "Beauty & Cosmetics": 0.06,
+            "Home & Electronics": 0.05
+          }
         }
       }
     },
     {
       "id": "larger_carts",
-      "label": "Larger carts from existing buyers",
-      "description": "Customers who were already going to buy see products in context through video, leading to bundle purchases and add-ons. This lifts average order value on orders that would have happened anyway.",
+      "label": "AOV Lift",
+      "description": "Bigger carts from existing buyers. Customers who were already going to purchase see products in context through video, leading to bundle purchases and add-ons on orders that would have happened anyway.",
       "type": "revenue-generation",
       "formula": "annualOrders * aov * aovLiftPct",
       "brandInputs": ["annualOrders", "aov"],
@@ -52,7 +57,10 @@
         "aovLiftPct": {
           "value": 0.05,
           "label": "% increase in AOV from video-driven cross-sell",
-          "source": "Videowise claims '28% increased AOV' but case studies show 3-7% AOV lifts (Dr Dennis Gross +7%). We SWAG 5% (mid-range of actual results)."
+          "source": "Videowise claims '28% increased AOV' but case studies show 3-7% AOV lifts (Dr Dennis Gross +7%). We SWAG 5% (mid-range of actual results).",
+          "byCategory": {
+            "Beauty & Cosmetics": 0.06
+          }
         }
       }
     }

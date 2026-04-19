@@ -63,9 +63,10 @@ export function computeSwag(
         }
       }
 
-      // SWAG defaults
+      // SWAG defaults — resolve byCategory if present
       for (const [key, def] of Object.entries(benefit.swagDefaults)) {
-        vars[key] = def.value
+        const categoryValue = def.byCategory?.[profile.primaryCategory]
+        vars[key] = categoryValue ?? def.value
         labels[key] = def.label
       }
 

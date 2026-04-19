@@ -9,8 +9,8 @@
   "benefits": [
     {
       "id": "support_reduction",
-      "label": "Support ticket deflection",
-      "description": "When customers can edit their own orders, they stop emailing support about it.",
+      "label": "Ticket Deflection",
+      "description": "Self-serve order edits. When customers can edit their own orders, they stop emailing support about it.",
       "type": "cost-saving",
       "formula": "annualOrders * editTicketRate * costPerTicket * reductionRate",
       "brandInputs": ["annualOrders"],
@@ -28,14 +28,17 @@
         "reductionRate": {
           "value": 0.80,
           "label": "Ticket reduction from self-serve editing",
-          "source": "dtcmvp estimate (partner claims up to 98%, Oh Polly case study)"
+          "source": "dtcmvp estimate (partner claims up to 98%, Oh Polly apparel case study)",
+          "byCategory": {
+            "Apparel & Fashion": 0.90
+          }
         }
       }
     },
     {
       "id": "upsell_revenue",
-      "label": "Post-purchase upsell revenue",
-      "description": "The editing flow surfaces add-on items, creating a net-new revenue stream.",
+      "label": "Upsell Revenue",
+      "description": "Post-purchase add-ons. The editing flow surfaces upsell items, creating a net-new revenue stream from customers who already bought.",
       "type": "revenue-generation",
       "formula": "annualOrders * upsellRate * (aov * upsellPctOfAov)",
       "brandInputs": ["annualOrders", "aov"],
