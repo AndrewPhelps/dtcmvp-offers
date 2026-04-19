@@ -19,9 +19,9 @@ export type SwagBenefit = {
 }
 
 export const BENEFIT_TYPE_META: Record<BenefitType, { label: string; verb: string; color: string }> = {
-  'cost-saving': { label: 'Cost savings', verb: 'saves you', color: '#1e90ff' },
+  'cost-saving': { label: 'Cost savings', verb: 'saves you', color: '#70a1ff' },
   'revenue-generation': { label: 'Potential lift', verb: 'could add', color: '#7bed9f' },
-  'time-saving': { label: 'Time savings', verb: 'frees up', color: '#ff9f43' },
+  'time-saving': { label: 'Time savings', verb: 'frees up', color: '#ffa502' },
 }
 
 export type PricingIntel = {
@@ -115,6 +115,7 @@ export const CATEGORY_OVERRIDES: Partial<Record<Category, Partial<Pick<BrandProf
 export type BrandProfile = {
   brandName: string
   contactName: string
+  contactEmail: string
   department: Department
   primaryCategory: Category
   annualOrders: number
@@ -128,9 +129,10 @@ export type BrandProfile = {
 }
 
 export const DEFAULT_BRAND_PROFILE: BrandProfile = {
-  brandName: 'Vuori',
-  contactName: 'Sean Wendt',
-  department: 'Retention / CRM',
+  brandName: 'Sunday Swagger',
+  contactName: 'Kyle Moloo',
+  contactEmail: '',
+  department: 'Marketing / Growth',
   primaryCategory: 'Apparel & Fashion',
   annualOrders: 100_000,
   aov: 120,

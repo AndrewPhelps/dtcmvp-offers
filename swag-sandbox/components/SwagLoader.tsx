@@ -202,7 +202,7 @@ export default function SwagLoader({ profile, partnerName, onComplete }: Props) 
       className={`fixed inset-0 z-[60] flex items-center justify-center transition-opacity duration-500 ${
         fadeOut ? 'opacity-0' : 'opacity-100'
       }`}
-      style={{ backgroundColor: '#0a0e1a' }}
+      style={{ backgroundColor: '#0f172a' }}
     >
       <div className="flex flex-col items-center">
         <MoleculeLoader
@@ -232,7 +232,7 @@ export default function SwagLoader({ profile, partnerName, onComplete }: Props) 
                   )}
                   {step.status === 'done' && (
                     <div className="w-5 h-5 rounded-full bg-accent-green flex items-center justify-center">
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#0a0e1a" strokeWidth="3">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#0f172a" strokeWidth="3">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
                     </div>

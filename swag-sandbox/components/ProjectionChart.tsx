@@ -99,7 +99,7 @@ export default function ProjectionChart({ metrics, category, partnerName }: Prop
           <button
             onClick={() => setMode('monthly')}
             className={`px-3 py-1 rounded-md text-[10px] font-grotesk font-semibold uppercase tracking-wider transition-all ${
-              mode === 'monthly' ? 'bg-accent-green text-[#0a0e1a]' : 'text-text-muted hover:text-text-primary'
+              mode === 'monthly' ? 'bg-accent-green text-[#0f172a]' : 'text-text-muted hover:text-text-primary'
             }`}
           >
             Monthly
@@ -107,7 +107,7 @@ export default function ProjectionChart({ metrics, category, partnerName }: Prop
           <button
             onClick={() => setMode('cumulative')}
             className={`px-3 py-1 rounded-md text-[10px] font-grotesk font-semibold uppercase tracking-wider transition-all ${
-              mode === 'cumulative' ? 'bg-accent-green text-[#0a0e1a]' : 'text-text-muted hover:text-text-primary'
+              mode === 'cumulative' ? 'bg-accent-green text-[#0f172a]' : 'text-text-muted hover:text-text-primary'
             }`}
           >
             Cumulative
@@ -124,25 +124,25 @@ export default function ProjectionChart({ metrics, category, partnerName }: Prop
                 <stop offset="100%" stopColor="#7bed9f" stopOpacity={0.05} />
               </linearGradient>
               <linearGradient id="baseGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#718096" stopOpacity={0.15} />
-                <stop offset="100%" stopColor="#718096" stopOpacity={0.02} />
+                <stop offset="0%" stopColor="#64748b" stopOpacity={0.15} />
+                <stop offset="100%" stopColor="#64748b" stopOpacity={0.02} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#2f3542" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
             <XAxis
               dataKey="label"
-              stroke="#718096"
-              tick={{ fill: '#a0aec0', fontSize: 11, fontFamily: 'var(--font-space-grotesk)' }}
+              stroke="#64748b"
+              tick={{ fill: '#94a3b8', fontSize: 11, fontFamily: 'var(--font-space-grotesk)' }}
             />
             <YAxis
-              stroke="#718096"
-              tick={{ fill: '#a0aec0', fontSize: 11, fontFamily: 'var(--font-space-mono)' }}
+              stroke="#64748b"
+              tick={{ fill: '#94a3b8', fontSize: 11, fontFamily: 'var(--font-space-mono)' }}
               tickFormatter={(v) => fmtMoneyCompact(v)}
             />
             <Tooltip
               contentStyle={{
-                background: '#131820',
-                border: '1px solid #2f3542',
+                background: '#1a2436',
+                border: '1px solid #334155',
                 borderRadius: 6,
                 fontFamily: 'var(--font-space-mono)',
                 fontSize: 11,
@@ -162,11 +162,11 @@ export default function ProjectionChart({ metrics, category, partnerName }: Prop
             <Area
               type="monotone"
               dataKey="without"
-              stroke="#718096"
+              stroke="#64748b"
               strokeWidth={2}
               fill="url(#baseGradient)"
               dot={false}
-              activeDot={{ r: 4, fill: '#718096' }}
+              activeDot={{ r: 4, fill: '#64748b' }}
               animationDuration={400}
             />
             <Area

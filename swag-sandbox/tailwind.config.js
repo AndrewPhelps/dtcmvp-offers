@@ -20,9 +20,12 @@ module.exports = {
         'accent-blue': 'var(--color-accent-blue)',
         'accent-orange': 'var(--color-accent-orange)',
         'border': 'var(--color-border)',
+        'border-hover': 'var(--color-border-hover)',
         'error': 'var(--color-error)',
       },
       fontFamily: {
+        'sans': ['var(--font-inter)', 'system-ui', 'sans-serif'],
+        'heading': ['var(--font-space-grotesk)', 'sans-serif'],
         'grotesk': ['var(--font-space-grotesk)', 'sans-serif'],
         'mono': ['var(--font-space-mono)', 'monospace'],
       },

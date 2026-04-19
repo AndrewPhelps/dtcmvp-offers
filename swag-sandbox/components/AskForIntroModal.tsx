@@ -14,7 +14,7 @@ type Props = {
 }
 
 export default function AskForIntroModal({ partnerName, profile, results, onClose, onSubmit }: Props) {
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(profile.contactEmail || '')
   const [submitted, setSubmitted] = useState(false)
   const r = results.hundred
 
@@ -31,7 +31,7 @@ export default function AskForIntroModal({ partnerName, profile, results, onClos
         <div className="relative bg-bg-secondary border border-border rounded-2xl max-w-lg w-full mx-6 p-8">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-8 h-8 rounded-full bg-accent-green flex items-center justify-center flex-shrink-0">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0a0e1a" strokeWidth="3">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0f172a" strokeWidth="3">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </div>

@@ -24,9 +24,9 @@ import type { ProjectionMetric } from './ProjectionChart'
 
 // Per-benefit colors: shades within each type so stacked bars are readable
 const BENEFIT_PALETTE: Record<BenefitType, string[]> = {
-  'cost-saving': ['#1e90ff', '#5ba3f5', '#87baeb', '#4a9df5'],
+  'cost-saving': ['#70a1ff', '#94baff', '#b6ceff', '#5a8de8'],
   'revenue-generation': ['#7bed9f', '#2ed573', '#1abc6e', '#a8f0c0'],
-  'time-saving': ['#ff9f43', '#ffb36b', '#ffc993', '#e8893a'],
+  'time-saving': ['#ffa502', '#ffba3d', '#ffd070', '#e89100'],
 }
 const benefitColorCounters: Record<BenefitType, number> = {
   'cost-saving': 0, 'revenue-generation': 0, 'time-saving': 0,
@@ -234,9 +234,13 @@ export default function SwagCalculator({ spec }: { spec: SwagSpec }) {
             </div>
             <button
               onClick={() => setView('inputs')}
-              className="text-[10px] text-text-primary font-grotesk hover:underline"
+              aria-label="edit input"
+              className="text-text-muted hover:underline inline-flex items-center"
             >
-              edit input
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.375 2.625a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4Z" />
+              </svg>
             </button>
           </div>
         </header>
@@ -250,7 +254,7 @@ export default function SwagCalculator({ spec }: { spec: SwagSpec }) {
               onClick={() => setView(tab)}
               className={`px-4 py-2 rounded-md text-xs font-grotesk font-semibold uppercase tracking-wider transition-all ${
                 view === tab
-                  ? 'bg-accent-green text-[#0a0e1a]'
+                  ? 'bg-accent-green text-[#0f172a]'
                   : 'text-text-muted hover:text-text-primary'
               }`}
             >
@@ -312,6 +316,16 @@ export default function SwagCalculator({ spec }: { spec: SwagSpec }) {
                   value={profile.contactName}
                   onChange={(e) => setProfile((s) => ({ ...s, contactName: e.target.value }))}
                   placeholder="Your name"
+                  className="w-full bg-bg-input border border-border rounded-lg px-3 py-2 text-sm text-text-primary font-grotesk transition-all outline-none focus:border-accent-green"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-grotesk text-text-secondary mb-1.5">Contact email</label>
+                <input
+                  type="email"
+                  value={profile.contactEmail}
+                  onChange={(e) => setProfile((s) => ({ ...s, contactEmail: e.target.value }))}
+                  placeholder="you@yourbrand.com"
                   className="w-full bg-bg-input border border-border rounded-lg px-3 py-2 text-sm text-text-primary font-grotesk transition-all outline-none focus:border-accent-green"
                 />
               </div>
@@ -744,21 +758,21 @@ export default function SwagCalculator({ spec }: { spec: SwagSpec }) {
                 <div className="h-[280px] -ml-4">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={chartData} margin={{ top: 10, right: 20, left: 20, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#2f3542" vertical={false} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
                       <XAxis
                         dataKey="name"
-                        stroke="#718096"
-                        tick={{ fill: '#a0aec0', fontSize: 12, fontFamily: 'var(--font-space-grotesk)' }}
+                        stroke="#64748b"
+                        tick={{ fill: '#94a3b8', fontSize: 12, fontFamily: 'var(--font-space-grotesk)' }}
                       />
                       <YAxis
-                        stroke="#718096"
-                        tick={{ fill: '#a0aec0', fontSize: 11, fontFamily: 'var(--font-space-mono)' }}
+                        stroke="#64748b"
+                        tick={{ fill: '#94a3b8', fontSize: 11, fontFamily: 'var(--font-space-mono)' }}
                         tickFormatter={(v) => fmtMoneyCompact(v)}
                       />
                       <Tooltip
                         contentStyle={{
-                          background: '#131820',
-                          border: '1px solid #2f3542',
+                          background: '#1a2436',
+                          border: '1px solid #334155',
                           borderRadius: 6,
                           fontFamily: 'var(--font-space-mono)',
                           fontSize: 11,
@@ -773,17 +787,17 @@ export default function SwagCalculator({ spec }: { spec: SwagSpec }) {
                           if (!item) return null
                           return (
                             <div style={{
-                              background: '#131820',
-                              border: '1px solid #2f3542',
+                              background: '#1a2436',
+                              border: '1px solid #334155',
                               borderRadius: 6,
                               fontFamily: 'var(--font-space-mono)',
                               fontSize: 11,
                               padding: '6px 10px',
                             }}>
-                              <p style={{ color: '#a0aec0', marginBottom: 2 }}>{label}</p>
+                              <p style={{ color: '#94a3b8', marginBottom: 2 }}>{label}</p>
                               <p style={{ color: String(item.color), fontWeight: 600 }}>
                                 {fmtMoneyCompact(Number(item.value))}
-                                <span style={{ color: '#a0aec0', fontWeight: 400, marginLeft: 6, fontSize: 10 }}>
+                                <span style={{ color: '#94a3b8', fontWeight: 400, marginLeft: 6, fontSize: 10 }}>
                                   {String(item.name)}
                                 </span>
                               </p>
@@ -1008,7 +1022,7 @@ function PricingIntelCard({
         className="w-full flex items-center justify-between p-4 hover:bg-bg-hover/30 transition-colors text-left"
       >
         <div className="flex items-center gap-2">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#718096" strokeWidth="2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2">
             <circle cx="12" cy="12" r="10" />
             <path d="M12 16v-4M12 8h.01" />
           </svg>

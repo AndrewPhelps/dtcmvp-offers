@@ -65,7 +65,7 @@ export default function SwagDisclaimer({ partnerName, onAccept }: Props) {
               onClick={() => setSkipNext(!skipNext)}
             >
               {skipNext && (
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#0a0e1a" strokeWidth="3">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#0f172a" strokeWidth="3">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               )}
