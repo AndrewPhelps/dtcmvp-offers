@@ -1,0 +1,105 @@
+{
+  "slug": "gorgias",
+  "partnerName": "Gorgias",
+  "partnerUrl": "https://www.gorgias.com",
+  "tagline": "AI-powered CX helpdesk that automates support and drives sales",
+  "tags": ["cx", "support", "automation", "chat", "sales"],
+  "pricingMonthly": null,
+  "pricingIntel": {
+    "summary": "Starts at $300/mo (annual) for 2,000 tickets/month on the Pro plan",
+    "details": [
+      "Starter: $10/mo for 50 tickets ($0.40/overage ticket)",
+      "Basic: $60/mo for 300 tickets ($40/100 overage)",
+      "Pro: $300/mo for 2,000 tickets ($36/100 overage). most popular",
+      "Advanced: $750/mo for 5,000 tickets ($36/100 overage)",
+      "Enterprise: custom pricing for 5,000+ tickets",
+      "AI Agent add-on: $0.90 per resolved conversation"
+    ],
+    "costDrivers": [
+      "Ticket volume. pricing jumps at 300, 2k, and 5k tickets/month thresholds",
+      "AI Agent usage. $0.90 per automated resolution adds up at scale",
+      "Channel add-ons. Voice and SMS are optional extras on top of the base plan"
+    ],
+    "sourceUrl": "https://www.gorgias.com/pricing"
+  },
+  "tier": 0,
+  "benefits": [
+    {
+      "id": "ticket_automation",
+      "label": "Ticket Deflection",
+      "description": "Automated CX. AI resolves routine inquiries (order status, returns, shipping) without a human agent, cutting your support labor cost.",
+      "type": "cost-saving",
+      "formula": "annualOrders * ticketRate * costPerTicket * automationRate",
+      "brandInputs": ["annualOrders"],
+      "swagDefaults": {
+        "ticketRate": {
+          "value": 0.05,
+          "label": "% of orders that generate a support ticket",
+          "source": "industry avg (Gorgias benchmark: 4-8% depending on category)",
+          "byCategory": {
+            "Apparel & Fashion": 0.07,
+            "Food & Drink": 0.06,
+            "Beauty & Cosmetics": 0.05,
+            "Home & Electronics": 0.06
+          }
+        },
+        "costPerTicket": {
+          "value": 4.00,
+          "label": "Fully loaded cost per support ticket (labor + tooling)",
+          "source": "industry avg (Zendesk CX report, $3-7 range)"
+        },
+        "automationRate": {
+          "value": 0.50,
+          "label": "% of tickets resolved by AI without human intervention",
+          "source": "dtcmvp estimate (Gorgias claims 60%, discounted to 50%)"
+        }
+      }
+    },
+    {
+      "id": "sales_conversion",
+      "label": "CVR Lift",
+      "description": "AI shopping assistant. Proactive chat engages browsing visitors with tailored product recommendations, converting browsers into buyers who would have otherwise left.",
+      "type": "revenue-generation",
+      "formula": "monthlyWebTraffic * chatEngagementRate * incrementalConversionRate * aov * 12",
+      "brandInputs": ["monthlyWebTraffic", "aov"],
+      "swagDefaults": {
+        "chatEngagementRate": {
+          "value": 0.03,
+          "label": "% of visitors who engage with chat",
+          "source": "industry avg (live chat engagement rates: 2-5%)"
+        },
+        "incrementalConversionRate": {
+          "value": 0.02,
+          "label": "% of chat-engaged visitors who convert incrementally",
+          "source": "dtcmvp estimate (Gorgias claims 2.5x conversion for chatters. we model 2% incremental, conservatively)"
+        }
+      }
+    }
+  ],
+  "sources": [
+    "https://www.gorgias.com. homepage",
+    "https://www.gorgias.com/pricing. full tier breakdown",
+    "Gorgias claims: 'resolving 60% of support inquiries' (AI agent)",
+    "Gorgias claims: 'increases conversions 2.5x with tailored recommendations'",
+    "ROI calculator available at gorgias.com/shopping-assistant-roi-calculator"
+  ],
+  "narrative": {
+    "headline": "Gorgias could save {brandName} {costSavingsTotal}/yr in support costs and add {revenueTotal}/yr in sales.",
+    "byDepartment": {
+      "CX / Support": "For {contactName} on the CX team: Gorgias automates the repetitive tickets (order status, shipping, returns) so your agents focus on high-value conversations. The {costSavingsTotal}/yr in ticket deflection comes from AI handling what your team currently does manually.",
+      "Ecommerce / DTC": "For {contactName} on the ecom side: Gorgias is both a cost play and a revenue play. The AI shopping assistant turns your chat widget into a sales channel, adding {revenueTotal}/yr in conversions from visitors who would have bounced without it.",
+      "Marketing / Growth": "For {contactName} and the marketing team: the shopping assistant side of Gorgias drives {revenueTotal}/yr by converting browsing visitors through tailored product recommendations in chat. Think of it as a conversion rate optimizer that also handles support.",
+      "Finance / Accounting": "For {contactName} reviewing the budget: at {targetMultiple} target ROI, {brandName} should pay no more than {maxMonthly}/mo for a CX platform. Gorgias delivers value through two channels: {costSavingsTotal}/yr in labor savings and {revenueTotal}/yr in AI-assisted sales.",
+      "Founder & CEO": "For {contactName}: Gorgias adds {totalValue}/yr to {brandName} across support automation ({costSavingsTotal}/yr saved) and AI sales ({revenueTotal}/yr added). At your {targetMultiple} target, the ceiling is {maxMonthly}/mo.",
+      "Other": "Gorgias adds {totalValue}/yr to {brandName} by automating support tickets and converting visitors through AI-powered chat recommendations."
+    },
+    "byCategory": {
+      "Apparel & Fashion": "Apparel brands generate more CX tickets than most categories (sizing questions, order edits, return inquiries). {brandName}'s ticket volume is likely on the higher end of our estimate, which means the automation savings could be even larger than {costSavingsTotal}/yr.",
+      "Beauty & Cosmetics": "Beauty brands see strong chat engagement because shoppers want product recommendations (routines, shade matching). The AI shopping assistant conversion lift tends to outperform other categories for {brandName}.",
+      "Food & Drink": "Food and beverage brands have high order frequency but lower AOV, which means ticket volume scales fast. Automation savings at {brandName}'s scale are significant because even small per-ticket costs compound quickly.",
+      "Other": "These numbers use industry-wide benchmarks for ticket rates and support costs. {brandName}'s actual ticket volume may push the savings higher or lower depending on your product complexity."
+    }
+  },
+  "notes": "Gorgias has their own published ROI calculator. Tier 1 upgrade opportunity. Pricing is per-ticket and scales significantly with volume. A 250k-order brand generating ~1,000 tickets/month fits the Pro plan; higher-volume brands jump to Advanced or Enterprise.",
+  "generatedAt": "2026-04-16"
+}

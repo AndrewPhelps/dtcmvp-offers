@@ -1,0 +1,112 @@
+{
+  "slug": "aftersell",
+  "partnerName": "Aftersell (Rokt)",
+  "partnerUrl": "https://www.aftersell.com",
+  "tagline": "Post-purchase upsell, checkout optimization, and thank-you page monetization",
+  "tags": ["upsell", "post-purchase", "checkout", "monetization"],
+  "pricingMonthly": null,
+  "pricingIntel": {
+    "summary": "Not publicly listed. 14-day free trial, pricing likely scales with order volume",
+    "details": [
+      "14-day free trial available",
+      "No visible pricing tiers on the website",
+      "Acquired by Rokt. enterprise pricing model likely",
+      "Multiple products (cart optimization, checkout, post-purchase upsell, Rokt Thanks) may be priced separately"
+    ],
+    "costDrivers": [
+      "Order volume. more orders = more upsell opportunities = likely higher tier",
+      "Product mix. each of the 4 products (cart, checkout, post-purchase, Rokt Thanks) may carry separate fees",
+      "Rokt Thanks intensity. low/average/high ad placements on thank-you page"
+    ],
+    "sourceUrl": "https://www.aftersell.com"
+  },
+  "tier": 0,
+  "benefits": [
+    {
+      "id": "post_purchase_upsell",
+      "label": "Upsell Revenue",
+      "description": "Post-purchase one-click upsells. After checkout, customers see an add-on offer before the thank-you page — no re-entering payment info, just frictionless additional purchases.",
+      "type": "revenue-generation",
+      "formula": "annualOrders * upsellTakeRate * (aov * upsellPctOfAov)",
+      "brandInputs": ["annualOrders", "aov"],
+      "swagDefaults": {
+        "upsellTakeRate": {
+          "value": 0.04,
+          "label": "% of orders that accept the post-purchase upsell",
+          "source": "industry benchmark (post-purchase upsell acceptance rates: 3-8% depending on offer relevance)",
+          "byCategory": {
+            "Beauty & Cosmetics": 0.06,
+            "Apparel & Fashion": 0.05,
+            "Health & Wellness": 0.05
+          }
+        },
+        "upsellPctOfAov": {
+          "value": 0.35,
+          "label": "Upsell value as % of original AOV",
+          "source": "dtcmvp estimate (typical post-purchase add-on is 25-50% of original cart)"
+        }
+      }
+    },
+    {
+      "id": "checkout_optimization",
+      "label": "CVR Lift",
+      "description": "Checkout and cart enhancements (trust badges, urgency timers, recommended bundles) reduce abandonment and recover conversions that would have been lost.",
+      "type": "revenue-generation",
+      "formula": "monthlyWebTraffic * baselineConversionRate * conversionLiftPct * aov * 12",
+      "brandInputs": ["monthlyWebTraffic", "aov"],
+      "swagDefaults": {
+        "baselineConversionRate": {
+          "value": 0.025,
+          "label": "Current site conversion rate",
+          "source": "industry avg (Shopify avg conversion rate: 1.5-3.5%)"
+        },
+        "conversionLiftPct": {
+          "value": 0.05,
+          "label": "Incremental conversion lift from checkout optimization",
+          "source": "dtcmvp estimate (checkout optimization tools typically lift conversion 3-8%)"
+        }
+      }
+    },
+    {
+      "id": "thank_you_page_revenue",
+      "label": "Ad Revenue",
+      "description": "Rokt Thanks ads. Non-competing brand ads on your thank-you page generate pure profit per order, monetizing a page that otherwise just says 'thanks.'",
+      "type": "revenue-generation",
+      "formula": "annualOrders * revenuePerOrder",
+      "brandInputs": ["annualOrders"],
+      "swagDefaults": {
+        "revenuePerOrder": {
+          "value": 0.35,
+          "label": "Revenue per order from thank-you page ads",
+          "source": "dtcmvp estimate based on Aftersell claim of 'up to $0.50 in pure profit per order'. discounted to $0.35"
+        }
+      }
+    }
+  ],
+  "sources": [
+    "https://www.aftersell.com. homepage",
+    "https://www.aftersell.com/rokt-revenue-forecast. published ROI calculator (Tier 1 upgrade opportunity)",
+    "Aftersell claims: 'Brands using Aftersell generate up to $0.50 in pure profit per order'",
+    "Aftersell claims: 'Directional projections based on Rokt's extensive global benchmarks across billions of transactions'",
+    "40,000+ brands on the platform",
+    "Calculator inputs: monthly order volume, product mix (cart/checkout/post-purchase/Rokt Thanks), gross margin"
+  ],
+  "narrative": {
+    "headline": "Aftersell could add {totalValue}/yr to {brandName} through post-purchase upsells and checkout optimization.",
+    "byDepartment": {
+      "Ecommerce / DTC": "For {contactName} on the ecom side: Aftersell adds revenue at three points in the checkout funnel: cart optimization, post-purchase upsells, and thank-you page ads. The {revenueTotal}/yr total comes from customers who have already committed to buying, so it is incremental to your existing conversion rate.",
+      "Marketing / Growth": "For {contactName} and the marketing team: this is pure bottom-of-funnel revenue that requires zero additional traffic. {revenueTotal}/yr comes from monetizing the checkout and post-purchase experience for {brandName}'s existing orders.",
+      "Finance / Accounting": "For {contactName} reviewing the budget: Aftersell's value to {brandName} is {totalValue}/yr across three revenue streams. At {targetMultiple} target, the ceiling is {maxMonthly}/mo. The thank-you page ads ({benefit_thank_you_page_revenue}/yr) are essentially pure margin.",
+      "Founder & CEO": "For {contactName}: Aftersell adds {totalValue}/yr to {brandName} by monetizing your checkout flow. Post-purchase upsells, checkout enhancements, and thank-you page ads. At your {targetMultiple} target, the ceiling is {maxMonthly}/mo.",
+      "Other": "Aftersell adds {totalValue}/yr to {brandName} by creating upsell moments after checkout and monetizing the thank-you page with non-competing brand ads."
+    },
+    "byCategory": {
+      "Apparel & Fashion": "Apparel brands see strong post-purchase upsell performance because add-on items (accessories, matching pieces, care products) are natural complements. {brandName}'s upsell take rate may land higher than our 4% SWAG.",
+      "Beauty & Cosmetics": "Beauty brands are a natural fit for post-purchase upsells because shoppers respond well to 'complete the routine' suggestions. Trial-size add-ons convert particularly well in the post-checkout flow.",
+      "Health & Wellness": "Health and wellness brands benefit from subscription upsells in the post-purchase flow. Suggesting a recurring add-on (supplements, refills) right after checkout captures intent at its peak.",
+      "Other": "Post-purchase upsell performance varies by category and product catalog depth. Brands with complementary product lines see the strongest results."
+    }
+  },
+  "notes": "Aftersell has a live ROI calculator at aftersell.com/rokt-revenue-forecast. strong Tier 1 upgrade candidate. Their calculator asks for monthly orders, product mix, and gross margin. The $0.50/order claim is their ceiling; we SWAG $0.35 for the Rokt Thanks benefit. The post-purchase upsell and checkout optimization benefits are SWAGged from industry benchmarks since their calculator bundles all products into one output.",
+  "generatedAt": "2026-04-16"
+}

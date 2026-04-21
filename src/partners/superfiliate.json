@@ -1,0 +1,123 @@
+{
+  "slug": "superfiliate",
+  "partnerName": "Superfiliate",
+  "partnerUrl": "https://superfiliate.com",
+  "tagline": "Unified affiliate, influencer, and referral program management",
+  "tags": ["affiliate", "influencer", "referral", "ugc", "acquisition"],
+  "pricingMonthly": null,
+  "pricingIntel": {
+    "summary": "Pricing not publicly listed. Likely scales with program size and GMV",
+    "details": [
+      "No visible pricing on the website",
+      "Covers Shopify, Meta Ads, and TikTok Shop in one platform",
+      "Includes creator discovery, automated payouts, UGC management, gifting/seeding"
+    ],
+    "costDrivers": [
+      "Number of active creators/affiliates in your program",
+      "GMV driven through the platform (may take a percentage)",
+      "Channel breadth. Shopify + Meta + TikTok vs. single channel"
+    ],
+    "sourceUrl": "https://superfiliate.com"
+  },
+  "tier": 0,
+  "benefits": [
+    {
+      "id": "affiliate_revenue",
+      "label": "Attributed Revenue (Affiliate)",
+      "description": "Creator-driven sales. Affiliates and influencers promote your brand through cobranded landing pages, affiliate links, and social content. Case studies show affiliates driving 5-10% of total brand revenue.",
+      "type": "revenue-generation",
+      "formula": "annualOrders * aov * affiliateRevenuePct * (1 - commissionRate)",
+      "brandInputs": ["annualOrders", "aov"],
+      "swagDefaults": {
+        "affiliateRevenuePct": {
+          "value": 0.05,
+          "label": "% of total revenue driven by affiliate/influencer channel",
+          "source": "Superfiliate case studies: Graza food 3x ROAS on LPs, Cymbiotika supplements 1,400 affiliates, Viva Raw food $2M+ GMV, Epic Gardening home 58% growth, Omnilux beauty 22% new customer revenue",
+          "byCategory": {
+            "Food & Drink": 0.07,
+            "Beauty & Cosmetics": 0.08,
+            "Health & Wellness": 0.06
+          }
+        },
+        "commissionRate": {
+          "value": 0.15,
+          "label": "Average creator commission rate",
+          "source": "industry avg (affiliate commissions typically 10-20% of sale)"
+        }
+      }
+    },
+    {
+      "id": "cobranded_lp_revenue",
+      "label": "CVR Lift",
+      "description": "Cobranded landing pages. Personalized pages per creator convert at higher rates than generic product pages because the visitor already trusts the creator who sent them.",
+      "type": "revenue-generation",
+      "formula": "annualOrders * aov * affiliateRevenuePct * cobrandedLift",
+      "brandInputs": ["annualOrders", "aov"],
+      "swagDefaults": {
+        "affiliateRevenuePct": {
+          "value": 0.05,
+          "label": "% of revenue through affiliate channel (same as above)",
+          "source": "Superfiliate case studies",
+          "byCategory": {
+            "Food & Drink": 0.07,
+            "Beauty & Cosmetics": 0.08,
+            "Health & Wellness": 0.06
+          }
+        },
+        "cobrandedLift": {
+          "value": 0.20,
+          "label": "Additional conversion lift from cobranded landing pages vs. standard affiliate links",
+          "source": "dtcmvp estimate (Graza case study: 3x ROAS on cobranded LPs, we model 20% incremental lift)"
+        }
+      }
+    },
+    {
+      "id": "ops_time_savings",
+      "label": "Workflow Automation",
+      "description": "Program management time savings. Automated creator discovery, outreach via IG DMs, payout processing, and reporting replace manual spreadsheet management.",
+      "type": "time-saving",
+      "formula": "weeklyHoursSaved * hourlyOpsCost * 52",
+      "brandInputs": [],
+      "swagDefaults": {
+        "weeklyHoursSaved": {
+          "value": 10,
+          "label": "Hours saved per week from automation",
+          "source": "Superfiliate case study: Lineage 'saved 12h+ per week via automated workflows', discounted to 10"
+        },
+        "hourlyOpsCost": {
+          "value": 30,
+          "label": "Fully loaded hourly cost of marketing/ops labor",
+          "source": "dtcmvp estimate ($25-40/hr for DTC marketing ops)"
+        }
+      }
+    }
+  ],
+  "sources": [
+    "https://superfiliate.com. homepage",
+    "Superfiliate claims: 'drives anywhere from 5-10% of our total revenue'",
+    "Graza: 3x ROAS using cobranded landing pages",
+    "Cymbiotika: 1,400+ affiliates enrolled, 850+ conversions",
+    "Lineage: $500k Black Friday revenue, saved 12h+/week",
+    "Viva Raw: 32% increase in LTV, $2M+ GMV",
+    "Epic Gardening: 58% revenue increase Q3-Q4",
+    "Omnilux: 22% of revenue from new customers, 50k+ cobranded LP visits"
+  ],
+  "narrative": {
+    "headline": "Superfiliate could drive {revenueTotal}/yr in affiliate revenue and save {timeSavingsTotal}/yr in ops time for {brandName}.",
+    "byDepartment": {
+      "Influencer / Affiliate": "For {contactName} on the influencer/affiliate side: Superfiliate consolidates your creator program into one platform. The {revenueTotal}/yr in affiliate revenue comes from cobranded landing pages and creator-driven sales. The {timeSavingsTotal}/yr in time savings replaces the manual work of managing payouts, outreach, and reporting across spreadsheets.",
+      "Marketing / Growth": "For {contactName} and the marketing team: affiliate and influencer sales are your lowest-CAC acquisition channel. Superfiliate drives {revenueTotal}/yr through creator partnerships at a fraction of the cost of paid media. The cobranded landing pages alone can deliver 3x ROAS based on case study data.",
+      "Performance / Paid": "For {contactName} on the paid side: affiliate revenue is the performance channel that does not require ad spend. {revenueTotal}/yr from Superfiliate at a 15% commission rate gives {brandName} a blended CAC that brings down your overall acquisition cost.",
+      "Founder & CEO": "For {contactName}: Superfiliate adds {totalValue}/yr to {brandName} through affiliate/influencer revenue ({revenueTotal}/yr) and ops time savings ({timeSavingsTotal}/yr). At your {targetMultiple} target, the ceiling is {maxMonthly}/mo.",
+      "Other": "Superfiliate adds {totalValue}/yr to {brandName} by consolidating affiliate, influencer, and referral programs into one platform with automated payouts and cobranded landing pages."
+    },
+    "byCategory": {
+      "Apparel & Fashion": "Apparel brands are the strongest category for affiliate and influencer programs. Fashion creators drive high-intent traffic through outfit content, and cobranded landing pages convert well because the styling context is built in for {brandName}.",
+      "Beauty & Cosmetics": "Beauty brands see strong creator-driven revenue because tutorials, reviews, and before/after content are the foundation of beauty purchasing decisions. {brandName}'s affiliate channel should be one of the top revenue drivers.",
+      "Health & Wellness": "Health and wellness brands benefit from trusted creator endorsements. Supplement and fitness brands in particular see high conversion from influencer content because buyers want social proof before committing.",
+      "Other": "Affiliate and influencer performance depends on creator fit and product category. Brands with visual, shareable products see the strongest results."
+    }
+  },
+  "notes": "Superfiliate is strongest for brands with an existing creator community or influencer relationships. Brands with no creator program today should consider the ramp-up time. the SWAG assumes a steady-state program, not month-one results.",
+  "generatedAt": "2026-04-16"
+}

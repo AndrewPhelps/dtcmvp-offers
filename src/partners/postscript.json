@@ -1,0 +1,107 @@
+{
+  "slug": "postscript",
+  "partnerName": "Postscript",
+  "partnerUrl": "https://postscript.io",
+  "tagline": "SMS marketing platform built for Shopify brands",
+  "tags": ["sms", "marketing", "retention", "automation"],
+  "pricingMonthly": null,
+  "pricingIntel": {
+    "summary": "Usage-based SMS pricing. Plans scale with subscriber count and message volume",
+    "details": [
+      "Free trial available",
+      "Pricing based on subscriber count + message credits",
+      "Postscript Plus (managed service) available as premium add-on",
+      "1,900+ 5-star Shopify reviews"
+    ],
+    "costDrivers": [
+      "Subscriber list size. primary pricing lever",
+      "Message volume. SMS credits consumed per campaign and flow",
+      "Add-ons. Postscript Plus managed service, CashBack, AI Infinity Testing"
+    ],
+    "sourceUrl": "https://postscript.io/pricing"
+  },
+  "tier": 0,
+  "benefits": [
+    {
+      "id": "sms_flow_revenue",
+      "label": "Attributed Revenue (SMS)",
+      "description": "SMS flows and campaigns. Automated flows (welcome, abandoned cart, post-purchase, winback) and targeted campaigns generate attributable revenue from your SMS subscriber list.",
+      "type": "revenue-generation",
+      "formula": "smsListSize * revenuePerSmsSubscriber * 12",
+      "brandInputs": ["smsListSize"],
+      "swagDefaults": {
+        "revenuePerSmsSubscriber": {
+          "value": 1.50,
+          "label": "Monthly revenue per SMS subscriber",
+          "source": "industry benchmark ($1-3/subscriber/month for active SMS programs)"
+        }
+      }
+    },
+    {
+      "id": "list_growth_value",
+      "label": "List Growth Revenue",
+      "description": "Onsite opt-in tools. Postscript's popups, checkout collection, and 130M+ subscriber network grow your SMS list faster than building it yourself. New subscribers generate revenue from day one.",
+      "type": "revenue-generation",
+      "formula": "monthlyWebTraffic * optInRate * revenuePerNewSubscriber * 12",
+      "brandInputs": ["monthlyWebTraffic"],
+      "swagDefaults": {
+        "optInRate": {
+          "value": 0.02,
+          "label": "% of site visitors who opt in to SMS",
+          "source": "dtcmvp estimate (Postscript claims 6x list growth, typical onsite opt-in: 1-4%)"
+        },
+        "revenuePerNewSubscriber": {
+          "value": 1.00,
+          "label": "First-month revenue per new SMS subscriber",
+          "source": "dtcmvp estimate (conservative. new subscribers convert lower than established list)"
+        }
+      }
+    },
+    {
+      "id": "ai_flow_optimization",
+      "label": "Flow Optimization",
+      "description": "AI-driven SMS lift. AI Infinity Testing continuously optimizes your flows (subject lines, timing, copy), adding incremental revenue on top of your baseline.",
+      "type": "revenue-generation",
+      "formula": "smsListSize * revenuePerSmsSubscriber * 12 * aiLiftPct",
+      "brandInputs": ["smsListSize"],
+      "swagDefaults": {
+        "revenuePerSmsSubscriber": {
+          "value": 1.50,
+          "label": "Monthly revenue per SMS subscriber (baseline)",
+          "source": "same as SMS flow revenue baseline"
+        },
+        "aiLiftPct": {
+          "value": 0.15,
+          "label": "% revenue lift from AI optimization",
+          "source": "dtcmvp estimate (Postscript claims 'average 20% increase' on highest-ROI flows, discounted to 15%)"
+        }
+      }
+    }
+  ],
+  "sources": [
+    "https://postscript.io. homepage + features",
+    "Postscript claims: '34x Return on Investment on SMS Spend'",
+    "Postscript claims: '+22% Online revenue attributed to Postscript SMS'",
+    "Postscript claims: '6x YoY list growth rate since introducing Onsite Opt-in'",
+    "Postscript claims: 'average 20% increase in revenue on your highest ROI flows' (AI Infinity Testing)",
+    "130M+ subscriber network for onsite opt-in"
+  ],
+  "narrative": {
+    "headline": "Postscript could add {totalValue}/yr in SMS revenue for {brandName}.",
+    "byDepartment": {
+      "Retention / CRM": "For {contactName} on the retention side: SMS is the highest-engagement owned channel. Postscript's flow builder and AI optimization drive {revenueTotal}/yr from {brandName}'s subscriber list. The list growth tools mean the value compounds over time as more customers opt in.",
+      "Marketing / Growth": "For {contactName} and the marketing team: SMS is a net-new revenue channel that complements email. Postscript's 34x claimed ROI on SMS spend puts it among the highest-return marketing investments available to {brandName}.",
+      "Ecommerce / DTC": "For {contactName} on the ecom side: Postscript turns your SMS list into a revenue channel. The {revenueTotal}/yr estimate includes flow revenue, campaign revenue, and the value of new subscribers acquired through onsite opt-in.",
+      "Founder & CEO": "For {contactName}: Postscript adds {totalValue}/yr to {brandName} through SMS marketing. At your {targetMultiple} target, the ceiling is {maxMonthly}/mo.",
+      "Other": "Postscript adds {totalValue}/yr to {brandName} through SMS flows, campaigns, and list growth tools."
+    },
+    "byCategory": {
+      "Apparel & Fashion": "Apparel brands see strong SMS performance for new drops, restocks, and flash sales. The urgency of SMS drives faster conversion on time-sensitive launches that email alone cannot match for {brandName}.",
+      "Beauty & Cosmetics": "Beauty brands benefit from SMS for product launches, limited editions, and restock alerts. The personal, direct nature of SMS fits the relationship-driven buying behavior in beauty.",
+      "Food & Drink": "Food and beverage brands see high SMS engagement because of repeat-purchase cadences and subscription reminders. SMS opt-in rates tend to be above average for food brands.",
+      "Other": "SMS performance varies by category but the mechanics are universal: higher open rates than email, faster time-to-purchase, and a direct line to your most engaged customers."
+    }
+  },
+  "notes": "Postscript is SMS-first, unlike Klaviyo which bundles email + SMS. The SWAG focuses on SMS-specific value. Brands already on Klaviyo SMS should compare the incremental value of a dedicated SMS platform vs. bundled.",
+  "generatedAt": "2026-04-16"
+}
