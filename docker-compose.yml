@@ -13,6 +13,8 @@ services:
       AUTH_API_URL: ${AUTH_API_URL:-https://api.dtcmvpete.com}
       # /scrape-results reads from a read-only scrape DB mounted via volumes.
       SCRAPE_DB_PATH: /app/data/1800dtc.db
+      # SWAG specs are stored in a writable SQLite DB (separate from 1800dtc).
+      SWAG_DB_PATH: /app/swag-data/swags.db
     ports:
       # Bind to localhost only — nginx handles external TLS on 443
       - "127.0.0.1:3005:3000"
@@ -21,6 +23,8 @@ services:
       # scp'd to the droplet out-of-band (see deploy/README-DEPLOY.md) — too
       # large for git. Read-only is enough; nothing here is a write target.
       - ./data:/app/data:ro
+      # SWAG specs DB — writable so agents can insert/update specs without rebuild.
+      - ./swag-data:/app/swag-data
     restart: unless-stopped
     healthcheck:
       # 127.0.0.1 (not localhost) — avoids alpine wget resolving to IPv6

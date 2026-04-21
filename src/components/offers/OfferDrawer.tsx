@@ -1,17 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
-import { Bookmark, EyeOff, FileText, ArrowLeft, BarChart3 } from 'lucide-react';
+import { Bookmark, EyeOff, FileText, ArrowLeft, BarChart3, Loader2 } from 'lucide-react';
 import { Modal, Button } from '@/components/common';
 import { ClaimForm } from '@/components/offers';
 import { getCategoryColorByColorName, tagBadgeStyle } from '@/lib';
 import { Offer, Partner, Category, Tag } from '@/types';
 import { getCategory, getTagsByIds } from '@/data';
 import { useBrand } from '@/contexts';
-import { getSwagSlugForPartner } from '@/lib/swag/offer-swag-map';
-import { getSpec } from '@/lib/swag/partners-registry';
+import type { SwagSpec } from '@/lib/swag/swag-types';
 
 const SwagCalculator = dynamic(() => import('@/components/swag/SwagCalculator'), { ssr: false });
 
@@ -22,24 +21,71 @@ interface OfferDrawerProps {
   onClose: () => void;
 }
 
+// Cache of partner names that have SWAGs (fetched once, shared across renders)
+let _swagIndex: Map<string, string> | null = null;
+let _swagIndexPromise: Promise<Map<string, string>> | null = null;
+
+function fetchSwagIndex(): Promise<Map<string, string>> {
+  if (_swagIndex) return Promise.resolve(_swagIndex);
+  if (_swagIndexPromise) return _swagIndexPromise;
+  _swagIndexPromise = fetch('/api/swag')
+    .then(res => res.ok ? res.json() : { specs: [] })
+    .then(data => {
+      const map = new Map<string, string>();
+      for (const s of data.specs) {
+        map.set(s.partner_name.toLowerCase(), s.slug);
+      }
+      _swagIndex = map;
+      return map;
+    })
+    .catch(() => new Map<string, string>());
+  return _swagIndexPromise;
+}
+
 export default function OfferDrawer({ offer, partner, isOpen, onClose }: OfferDrawerProps) {
   const [showClaimForm, setShowClaimForm] = useState(false);
   const [showSwag, setShowSwag] = useState(false);
+  const [swagSpec, setSwagSpec] = useState<SwagSpec | null>(null);
+  const [swagLoading, setSwagLoading] = useState(false);
+  const [swagSlug, setSwagSlug] = useState<string | null>(null);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const { isOfferSaved, saveOffer, unsaveOffer, hideOffer, claimOffer, isOfferClaimed } = useBrand();
 
-  // Reset to offer view when modal closes or offer changes
+  // Check if this partner has a SWAG spec
+  useEffect(() => {
+    if (!partner) return;
+    fetchSwagIndex().then(index => {
+      setSwagSlug(index.get(partner.name.toLowerCase()) ?? null);
+    });
+  }, [partner]);
+
+  // Reset to offer view when modal closes
   useEffect(() => {
     if (!isOpen) {
       setShowClaimForm(false);
       setShowSwag(false);
+      setSwagSpec(null);
       setFormSubmitted(false);
     }
   }, [isOpen]);
 
-  if (!offer || !partner) return null;
+  // Fetch the full spec when user clicks "See the SWAG"
+  const handleShowSwag = useCallback(async () => {
+    if (!swagSlug) return;
+    setSwagLoading(true);
+    try {
+      const res = await fetch(`/api/swag/${swagSlug}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSwagSpec(data.spec);
+        setShowSwag(true);
+      }
+    } finally {
+      setSwagLoading(false);
+    }
+  }, [swagSlug]);
 
-  const swagSlug = getSwagSlugForPartner(partner.name);
+  if (!offer || !partner) return null;
   const category = getCategory(offer.categoryId);
   const categoryColor = category ? getCategoryColorByColorName(category.color) : getCategoryColorByColorName('blue');
   const offerTags = getTagsByIds(offer.tagIds);
@@ -142,11 +188,12 @@ export default function OfferDrawer({ offer, partner, isOpen, onClose }: OfferDr
         )}
         {swagSlug && (
           <button
-            onClick={() => setShowSwag(true)}
-            className="flex items-center gap-2 p-2 md:px-4 md:py-2 rounded-lg text-sm font-medium text-[var(--brand-blue-primary)] hover:bg-[var(--brand-blue-primary)]/10 transition-colors cursor-pointer"
+            onClick={handleShowSwag}
+            disabled={swagLoading}
+            className="flex items-center gap-2 p-2 md:px-4 md:py-2 rounded-lg text-sm font-medium text-[var(--brand-blue-primary)] hover:bg-[var(--brand-blue-primary)]/10 transition-colors cursor-pointer disabled:opacity-50"
           >
-            <BarChart3 className="w-4 h-4" />
-            <span className="hidden md:inline">See the SWAG</span>
+            {swagLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <BarChart3 className="w-4 h-4" />}
+            <span className="hidden md:inline">{swagLoading ? 'Loading...' : 'See the SWAG'}</span>
           </button>
         )}
         <Button onClick={() => setShowClaimForm(true)} disabled={isClaimed} className="text-sm md:text-base">
@@ -182,9 +229,9 @@ export default function OfferDrawer({ offer, partner, isOpen, onClose }: OfferDr
   );
 
   // SWAG calculator view
-  if (showSwag && swagSlug) {
-    const spec = getSpec(swagSlug);
-    if (spec) {
+  if (showSwag && swagSpec) {
+    const spec = swagSpec;
+    {
       const swagHeader = (
         <div className="flex items-center gap-3 md:gap-5">
           <button

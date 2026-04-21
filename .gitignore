@@ -44,3 +44,6 @@ next-env.d.ts
 
 # scrape data mounted into the container at /app/data (scp'd out-of-band)
 /data/
+
+# SWAG specs database (writable, mounted at /app/swag-data in container)
+/swag-data/
