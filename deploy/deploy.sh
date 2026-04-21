@@ -22,6 +22,15 @@ SSH_TARGET="$DROPLET_USER@$DROPLET_IP"
 BRANCH="master"
 MODE="${1:-full}"
 
+# Append a structured line to ~/staging-infra/logs/events.log on DO for a
+# shared audit trail. Non-fatal: logging failures never abort a deploy.
+log_remote() {
+    ssh "$SSH_TARGET" "DEPLOY_AGENT_ID='${DEPLOY_AGENT_ID:-$(whoami)-manual}' bash -lc 'source ~/staging-infra/lib-log.sh 2>/dev/null && log_event $*'" 2>/dev/null || true
+}
+
+COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo unknown)
+trap 'log_remote dtcmvp-offers deploy-failed production mode=$MODE commit=$COMMIT' ERR
+
 echo "==================================="
 echo "dtcmvp-offers deploy"
 echo "  mode:   $MODE"
@@ -99,6 +108,8 @@ fi
 preflight_local
 preflight_do
 
+log_remote dtcmvp-offers deploy-start production mode=$MODE branch=$BRANCH commit=$COMMIT
+
 # ── pull + build + restart ──
 echo ""
 echo "[1/3] Pulling latest code on droplet..."
@@ -119,3 +130,5 @@ echo "  https://offers.dtcmvp.com/ → $PUBLIC"
 
 echo ""
 echo "=== deploy complete ==="
+log_remote dtcmvp-offers deploy-complete production mode=$MODE commit=$COMMIT
+trap - ERR
