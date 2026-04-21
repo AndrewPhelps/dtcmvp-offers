@@ -1,6 +1,6 @@
-# dtcmvp-offers — partner offer marketplace
+# dtcmvp-offers — partner offer marketplace + SWAG ROI calculators
 
-Standalone Next.js app at **offers.dtcmvp.com**. Brands discover and claim exclusive offers from dtcmvp partner companies (app developers); partners get qualified intros without the cost of paid lead-gen. Plus an admin-only `/scrape-results` viewer for the 1,126 apps scraped from 1800dtc.com.
+Standalone Next.js app at **offers.dtcmvp.com**. Brands discover and claim exclusive offers from dtcmvp partner companies (app developers); partners get qualified intros without the cost of paid lead-gen. Each partner can also have a **SWAG** (Scientific Wild-Ass Guess) — an interactive ROI calculator that tells a brand what the partner's tool is worth to their specific store. Plus an admin-only `/scrape-results` viewer for the 1,126 apps scraped from 1800dtc.com.
 
 For roadmap + outstanding work, see `OFFERS_ROLLOUT_PLAN.md`. This doc describes what's live today.
 
@@ -15,6 +15,7 @@ For roadmap + outstanding work, see `OFFERS_ROLLOUT_PLAN.md`. This doc describes
 | auth | Supabase JWT — proxied through `api.dtcmvpete.com`, mirrors dtcmvp-2.0 |
 | backend (catalog/claims) | Node/Express in `dtcmvp-app/handlers/offers/` (DO droplet) |
 | backend (scrape) | `better-sqlite3` reading bind-mounted `/app/data/1800dtc.db` |
+| SWAG specs | `better-sqlite3` reading/writing `/app/swag-data/swags.db` |
 | primary data store | Airtable base `appnBsoKSUIYu6Nn1` (Offers, Claims, Companies tables) |
 | read cache | SQLite tables `offers_*` in `dtcmvp-tam-large.db` (synced hourly) |
 
@@ -35,6 +36,16 @@ Live at **https://offers.dtcmvp.com** (deployed via `./deploy/deploy.sh` → DO 
 - ✅ Brand login at `/brand/[contactId]` — first-name verification against Airtable contact ID
 - ✅ Middleware gates `/`, `/offers/*`, `/questionnaire/*`, `/scrape-results/*`
 - ✅ Cookie-based session with 45-min refresh, mutex/debounce, cookie restore from localStorage clear
+
+**SWAG calculators (live):**
+- ✅ SWAG specs stored in `swags.db` (writable SQLite, separate from read-only 1800dtc.db)
+- ✅ `GET /api/swag` — lightweight index of available SWAGs (slug + partner name)
+- ✅ `GET /api/swag/[slug]` — full spec JSON, fetched on demand when user clicks "See the SWAG"
+- ✅ OfferDrawer shows "See the SWAG" button for partners with specs in the database
+- ✅ Clicking opens the SWAG calculator inside the same modal (no page navigation)
+- ✅ Back arrow returns to offer details, scroll position preserved
+- ✅ `scripts/upsert-swag.js` — CLI for agents to insert/update specs without rebuild
+- ✅ 9 partner specs seeded: AIX, AfterSell, Gorgias, Klaviyo, Order Editing, PostPilot, Postscript, Superfiliate, Videowise
 
 **Admin tooling (live):**
 - ✅ `/scrape-results` — searchable/sortable/paginated table over 1800dtc.com scrape (admin-only)
@@ -69,13 +80,20 @@ src/
 │   ├── scrape-results/                 # admin-only 1800dtc viewer
 │   ├── api/
 │   │   ├── auth/[...path]/route.ts     # proxy → api.dtcmvpete.com
+│   │   ├── swag/route.ts               # GET — list available SWAG slugs
+│   │   ├── swag/[slug]/route.ts        # GET — fetch full spec by slug
+│   │   ├── sheet/route.ts              # GET — Google Sheets CSV proxy (for AI research links)
 │   │   └── scrape-results/apps/        # internal queries against /app/data/1800dtc.db
 │   ├── questionnaire/page.tsx          # standalone recommendation quiz (still mock-data)
 │   ├── layout.tsx                      # root — wraps AuthProvider
 │   └── page.tsx                        # redirects to /offers
 ├── components/
 │   ├── common/                         # Badge, Button, Card, Drawer, Input, Modal, MoleculeLoader
-│   └── offers/                         # OfferCard, OfferGrid, OfferFilters, OfferDrawer, ClaimForm
+│   ├── offers/                         # OfferCard, OfferGrid, OfferFilters, OfferDrawer, ClaimForm
+│   └── swag/                           # SwagCalculator, ProjectionChart, SwagReport, SwagLoader,
+│                                       # SwagDisclaimer, AskForIntroModal, AdminToolbar (dev-only),
+│                                       # AiResearchBar, InputField, InputSection, DerivedField,
+│                                       # CustomDropdown, MoleculeLoader, AnimatedValue
 ├── contexts/
 │   ├── AuthContext.tsx                 # session + permissions (mirrors dtcmvp-2.0)
 │   └── BrandContext.tsx                # claims (API-hydrated), saved/hidden (localStorage)
@@ -83,8 +101,15 @@ src/
 │   ├── auth.ts                         # token lifecycle, authFetch helper
 │   ├── api.ts                          # offers/claims fetchers + mappers
 │   ├── scrapeDb.ts                     # better-sqlite3 reader for 1800dtc.db
+│   ├── swagDb.ts                       # better-sqlite3 reader/writer for swags.db
 │   ├── serverAuth.ts                   # is_admin check for /scrape-results
-│   └── categoryColors.ts               # category color mapping
+│   ├── categoryColors.ts               # category color mapping
+│   └── swag/                           # SWAG engine + types
+│       ├── swag-types.ts               # SwagSpec, BrandProfile, SwagBenefit, etc.
+│       ├── swag-engine.ts              # computeSwag(), formula evaluation
+│       ├── format.ts                   # fmtMoney, fmtPct, fmtMultiple
+│       ├── highlight.tsx               # green token highlighting with TextScramble
+│       └── prompt-builder.ts           # AI research prompt generation
 ├── data/                               # remaining mocks (no claims.ts as of 2026-04-14)
 │   ├── offers.ts                       # used by /questionnaire
 │   ├── partners.ts                     # used by getPartner lookup helpers
@@ -144,6 +169,49 @@ Notes:
 - Partners are Companies in Airtable with `Type=Partner` — also not a separate table.
 - Frontend `Offer.id` is the slug (URL key); Airtable's primary field stays as Name.
 
+## SWAG system
+
+**What is a SWAG:** Scientific Wild-Ass Guess. dtcmvp publishes first-party ROI analyses for Shopify apps. The brand sets a target ROI multiple (5x, 8x, 15x) and we tell them the max they should pay to hit that target. Every number we don't know for certain, we SWAG — and label it as such.
+
+**UX flow:** offer grid → click offer → OfferDrawer opens (details view) → "See the SWAG" button in footer → click → modal expands with SwagCalculator → back arrow returns to details → close returns to grid (scroll preserved). All in-place, no page navigation.
+
+**Data storage:** SWAG specs live in `swags.db` (writable SQLite at `/app/swag-data/swags.db`), separate from the read-only `1800dtc.db`. Schema:
+
+```sql
+swag_specs (
+  slug TEXT PRIMARY KEY,       -- matches partner slug (e.g., "klaviyo")
+  partner_name TEXT NOT NULL,  -- display name (e.g., "Klaviyo")
+  spec_json TEXT NOT NULL,     -- full SwagSpec as JSON
+  tier INTEGER NOT NULL,       -- 0=public, 1=partner calculator, 2=private data
+  generated_at TEXT NOT NULL,
+  generated_by TEXT,           -- who/what created it (agent name, skill, etc.)
+  created_at TEXT, updated_at TEXT
+)
+```
+
+**How specs get into the database:** agents and the `/generate-swag` skill use `scripts/upsert-swag.js`:
+
+```bash
+# from a JSON file
+node scripts/upsert-swag.js spec.json --by "generate-swag-skill"
+
+# from stdin (agent piping output)
+echo '{"slug":"newpartner",...}' | node scripts/upsert-swag.js --stdin --by "swarm-agent-42"
+
+# seed all JSON files from src/partners/
+node scripts/upsert-swag.js --seed
+
+# list / delete
+node scripts/upsert-swag.js --list
+node scripts/upsert-swag.js --delete klaviyo
+```
+
+No rebuild or deploy needed — specs are served on demand via `GET /api/swag/[slug]`. The OfferDrawer fetches the index (`GET /api/swag`) once to know which partners have SWAGs, then fetches the full spec when the user clicks "See the SWAG".
+
+**The SWAG engine** (`src/lib/swag/swag-engine.ts`) evaluates benefit formulas at 3 confidence levels (60%, 80%, 100%), applies category-specific defaults, and computes break-even monthly pricing. The `SwagCalculator` component renders the interactive UI with charts (recharts), narrative briefs, and an "Ask for an intro" CTA.
+
+**generate-swag skill** (`.claude/skills/generate-swag.md`) documents the 5-step process for creating a SWAG spec from a partner's public website: read site → identify benefits → map to formulas → write spec → verify math. Includes canonical benefit label vocabulary for cross-partner comparability.
+
 ## deployment
 
 | target | location | trigger |
@@ -151,7 +219,7 @@ Notes:
 | Standalone frontend | DO droplet `142.93.27.155`, container `dtcmvp-offers-frontend`, host port 3005 | `./deploy/deploy.sh` (git pull + docker build) |
 | Backend handler | container `webhook-server-v2` on same droplet | `dtcmvp-app/deploy.sh` |
 
-The standalone container bind-mounts `./data:/app/data:ro` for the scrape DB. `1800dtc.db` is too large for git — scp'd to the droplet out-of-band (see `deploy/README-DEPLOY.md`). The monthly auto-refresh cron (`1800dtc/run-monthly.sh`) re-scrapes, snapshots into `scrape_snapshots`, diffs vs last run, posts a Slack digest, and atomically swaps the new DB in.
+The standalone container bind-mounts `./data:/app/data:ro` for the scrape DB and `./swag-data:/app/swag-data` (writable) for SWAG specs. `1800dtc.db` is too large for git — scp'd to the droplet out-of-band (see `deploy/README-DEPLOY.md`). `swags.db` auto-creates on first access; to seed production, scp from local: `scp data/swags.db deploy@142.93.27.155:~/dtcmvp-offers/swag-data/swags.db` (ensure chmod 666 for container write access). The monthly auto-refresh cron (`1800dtc/run-monthly.sh`) re-scrapes, snapshots into `scrape_snapshots`, diffs vs last run, posts a Slack digest, and atomically swaps the new DB in.
 
 ## env vars
 
@@ -161,6 +229,7 @@ The standalone container bind-mounts `./data:/app/data:ro` for the scrape DB. `1
 | `NEXT_PUBLIC_APP_URL` | build | `https://offers.dtcmvp.com` |
 | `AUTH_API_URL` | runtime | `https://api.dtcmvpete.com` — auth proxy target |
 | `SCRAPE_DB_PATH` | runtime | `/app/data/1800dtc.db` (read by `lib/scrapeDb.ts`) |
+| `SWAG_DB_PATH` | runtime | `/app/swag-data/swags.db` (read/write by `lib/swagDb.ts`) |
 | `SLACK_BOT_TOKEN` / `SLACK_DIGEST_CHANNEL` | host cron only | monthly scrape digest |
 
 ## design system
@@ -202,7 +271,9 @@ For `/scrape-results` to work locally you need a copy of `1800dtc.db` at the pat
 - `OFFERS_ROLLOUT_PLAN.md` — what's done, what's next, gotchas
 - `deploy/README-DEPLOY.md` — DO droplet setup + 1800dtc.db scp workflow
 - `dtcmvp-app/handlers/offers/` — backend code (sqlite-client, airtable-client, sync-runner)
+- `.claude/skills/generate-swag.md` — how to generate a SWAG spec for a partner (5-step process)
+- `scripts/upsert-swag.js` — CLI for inserting/updating specs in swags.db
 
 ---
 
-*last updated: 2026-04-16*
+*last updated: 2026-04-21*
