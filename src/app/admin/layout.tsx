@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import AdminTabs from './AdminTabs';
+import SignOutButton from './SignOutButton';
 
 // Shared shell for every /admin/* page: dtcmvp heading, tab row for the
 // lists we maintain, and a "back to offers" escape hatch. No BrandProvider
@@ -24,13 +25,16 @@ export default function AdminLayout({
               </h1>
             </Link>
 
-            <Link
-              href="/offers"
-              className="flex items-center gap-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span className="hidden sm:inline">Back to Offers</span>
-            </Link>
+            <div className="flex items-center gap-4">
+              <Link
+                href="/offers"
+                className="flex items-center gap-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span className="hidden sm:inline">Back to Offers</span>
+              </Link>
+              <SignOutButton />
+            </div>
           </div>
           <AdminTabs />
         </div>
