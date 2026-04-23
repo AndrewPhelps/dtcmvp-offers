@@ -11,6 +11,11 @@ const SwagCalculator = dynamic(
   { ssr: false },
 );
 
+const SwagReviewPanel = dynamic(
+  () => import('@/components/swag/SwagReviewPanel'),
+  { ssr: false },
+);
+
 type Status = 'draft' | 'approved' | 'needs-regen';
 
 interface SpecRow {
@@ -309,7 +314,13 @@ export default function AdminSwagsPage() {
         )}
         {selectedSpec && (
           <div className="p-4 md:p-6">
-            <SwagCalculator spec={selectedSpec.spec} />
+            <SwagReviewPanel spec={selectedSpec.spec} />
+            <div className="pt-4 border-t-2 border-dashed border-[var(--border-default)]">
+              <div className="text-xs uppercase tracking-widest text-[var(--text-secondary)] font-semibold mb-3">
+                Live calculator (what brands see)
+              </div>
+              <SwagCalculator spec={selectedSpec.spec} />
+            </div>
           </div>
         )}
       </Modal>

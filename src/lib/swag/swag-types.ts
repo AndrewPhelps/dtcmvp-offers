@@ -82,6 +82,50 @@ export const DEPARTMENTS = [
 
 export type Department = typeof DEPARTMENTS[number]
 
+// ─── Canonical benefit labels (from /generate-swag skill) ───
+// Every benefit's `label` must be one of these. Reviewers flag deviations
+// and the admin Review panel lints specs against this list.
+
+export const CANONICAL_BENEFIT_LABELS = {
+  'revenue-generation': [
+    'CVR Lift',
+    'AOV Lift',
+    'Repeat Rate Lift',
+    'LTV Lift',
+    'Cart Recovery',
+    'Upsell Revenue',
+    'Subscription Revenue',
+    'Attributed Revenue (Channel)', // channel required in parens — see ATTRIBUTED_REVENUE_PREFIX check
+    'Winback Revenue',
+    'Retention Revenue',
+    'List Growth Revenue',
+    'Ad Revenue',
+    'Organic Revenue',
+    'Flow Optimization',
+  ],
+  'cost-saving': [
+    'Ticket Deflection',
+    'Return Prevention',
+    'ROAS Improvement',
+    'Fee Avoidance',
+    'Shipping Optimization',
+    'Tool Consolidation',
+  ],
+  'time-saving': [
+    'Workflow Automation',
+  ],
+} as const
+
+// Flat set of non-parameterized labels for quick exact-match checks.
+// `Attributed Revenue (...)` is handled by prefix check instead of exact match.
+export const CANONICAL_BENEFIT_LABEL_SET: ReadonlySet<string> = new Set([
+  ...CANONICAL_BENEFIT_LABELS['revenue-generation'].filter((l) => l !== 'Attributed Revenue (Channel)'),
+  ...CANONICAL_BENEFIT_LABELS['cost-saving'],
+  ...CANONICAL_BENEFIT_LABELS['time-saving'],
+])
+
+export const ATTRIBUTED_REVENUE_PREFIX = 'Attributed Revenue'
+
 // ─── Categories (from stanger INTERNAL_CATEGORIES) ───
 
 export const CATEGORIES = [
