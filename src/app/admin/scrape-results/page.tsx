@@ -9,7 +9,7 @@ export default async function ScrapeResultsPage() {
   const user = await getSessionUser();
 
   if (!user) {
-    redirect('/login?redirect=/scrape-results');
+    redirect('/login?redirect=/admin/scrape-results');
   }
 
   if (!user.is_admin) {
