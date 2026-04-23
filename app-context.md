@@ -1,6 +1,6 @@
 # dtcmvp-offers — partner offer marketplace + SWAG ROI calculators
 
-Standalone Next.js app at **offers.dtcmvp.com**. Brands discover and claim exclusive offers from dtcmvp partner companies (app developers); partners get qualified intros without the cost of paid lead-gen. Each partner can also have a **SWAG** (Scientific Wild-Ass Guess) — an interactive ROI calculator that tells a brand what the partner's tool is worth to their specific store. Plus an admin-only `/scrape-results` viewer for the 1,126 apps scraped from 1800dtc.com.
+Standalone Next.js app at **offers.dtcmvp.com**. Brands discover and claim exclusive offers from dtcmvp partner companies (app developers); partners get qualified intros without the cost of paid lead-gen. Each partner can also have a **SWAG** (Scientific Wild-Ass Guess) — an interactive ROI calculator that tells a brand what the partner's tool is worth to their specific store. Admin-only tooling under `/admin/*`: `/admin/scrape-results` (1,126 apps from 1800dtc.com) and `/admin/swags` (SWAG review queue with lint + flag-for-fix workflow).
 
 For roadmap + outstanding work, see `OFFERS_ROLLOUT_PLAN.md`. This doc describes what's live today.
 
@@ -34,7 +34,7 @@ Live at **https://offers.dtcmvp.com** (deployed via `./deploy/deploy.sh` → DO 
 **Auth (live, mirrors dtcmvp-2.0):**
 - ✅ Partner login at `/login` — OTP + password, proxied through `api.dtcmvpete.com`
 - ✅ Brand login at `/brand/[contactId]` — first-name verification against Airtable contact ID
-- ✅ Middleware gates `/`, `/offers/*`, `/questionnaire/*`, `/scrape-results/*`
+- ✅ Middleware gates `/`, `/offers/*`, `/questionnaire/*`, `/admin/*`
 - ✅ Cookie-based session with 45-min refresh, mutex/debounce, cookie restore from localStorage clear
 
 **SWAG calculators (live):**
@@ -48,7 +48,8 @@ Live at **https://offers.dtcmvp.com** (deployed via `./deploy/deploy.sh` → DO 
 - ✅ 9 partner specs seeded: AIX, AfterSell, Gorgias, Klaviyo, Order Editing, PostPilot, Postscript, Superfiliate, Videowise
 
 **Admin tooling (live):**
-- ✅ `/scrape-results` — searchable/sortable/paginated table over 1800dtc.com scrape (admin-only)
+- ✅ `/admin/scrape-results` — searchable/sortable/paginated table over 1800dtc.com scrape (admin-only)
+- ✅ `/admin/swags` — SWAG review queue with side-by-side review panel + live calculator, sortable lint columns, flag-for-fix workflow
 
 **Backend (live in dtcmvp-app/handlers/offers/):**
 - ✅ `GET /api/offers` (public, filtered by category/tag/partner/search/status)
@@ -77,11 +78,19 @@ src/
 │   │   ├── [id]/page.tsx               # offer detail
 │   │   ├── my/page.tsx                 # claimed + saved
 │   │   └── layout.tsx                  # navbar + BrandProvider
-│   ├── scrape-results/                 # admin-only 1800dtc viewer
+│   ├── admin/                          # admin-only tools under shared layout + topbar
+│   │   ├── layout.tsx                  # shared topbar with tab row + SignOutButton
+│   │   ├── AdminTabs.tsx                # tab definitions — add new admin views here
+│   │   ├── page.tsx                    # redirects to /admin/scrape-results
+│   │   ├── scrape-results/             # 1800dtc apps viewer
+│   │   └── swags/page.tsx              # SWAG review queue (side-by-side + lint)
 │   ├── api/
 │   │   ├── auth/[...path]/route.ts     # proxy → api.dtcmvpete.com
-│   │   ├── swag/route.ts               # GET — list available SWAG slugs
-│   │   ├── swag/[slug]/route.ts        # GET — fetch full spec by slug
+│   │   ├── swag/route.ts               # GET — list approved SWAG slugs (user-facing)
+│   │   ├── swag/[slug]/route.ts        # GET — fetch approved spec by slug
+│   │   ├── swag/admin/list             # GET — all specs w/ lint counts (draft/approved/needs-regen)
+│   │   ├── swag/admin/spec/[slug]      # GET, DELETE, PUT (PUT preserves review metadata)
+│   │   ├── swag/admin/status           # PATCH — set status/notes (also used by "Save notes" flag)
 │   │   ├── sheet/route.ts              # GET — Google Sheets CSV proxy (for AI research links)
 │   │   └── scrape-results/apps/        # internal queries against /app/data/1800dtc.db
 │   ├── questionnaire/page.tsx          # standalone recommendation quiz (still mock-data)
@@ -90,7 +99,7 @@ src/
 ├── components/
 │   ├── common/                         # Badge, Button, Card, Drawer, Input, Modal, MoleculeLoader
 │   ├── offers/                         # OfferCard, OfferGrid, OfferFilters, OfferDrawer, ClaimForm
-│   └── swag/                           # SwagCalculator, ProjectionChart, SwagReport, SwagLoader,
+│   └── swag/                           # SwagCalculator, ProjectionChart, SwagReport, SwagLoader, SwagReviewPanel (admin),
 │                                       # SwagDisclaimer, AskForIntroModal, AdminToolbar (dev-only),
 │                                       # AiResearchBar, InputField, InputSection, DerivedField,
 │                                       # CustomDropdown, MoleculeLoader, AnimatedValue
@@ -102,11 +111,12 @@ src/
 │   ├── api.ts                          # offers/claims fetchers + mappers
 │   ├── scrapeDb.ts                     # better-sqlite3 reader for 1800dtc.db
 │   ├── swagDb.ts                       # better-sqlite3 reader/writer for swags.db
-│   ├── serverAuth.ts                   # is_admin check for /scrape-results
+│   ├── serverAuth.ts                   # is_admin check for /admin/scrape-results
 │   ├── categoryColors.ts               # category color mapping
 │   └── swag/                           # SWAG engine + types
 │       ├── swag-types.ts               # SwagSpec, BrandProfile, SwagBenefit, etc.
 │       ├── swag-engine.ts              # computeSwag(), formula evaluation
+│       ├── review.ts                   # lintSwagSpec() — canonical-label + shape checks for admin
 │       ├── format.ts                   # fmtMoney, fmtPct, fmtMultiple
 │       ├── highlight.tsx               # green token highlighting with TextScramble
 │       └── prompt-builder.ts           # AI research prompt generation
@@ -183,11 +193,17 @@ swag_specs (
   partner_name TEXT NOT NULL,  -- display name (e.g., "Klaviyo")
   spec_json TEXT NOT NULL,     -- full SwagSpec as JSON
   tier INTEGER NOT NULL,       -- 0=public, 1=partner calculator, 2=private data
+  status TEXT NOT NULL,        -- 'draft' | 'approved' | 'needs-regen'
+  reviewed_by TEXT,            -- who approved/flagged (e.g., 'peter', 'claude-fix-em-dash')
+  reviewed_at TEXT,            -- when the current status was set
+  review_notes TEXT,           -- flag for fix — see admin review workflow below
   generated_at TEXT NOT NULL,
   generated_by TEXT,           -- who/what created it (agent name, skill, etc.)
   created_at TEXT, updated_at TEXT
 )
 ```
+
+Only `status='approved'` specs surface in the user-facing `GET /api/swag` and `GET /api/swag/[slug]` endpoints. Drafts and needs-regen specs are admin-only.
 
 **How specs get into the database:** agents and the `/generate-swag` skill use `scripts/upsert-swag.js`:
 
@@ -211,6 +227,21 @@ No rebuild or deploy needed — specs are served on demand via `GET /api/swag/[s
 **The SWAG engine** (`src/lib/swag/swag-engine.ts`) evaluates benefit formulas at 3 confidence levels (60%, 80%, 100%), applies category-specific defaults, and computes break-even monthly pricing. The `SwagCalculator` component renders the interactive UI with charts (recharts), narrative briefs, and an "Ask for an intro" CTA.
 
 **generate-swag skill** (`.claude/skills/generate-swag.md`) documents the 5-step process for creating a SWAG spec from a partner's public website: read site → identify benefits → map to formulas → write spec → verify math. Includes canonical benefit label vocabulary for cross-partner comparability.
+
+**Admin review workflow** (`/admin/swags`):
+
+1. Agent writes a spec via `scripts/upsert-swag.js` — it lands as `status='draft'`.
+2. Operator opens `/admin/swags`, reviews drafts sorted by lint-severity (Red desc by default). The modal shows a **Review panel** side-by-side with the **Live calculator**:
+   - Review panel lists each benefit's formula, resolved SWAG defaults with their sources, per-benefit $/yr contribution at the sample brand (250k orders, $120 AOV), and a reviewer checklist.
+   - **Deterministic lint** from `src/lib/swag/review.ts` flags canonical-label mismatches, missing sources, non-canonical byCategory/byDepartment keys, em dashes, AI-speak words, and $1M+ sample totals. Red = block-worthy, Yellow = worth checking. Once a spec is approved, lint badges render muted with a strike-through (yellows were implicitly accepted at approval and shouldn't look like outstanding work).
+3. Actions in the modal footer:
+   - **Approve** — sets `status='approved'`, stamps `reviewed_by` + `reviewed_at`, stores any notes.
+   - **Mark needs regen** — sets `status='needs-regen'`; an agent should re-run `/generate-swag` and upsert a fresh version.
+   - **Delete** — drops the row entirely (use for bogus/off-topic partners, not text fixes).
+   - **Save notes** — writes `review_notes` without changing status. Used to flag a small text fix ("remove em dash in X benefit") for Claude to handle without kicking the spec back to draft. The table's **Flag** column renders an orange `⚑ fix` badge on any row with non-empty notes and is sortable so flagged rows can be pulled to the top of a fix pass.
+4. Claude handling flagged fixes: read `GET /api/swag/admin/list` and filter for `review_notes`, fetch each flagged spec via `GET /api/swag/admin/spec/[slug]`, apply the requested text change, `PUT` back. The PUT endpoint passes `preserveReview=true` to `upsertSwagSpec` so approved status and reviewer metadata stay intact. After the fix, `PATCH /api/swag/admin/status` with `notes: null` clears the flag.
+
+Statuses map to visibility: `approved` is live in the user-facing API, `draft` and `needs-regen` are admin-only. `upsertSwagSpec` without `preserveReview` resets status to `draft` and nulls review metadata on conflict — correct behavior when an agent regenerates a spec but wrong for a typo fix, which is why `preserveReview` exists.
 
 ## deployment
 
@@ -264,7 +295,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 AUTH_API_URL=https://api.dtcmvpete.com
 ```
 
-For `/scrape-results` to work locally you need a copy of `1800dtc.db` at the path `SCRAPE_DB_PATH` points to (default `./data/1800dtc.db`).
+For `/admin/scrape-results` to work locally you need a copy of `1800dtc.db` at the path `SCRAPE_DB_PATH` points to (default `./data/1800dtc.db`).
 
 ## related docs
 
