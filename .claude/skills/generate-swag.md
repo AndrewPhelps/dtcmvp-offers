@@ -223,6 +223,8 @@ When `byCategory` fires, the UI shows an "adjusted for [Category]" hint next to 
 
 Output a JSON spec file following this exact format. Save it to `partners/[slug].json` in the repo.
 
+**The `narrative` object is REQUIRED.** The SWAG page renders a personalized hero headline and role-specific paragraphs using this block. Without it, the hero falls back to a generic "Here's what X is worth to Y" — noticeably weaker than the headline treatment every seeded spec ships with. Any swarm-generated spec missing `narrative` will be bounced back for regeneration.
+
 ```json
 {
   "slug": "orderediting",
@@ -232,6 +234,21 @@ Output a JSON spec file following this exact format. Save it to `partners/[slug]
   "tags": ["post-purchase", "cx", "upsell"],
   "pricingMonthly": 800,
   "tier": 0,
+  "narrative": {
+    "headline": "Order Editing could add {totalValue}/yr to {brandName} by letting customers fix their own orders.",
+    "byDepartment": {
+      "CX / Support": "For {contactName} on the CX side: self-serve order edits deflect the single most common ticket type. {brandName} stops burning agent time on address changes and size swaps, and the customer experience improves because they get the edit instantly instead of waiting on a reply.",
+      "Ecommerce / DTC": "For {contactName} on the ecom side: the editing flow doubles as a post-purchase upsell surface. Every customer who opens the editor to change their order sees complementary add-ons, which creates {benefit_upsell_revenue}/yr in net-new revenue for {brandName}.",
+      "Finance / Accounting": "For {contactName} reviewing the budget: at {targetMultiple} target, the ceiling on what {brandName} should pay is {maxMonthly}/mo. The blended value of {totalValue}/yr is split between support savings and upsell revenue.",
+      "Founder & CEO": "For {contactName}: Order Editing removes the most repetitive class of support tickets and turns post-purchase moments into revenue. {totalValue}/yr to {brandName} at {targetMultiple} target.",
+      "Other": "Order Editing adds {totalValue}/yr to {brandName} by reducing support volume and creating post-purchase upsell moments."
+    },
+    "byCategory": {
+      "Apparel & Fashion": "Apparel brands benefit most because size changes and swaps are the dominant ticket type. Self-serve editing typically resolves 90%+ of size-related contacts without a human in the loop.",
+      "Beauty & Cosmetics": "Beauty brands see strong post-purchase upsell on the editing flow because complementary products (trial sizes, related items) convert naturally at the point of review.",
+      "Other": "Self-serve editing performance varies by catalog depth and product type, but the core insight holds: the most-edited moment is also a natural upsell surface."
+    }
+  },
   "benefits": [
     {
       "id": "support_reduction",
@@ -303,6 +320,15 @@ Output a JSON spec file following this exact format. Save it to `partners/[slug]
 - `formula` uses the exact variable names from `brandInputs` + `swagDefaults` keys. Keep it readable arithmetic.
 - `brandInputs` only lists fields from the standard brand profile (see Step 3). Don't invent new profile fields.
 - `sources` lists URLs and specific claims so anyone can verify. Tag each case study with its category when known: "Dr Squatch (Beauty): +3.2% CVR".
+
+**Narrative rules:**
+- `narrative` is required on every spec. No exceptions.
+- `headline` is one sentence. Lead with the partner name, name the mechanism, end with `{totalValue}/yr to {brandName}` (or similar). This is the first thing a brand reads, so it has to land.
+- `byDepartment` MUST include an `"Other"` key as the fallback. Add entries for the 2 to 4 departments that are the real audience for this tool (e.g. `CX / Support` for Gorgias, `Retention / CRM` for Klaviyo, `Performance / Paid` for AIX). Don't populate every department — empty entries fall back to `Other`.
+- `byCategory` MUST include an `"Other"` key. Add entries for the 2 to 4 categories where the partner's case studies cluster (e.g. Apparel for post-purchase tools, Health & Wellness for subscriptions). Use CANONICAL category names from this exact list: `Apparel & Fashion`, `Beauty & Cosmetics`, `Health & Wellness`, `Sports & Fitness`, `Food & Drink`, `Home & Electronics`, `Baby & Kids`, `Pet & Vet`, `Other`. `Pet & Vet` not `Pets`. `Food & Drink` not `Food & Beverage`.
+- Available template variables: `{partnerName}`, `{brandName}`, `{contactName}`, `{totalValue}` (compact like "$1.1M"), `{totalValueFull}` (like "$1,057,500"), `{maxMonthly}`, `{maxAnnual}`, `{targetMultiple}` (like "8x"), `{revenueTotal}`, `{costSavingsTotal}`, `{timeSavingsTotal}`, `{benefitCount}`, and `{benefit_<id>}` for each benefit's individual annual value. Use the IDs you defined in the `benefits` array.
+- Canonical department keys: `Retention / CRM`, `Creative / Brand`, `Influencer / Affiliate`, `Performance / Paid`, `SEO / Content`, `Ecommerce / DTC`, `Marketing / Growth`, `Finance / Accounting`, `CX / Support`, `Operations / Logistics`, `Data / Analytics`, `Sales / B2B`, `Engineering / Technology`, `Product / UX`, `People / HR`, `PR / Communications`, `Founder & CEO`, `Other C-Suite`, `Other`. Exact casing matters.
+- Tone: the narrative paragraphs talk directly to `{contactName}` at `{brandName}`. Keep each one to 2 to 3 sentences max. Reference specific benefits by name or by their compact `{benefit_<id>}` value when it helps the argument.
 
 ### Step 5 — Verify the math
 
