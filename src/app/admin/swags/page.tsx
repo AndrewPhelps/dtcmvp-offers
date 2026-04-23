@@ -60,7 +60,7 @@ const statusBadgeClass: Record<Status, string> = {
 
 const REVIEWER = 'peter';
 
-type SortKey = 'partner' | 'status' | 'tier' | 'red' | 'yellow' | 'updated' | 'reviewed';
+type SortKey = 'partner' | 'status' | 'tier' | 'red' | 'yellow' | 'flag' | 'updated' | 'reviewed';
 type SortDir = 'asc' | 'desc';
 
 const COLUMNS: Array<{ key: SortKey; label: string; numeric?: boolean }> = [
@@ -69,6 +69,7 @@ const COLUMNS: Array<{ key: SortKey; label: string; numeric?: boolean }> = [
   { key: 'tier', label: 'Tier', numeric: true },
   { key: 'red', label: 'Red', numeric: true },
   { key: 'yellow', label: 'Yellow', numeric: true },
+  { key: 'flag', label: 'Flag', numeric: true },
   { key: 'updated', label: 'Updated' },
   { key: 'reviewed', label: 'Reviewed' },
 ];
@@ -135,6 +136,8 @@ export default function AdminSwagsPage() {
           return dir * ((a.lintCounts?.red ?? 0) - (b.lintCounts?.red ?? 0));
         case 'yellow':
           return dir * ((a.lintCounts?.yellow ?? 0) - (b.lintCounts?.yellow ?? 0));
+        case 'flag':
+          return dir * ((a.review_notes ? 1 : 0) - (b.review_notes ? 1 : 0));
         case 'updated':
           return dir * a.updated_at.localeCompare(b.updated_at);
         case 'reviewed':
@@ -192,6 +195,38 @@ export default function AdminSwagsPage() {
     setSelectedSpec(null);
     setNotesDraft('');
   }, []);
+
+  // Save review notes without changing status. Useful when the operator
+  // wants to flag an already-approved spec ("fix em dash in X benefit")
+  // without re-running the approval flow.
+  const saveNotesOnly = useCallback(async () => {
+    if (!selectedSpec) return;
+    setActionBusy(true);
+    try {
+      const res = await fetch('/api/swag/admin/status', {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          slug: selectedSpec.meta.slug,
+          status: selectedSpec.meta.status,
+          reviewed_by: REVIEWER,
+          notes: notesDraft || null,
+        }),
+      });
+      if (!res.ok) throw new Error(`notes save failed: ${res.status}`);
+      await loadList();
+      const refreshed = await fetch(`/api/swag/admin/spec/${selectedSpec.meta.slug}`, { cache: 'no-store' });
+      if (refreshed.ok) {
+        const data = (await refreshed.json()) as AdminSpecResponse;
+        setSelectedSpec(data);
+        setNotesDraft(data.meta.review_notes ?? '');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'notes save failed');
+    } finally {
+      setActionBusy(false);
+    }
+  }, [selectedSpec, notesDraft, loadList]);
 
   const setStatus = useCallback(async (status: Status) => {
     if (!selectedSpec) return;
@@ -309,6 +344,8 @@ export default function AdminSwagsPage() {
               <tbody>
                 {sorted.map((r) => {
                   const lc = r.lintCounts ?? { red: 0, yellow: 0, error: false };
+                  const approved = r.status === 'approved';
+                  const hasFlag = Boolean(r.review_notes);
                   return (
                     <tr
                       key={r.slug}
@@ -329,14 +366,38 @@ export default function AdminSwagsPage() {
                         {lc.error ? (
                           <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-red-500/20 text-red-400 border border-red-500/40">err</span>
                         ) : lc.red > 0 ? (
-                          <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-red-500/20 text-red-300 border border-red-500/40">{lc.red}</span>
+                          approved ? (
+                            <span className="inline-block px-2 py-0.5 rounded text-xs text-[var(--text-tertiary)] line-through" title="Accepted at approval">
+                              {lc.red}
+                            </span>
+                          ) : (
+                            <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-red-500/20 text-red-300 border border-red-500/40">{lc.red}</span>
+                          )
                         ) : (
                           <span className="text-[var(--text-tertiary)]">—</span>
                         )}
                       </td>
                       <td className="px-4 py-3">
                         {lc.yellow > 0 ? (
-                          <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-yellow-500/20 text-yellow-300 border border-yellow-500/40">{lc.yellow}</span>
+                          approved ? (
+                            <span className="inline-block px-2 py-0.5 rounded text-xs text-[var(--text-tertiary)] line-through" title="Accepted at approval">
+                              {lc.yellow}
+                            </span>
+                          ) : (
+                            <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-yellow-500/20 text-yellow-300 border border-yellow-500/40">{lc.yellow}</span>
+                          )
+                        ) : (
+                          <span className="text-[var(--text-tertiary)]">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {hasFlag ? (
+                          <span
+                            className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-[var(--brand-orange)]/20 text-[var(--brand-orange)] border border-[var(--brand-orange)]/40"
+                            title={r.review_notes ?? ''}
+                          >
+                            ⚑ fix
+                          </span>
                         ) : (
                           <span className="text-[var(--text-tertiary)]">—</span>
                         )}
@@ -381,14 +442,24 @@ export default function AdminSwagsPage() {
         footer={selectedSpec ? (
           <div className="px-4 md:px-8 py-4 flex flex-wrap items-center gap-3">
             <label className="flex-1 min-w-[240px] flex items-center gap-2">
-              <span className="text-xs text-[var(--text-secondary)] shrink-0">Notes</span>
+              <span className="text-xs text-[var(--text-secondary)] shrink-0">Flag / notes</span>
               <input
                 value={notesDraft}
                 onChange={(e) => setNotesDraft(e.target.value)}
-                placeholder="Review notes (optional)"
+                placeholder="e.g. fix em dash in upsell description"
                 className="flex-1 bg-[var(--bg-body)] border border-[var(--border-default)] rounded-md px-3 py-1.5 text-sm"
               />
             </label>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={saveNotesOnly}
+              loading={actionBusy}
+              disabled={notesDraft === (selectedSpec.meta.review_notes ?? '')}
+              title="Save flag/notes without changing status — for small fixes you want Claude to handle"
+            >
+              Save notes
+            </Button>
             <Button
               variant="secondary"
               size="sm"

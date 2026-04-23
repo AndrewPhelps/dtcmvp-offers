@@ -203,16 +203,23 @@ export function getStatusCounts(): { status: SwagStatus; count: number }[] {
 export interface UpsertOptions {
   status?: SwagStatus;
   generatedBy?: string;
+  /**
+   * When true, preserve existing status and review metadata on conflict.
+   * Used by the admin inline-edit endpoint where an operator is fixing
+   * typos or em dashes without wanting to blow away the approval.
+   * Agents (and the seed/batch flows) leave this off so re-generated
+   * specs correctly return to the review queue.
+   */
+  preserveReview?: boolean;
 }
 
 /**
  * Insert or replace a SWAG spec.
  *
  * On insert: status defaults to 'draft' (or whatever the caller passes).
- * On conflict: status is reset to 'draft' unless caller explicitly passes
- *   a status — the spec content just changed, so a prior 'approved' stamp
- *   no longer applies. The seed script passes 'approved' explicitly when
- *   replaying trusted fixtures.
+ * On conflict: status is reset to the incoming status (default 'draft')
+ *   and review metadata is cleared — a regenerated spec needs re-review.
+ *   Pass opts.preserveReview=true to suppress both, used by admin edits.
  */
 export function upsertSwagSpec(
   slug: string,
@@ -224,6 +231,24 @@ export function upsertSwagSpec(
 ): void {
   const status: SwagStatus = opts.status ?? 'draft';
   const generatedBy = opts.generatedBy ?? null;
+
+  if (opts.preserveReview) {
+    // Touch content fields only. Status and reviewed_* stay as-is.
+    db().prepare(`
+      INSERT INTO swag_specs (
+        slug, partner_name, spec_json, tier, status,
+        generated_at, generated_by, updated_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
+      ON CONFLICT(slug) DO UPDATE SET
+        partner_name = excluded.partner_name,
+        spec_json = excluded.spec_json,
+        tier = excluded.tier,
+        generated_at = excluded.generated_at,
+        updated_at = datetime('now')
+    `).run(slug, partnerName, specJson, tier, status, generatedAt, generatedBy);
+    return;
+  }
 
   db().prepare(`
     INSERT INTO swag_specs (

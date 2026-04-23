@@ -8,7 +8,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getAdminSwagSpec, deleteSwagSpec } from '@/lib/swagDb';
+import { getAdminSwagSpec, deleteSwagSpec, upsertSwagSpec } from '@/lib/swagDb';
+import type { SwagSpec } from '@/lib/swag/swag-types';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,4 +57,53 @@ export async function DELETE(
     return NextResponse.json({ error: 'SWAG spec not found' }, { status: 404 });
   }
   return NextResponse.json({ deleted: slug });
+}
+
+/**
+ * PUT /api/swag/admin/spec/[slug] — replace the spec body while preserving
+ * review metadata. Used by the admin inline JSON editor for typo fixes
+ * and similar non-material edits. The slug in the URL must match the
+ * slug in the body.
+ */
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ slug: string }> },
+) {
+  const { slug } = await params;
+  const existing = getAdminSwagSpec(slug);
+  if (!existing) {
+    return NextResponse.json({ error: 'SWAG spec not found' }, { status: 404 });
+  }
+
+  let body: { spec?: SwagSpec };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  const spec = body.spec;
+  if (!spec || typeof spec !== 'object') {
+    return NextResponse.json({ error: 'body.spec is required' }, { status: 400 });
+  }
+  if (!spec.slug || spec.slug !== slug) {
+    return NextResponse.json(
+      { error: `spec.slug must match URL slug (${slug})` },
+      { status: 400 },
+    );
+  }
+  if (!spec.partnerName) {
+    return NextResponse.json({ error: 'spec.partnerName is required' }, { status: 400 });
+  }
+
+  upsertSwagSpec(
+    spec.slug,
+    spec.partnerName,
+    JSON.stringify(spec),
+    spec.tier ?? existing.tier,
+    spec.generatedAt ?? existing.generated_at,
+    { preserveReview: true },
+  );
+
+  return NextResponse.json({ ok: true, slug });
 }
