@@ -73,23 +73,16 @@ export default function SwagReviewPanel({ spec }: Props) {
 
   return (
     <div className="border border-[var(--border-default)] rounded-xl bg-[var(--bg-card)] mb-6">
-      {/* Header */}
-      <div className="p-4 md:p-6 border-b border-[var(--border-default)]">
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div>
-            <h2 className="text-lg md:text-xl font-semibold">Review panel</h2>
-            <p className="text-xs text-[var(--text-secondary)] mt-1">
-              Derivation, canonical-label lints, and a reviewer checklist. Scroll below for the live calculator.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className={`px-2 py-1 rounded text-xs font-medium ${summary.red > 0 ? severityClass('red') : 'bg-[var(--bg-card-hover)] text-[var(--text-secondary)] border border-[var(--border-default)]'}`}>
-              {summary.red} red
-            </span>
-            <span className={`px-2 py-1 rounded text-xs font-medium ${summary.yellow > 0 ? severityClass('yellow') : 'bg-[var(--bg-card-hover)] text-[var(--text-secondary)] border border-[var(--border-default)]'}`}>
-              {summary.yellow} yellow
-            </span>
-          </div>
+      {/* Header — slim since this panel is always rendered alongside the live calculator on the right */}
+      <div className="p-4 md:p-5 border-b border-[var(--border-default)] flex items-center justify-between gap-3 flex-wrap">
+        <h2 className="text-base font-semibold">Review · sample brand</h2>
+        <div className="flex items-center gap-2">
+          <span className={`px-2 py-1 rounded text-xs font-medium ${summary.red > 0 ? severityClass('red') : 'bg-[var(--bg-card-hover)] text-[var(--text-secondary)] border border-[var(--border-default)]'}`}>
+            {summary.red} red
+          </span>
+          <span className={`px-2 py-1 rounded text-xs font-medium ${summary.yellow > 0 ? severityClass('yellow') : 'bg-[var(--bg-card-hover)] text-[var(--text-secondary)] border border-[var(--border-default)]'}`}>
+            {summary.yellow} yellow
+          </span>
         </div>
       </div>
 

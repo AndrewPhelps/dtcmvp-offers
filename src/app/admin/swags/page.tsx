@@ -422,15 +422,9 @@ export default function AdminSwagsPage() {
         {selectedSpec && (
           <div className="flex flex-col md:flex-row h-full md:h-[calc(90vh-10rem)]">
             <div className="md:w-1/2 md:h-full overflow-y-auto p-4 md:p-6 md:border-r border-[var(--border-default)]">
-              <div className="text-xs uppercase tracking-widest text-[var(--text-secondary)] font-semibold mb-3">
-                Review panel (sample brand)
-              </div>
               <SwagReviewPanel key={selectedSpec.meta.slug} spec={selectedSpec.spec} />
             </div>
             <div className="md:w-1/2 md:h-full overflow-y-auto p-4 md:p-6">
-              <div className="text-xs uppercase tracking-widest text-[var(--text-secondary)] font-semibold mb-3">
-                Live calculator (what brands see)
-              </div>
               <SwagCalculator key={selectedSpec.meta.slug} spec={selectedSpec.spec} />
             </div>
           </div>
