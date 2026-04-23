@@ -37,24 +37,24 @@ type Props = {
 
 export default function AiResearchBar({ spec, profile, results }: Props) {
   return (
-    <div className="rounded-xl border border-border/50 bg-bg-secondary p-6 print:hidden">
-      <div className="flex items-start justify-between gap-4">
-        <div>
+    <div className="rounded-xl border border-border/50 bg-bg-secondary p-4 md:p-6 print:hidden">
+      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+        <div className="min-w-0">
           <h3 className="text-sm font-grotesk font-semibold text-text-primary mb-1">
             Research this with your AI
           </h3>
-          <p className="text-xs text-text-muted font-grotesk leading-relaxed max-w-md">
+          <p className="text-xs text-text-muted font-grotesk leading-relaxed md:max-w-md">
             Open a conversation pre-loaded with your SWAG results. Your AI can search for community reviews, give you a second opinion, and help you prep questions for a call.
           </p>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-2 flex-wrap md:flex-nowrap md:flex-shrink-0">
           {AI_PLATFORMS.map((platform) => (
             <a
               key={platform.id}
               href={buildAiUrl(platform.id, spec, profile, results)}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-bg-primary text-text-secondary hover:text-accent-green hover:border-accent-green/40 transition-all text-xs font-grotesk"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-bg-primary text-text-secondary hover:text-accent-green hover:border-accent-green/40 transition-all text-xs font-grotesk whitespace-nowrap"
             >
               <AiIcon platform={platform.id} />
               {platform.name}

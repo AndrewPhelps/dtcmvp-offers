@@ -2,8 +2,8 @@
 
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
-import { Search, Sparkles, ArrowRight, Trash2 } from 'lucide-react';
-import { Card, MoleculeLoader } from '@/components/common';
+import { Search, Sparkles, ArrowRight, Trash2, ChevronDown, Check } from 'lucide-react';
+import { Card, MoleculeLoader, Modal } from '@/components/common';
 import { OfferDrawer } from '@/components/offers';
 import { QuestionnaireModal } from '@/components/questionnaire';
 import { Offer, Partner, Category, Tag } from '@/types';
@@ -61,6 +61,7 @@ export default function OffersMarketplaceClient({ offers, partners, categories, 
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [questionnaireOpen, setQuestionnaireOpen] = useState(false);
+  const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
   const {
     setAvailableOffers,
     hiddenOfferIds,
@@ -282,44 +283,29 @@ export default function OffersMarketplaceClient({ offers, partners, categories, 
                     </div>
                   </div>
                 )}
-                {/* Category pills */}
-                <div className="overflow-x-auto pb-2 -mx-4 px-4">
-                  <div className="flex gap-2 min-w-max">
+                {/* Category picker trigger — opens a modal list instead of horizontal scroll */}
+                {(() => {
+                  const selectedCategory = selectedCategoryId !== 'all'
+                    ? categories.find((c) => c.id === selectedCategoryId)
+                    : null;
+                  const selectedCount = selectedCategory
+                    ? getCategoryCount(selectedCategory.id)
+                    : getTotalActiveOffersCount();
+                  const selectedLabel = selectedCategory ? selectedCategory.name : 'All categories';
+                  return (
                     <button
-                      onClick={() => {
-                        setSelectedCategoryId('all');
-                        clearRecommendationView();
-                      }}
-                      className={`flex-shrink-0 px-3 py-2 rounded-full text-sm whitespace-nowrap ${
-                        selectedCategoryId === 'all' && !selectedRecommendation
-                          ? 'bg-[var(--brand-green-primary)] text-[var(--bg-body)]'
-                          : 'bg-[var(--bg-card)] text-[var(--text-secondary)] border border-[var(--border-default)]'
-                      }`}
+                      onClick={() => setCategoryPickerOpen(true)}
+                      className="flex items-center justify-between w-full px-4 py-3 rounded-lg bg-[var(--bg-card)] border border-[var(--border-default)] text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)] transition-colors"
                     >
-                      All ({getTotalActiveOffersCount()})
+                      <span className="flex items-center gap-2 min-w-0">
+                        <span className="text-[var(--text-tertiary)] text-xs uppercase tracking-wider shrink-0">Category</span>
+                        <span className="truncate">{selectedLabel}</span>
+                        <span className="text-[var(--text-tertiary)] text-xs font-mono shrink-0">({selectedCount})</span>
+                      </span>
+                      <ChevronDown className="w-4 h-4 text-[var(--text-tertiary)] shrink-0 ml-2" />
                     </button>
-                    {categories.map((category) => {
-                      const colors = getCategoryColorByColorName(category.color);
-                      const isSelected = selectedCategoryId === category.id && !selectedRecommendation;
-                      return (
-                        <button
-                          key={category.id}
-                          onClick={() => {
-                            setSelectedCategoryId(category.id);
-                            clearRecommendationView();
-                          }}
-                          className={`flex-shrink-0 px-3 py-2 rounded-full text-sm whitespace-nowrap ${
-                            isSelected
-                              ? `${colors.bg} ${colors.text}`
-                              : 'bg-[var(--bg-card)] text-[var(--text-secondary)] border border-[var(--border-default)]'
-                          }`}
-                        >
-                          {category.name} ({getCategoryCount(category.id)})
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+                  );
+                })()}
               </div>
 
               {/* Desktop: Vertical sidebar */}
@@ -616,6 +602,55 @@ export default function OffersMarketplaceClient({ offers, partners, categories, 
         onClose={() => setQuestionnaireOpen(false)}
         onComplete={() => handleQuestionnaireComplete()}
       />
+
+      {/* Category picker (mobile) */}
+      <Modal
+        isOpen={categoryPickerOpen}
+        onClose={() => setCategoryPickerOpen(false)}
+        maxWidth="max-w-md"
+        header={<h2 className="text-lg font-semibold">Filter by category</h2>}
+      >
+        <div className="py-2">
+          <button
+            onClick={() => {
+              setSelectedCategoryId('all');
+              clearRecommendationView();
+              setCategoryPickerOpen(false);
+            }}
+            className="flex items-center justify-between w-full px-4 md:px-6 py-3 text-left hover:bg-[var(--bg-card-hover)] transition-colors"
+          >
+            <span className="flex items-center gap-3">
+              <span className="text-sm font-medium text-[var(--text-primary)]">All categories</span>
+              <span className="text-xs font-mono text-[var(--text-tertiary)]">{getTotalActiveOffersCount()}</span>
+            </span>
+            {selectedCategoryId === 'all' && !selectedRecommendation && (
+              <Check className="w-4 h-4 text-[var(--brand-green-primary)]" />
+            )}
+          </button>
+          <div className="border-t border-[var(--border-default)]" />
+          {categories.map((category) => {
+            const isSelected = selectedCategoryId === category.id && !selectedRecommendation;
+            const count = getCategoryCount(category.id);
+            return (
+              <button
+                key={category.id}
+                onClick={() => {
+                  setSelectedCategoryId(category.id);
+                  clearRecommendationView();
+                  setCategoryPickerOpen(false);
+                }}
+                className="flex items-center justify-between w-full px-4 md:px-6 py-3 text-left hover:bg-[var(--bg-card-hover)] transition-colors"
+              >
+                <span className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-[var(--text-primary)]">{category.name}</span>
+                  <span className="text-xs font-mono text-[var(--text-tertiary)]">{count}</span>
+                </span>
+                {isSelected && <Check className="w-4 h-4 text-[var(--brand-green-primary)]" />}
+              </button>
+            );
+          })}
+        </div>
+      </Modal>
     </div>
   );
 }

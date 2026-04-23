@@ -220,55 +220,56 @@ export default function SwagCalculator({ spec }: { spec: SwagSpec }) {
             {spec.tagline}
           </p>
           <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-2 text-xs text-text-muted font-mono">
-              <span>{fmtNumber(profile.annualOrders)} orders/yr</span>
+            <div className="flex items-center gap-x-2 gap-y-1 flex-wrap text-xs text-text-muted font-mono">
+              <span className="whitespace-nowrap">{fmtNumber(profile.annualOrders)} orders/yr</span>
               <span className="text-border">·</span>
-              <span>{fmtMoney(profile.aov)} AOV</span>
+              <span className="whitespace-nowrap">{fmtMoney(profile.aov)} AOV</span>
               <span className="text-border">·</span>
-              <span>{fmtNumber(profile.monthlyWebTraffic)} visits/mo</span>
+              <span className="whitespace-nowrap">{fmtNumber(profile.monthlyWebTraffic)} visits/mo</span>
               <span className="text-border">·</span>
-              <span>{profile.targetRoiMultiple}x target</span>
+              <span className="whitespace-nowrap">{profile.targetRoiMultiple}x target</span>
               {profile.primaryCategory !== 'Other' && (
                 <>
                   <span className="text-border">·</span>
-                  <span>{profile.primaryCategory}</span>
+                  <span className="whitespace-nowrap">{profile.primaryCategory}</span>
                 </>
               )}
             </div>
             <button
               onClick={() => setView('inputs')}
-              aria-label="edit input"
-              className="text-text-muted hover:underline inline-flex items-center"
+              aria-label="Edit brand profile"
+              className="text-text-muted hover:text-text-primary hover:underline inline-flex items-center gap-1 text-xs font-grotesk"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                 <path d="M18.375 2.625a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4Z" />
               </svg>
+              <span>Edit</span>
             </button>
           </div>
         </header>
 
-        {/* Tab toggle + CTA */}
-        <div ref={tabRowRef} className="flex items-center justify-between mb-6">
-        <div className="flex gap-1 p-1 bg-bg-secondary rounded-lg w-fit">
-          {(['swag', 'brief', 'inputs'] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setView(tab)}
-              className={`px-4 py-2 rounded-md text-xs font-grotesk font-semibold uppercase tracking-wider transition-all ${
-                view === tab
-                  ? 'bg-accent-green text-[#0f172a]'
-                  : 'text-text-muted hover:text-text-primary'
-              }`}
-            >
-              {tab === 'swag' ? 'SWAG' : tab === 'brief' ? 'Brief' : 'Input'}
-            </button>
-          ))}
-        </div>
+        {/* Tab toggle + CTA — stack on mobile so the CTA gets its own full-width row */}
+        <div ref={tabRowRef} className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
+          <div className="flex gap-1 p-1 bg-bg-secondary rounded-lg w-fit">
+            {(['swag', 'brief', 'inputs'] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setView(tab)}
+                className={`px-4 py-2 rounded-md text-xs font-grotesk font-semibold uppercase tracking-wider transition-all ${
+                  view === tab
+                    ? 'bg-accent-green text-[#0f172a]'
+                    : 'text-text-muted hover:text-text-primary'
+                }`}
+              >
+                {tab === 'swag' ? 'SWAG' : tab === 'brief' ? 'Brief' : 'Input'}
+              </button>
+            ))}
+          </div>
           <button
             onClick={() => setShowIntroModal(true)}
             ref={inlineBtnRef}
-            className="group btn-primary px-5 py-2 text-sm flex items-center gap-2 print:hidden"
+            className="group btn-primary px-5 py-2 text-sm flex items-center justify-center gap-2 whitespace-nowrap w-full md:w-auto print:hidden"
           >
             Ask for an intro
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="arrow-nudge">
@@ -281,7 +282,7 @@ export default function SwagCalculator({ spec }: { spec: SwagSpec }) {
         {ctaFixed && (
           <button
             onClick={() => setShowIntroModal(true)}
-            className="group sticky top-0 z-40 btn-primary px-5 py-2 text-sm flex items-center gap-2 shadow-lg shadow-accent-green/20 print:hidden ml-auto"
+            className="group sticky top-0 z-40 btn-primary px-5 py-2 text-sm flex items-center justify-center gap-2 whitespace-nowrap shadow-lg shadow-accent-green/20 print:hidden ml-auto"
           >
             Ask for an intro
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="arrow-nudge">

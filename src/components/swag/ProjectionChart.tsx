@@ -76,26 +76,26 @@ export default function ProjectionChart({ metrics, category, partnerName }: Prop
 
   return (
     <div>
-      <div className="flex items-start justify-between gap-4 mb-4">
-        <div>
+      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 md:gap-4 mb-4">
+        <div className="min-w-0">
           <p className="text-xs text-text-secondary font-grotesk leading-relaxed">
             Based on {fmtMoneyCompact(metric.baseMonthly * 12)}/yr current revenue (your orders x AOV) with seasonal patterns for {category !== 'Other' ? category : 'your category'}.
           </p>
-          <div className="flex gap-4 mt-2">
-            <div className="text-xs font-mono text-text-muted">
+          <div className="flex gap-x-4 gap-y-1 flex-wrap mt-2">
+            <div className="text-xs font-mono text-text-muted whitespace-nowrap">
               Current: <span className="text-text-secondary">{fmtMoneyCompact(monthlyData.totalWithout)}/yr</span>
             </div>
-            <div className="text-xs font-mono text-text-muted">
+            <div className="text-xs font-mono text-text-muted whitespace-nowrap">
               With {partnerName}: <span className="text-accent-green">{fmtMoneyCompact(monthlyData.totalWith)}/yr</span>
             </div>
-            <div className="text-xs font-mono text-text-muted">
+            <div className="text-xs font-mono text-text-muted whitespace-nowrap">
               Lift: <span className="text-accent-green">+{fmtMoneyCompact(monthlyData.totalLift)}/yr</span>
             </div>
           </div>
         </div>
 
-        {/* Toggle */}
-        <div className="flex gap-1 p-1 bg-bg-primary rounded-lg flex-shrink-0">
+        {/* Toggle — self-start on mobile so it doesn't stretch full-width */}
+        <div className="flex gap-1 p-1 bg-bg-primary rounded-lg self-start md:flex-shrink-0">
           <button
             onClick={() => setMode('monthly')}
             className={`px-3 py-1 rounded-md text-[10px] font-grotesk font-semibold uppercase tracking-wider transition-all ${

@@ -157,6 +157,7 @@ export default function OfferDrawer({ offer, partner, isOpen, onClose }: OfferDr
   );
 
   // Footer content - actions on right
+  // On mobile: hide/save icons stay compact; SWAG and Claim are primary actions with labels.
   const footerContent = (
     <div className="flex items-center justify-end px-4 md:px-8 py-4 md:py-6 gap-2 md:gap-3">
 
@@ -164,17 +165,19 @@ export default function OfferDrawer({ offer, partner, isOpen, onClose }: OfferDr
       <div className="flex items-center gap-2 md:gap-3">
         {!isClaimed && (
           <>
-            {/* Hide button - icon only on mobile */}
+            {/* Hide — icon only, utility action */}
             <button
               onClick={handleHide}
+              aria-label="Not for me"
               className="flex items-center gap-2 p-2 md:px-4 md:py-2 rounded-lg text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
             >
               <EyeOff className="w-4 h-4" />
               <span className="hidden md:inline">Not for Me</span>
             </button>
-            {/* Save button - icon only on mobile */}
+            {/* Save — icon only, utility action */}
             <button
               onClick={handleSaveToggle}
+              aria-label={isSaved ? 'Unsave offer' : 'Save offer for later'}
               className={`flex items-center gap-2 p-2 md:px-4 md:py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
                 isSaved
                   ? 'bg-[var(--brand-green-primary)]/10 text-[var(--brand-green-primary)]'
@@ -190,13 +193,13 @@ export default function OfferDrawer({ offer, partner, isOpen, onClose }: OfferDr
           <button
             onClick={handleShowSwag}
             disabled={swagLoading}
-            className="flex items-center gap-2 p-2 md:px-4 md:py-2 rounded-lg text-sm font-medium text-[var(--brand-blue-primary)] hover:bg-[var(--brand-blue-primary)]/10 transition-colors cursor-pointer disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-2 md:px-4 md:py-2 rounded-lg text-sm font-semibold text-[var(--brand-blue-primary)] bg-[var(--brand-blue-primary)]/10 hover:bg-[var(--brand-blue-primary)]/20 border border-[var(--brand-blue-primary)]/30 transition-colors cursor-pointer disabled:opacity-50 whitespace-nowrap"
           >
             {swagLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <BarChart3 className="w-4 h-4" />}
-            <span className="hidden md:inline">{swagLoading ? 'Loading...' : 'See the SWAG'}</span>
+            <span>{swagLoading ? 'Loading' : 'SWAG'}</span>
           </button>
         )}
-        <Button onClick={() => setShowClaimForm(true)} disabled={isClaimed} className="text-sm md:text-base">
+        <Button onClick={() => setShowClaimForm(true)} disabled={isClaimed} className="text-sm md:text-base whitespace-nowrap">
           {isClaimed ? 'Claimed' : 'Claim Offer'}
         </Button>
       </div>
