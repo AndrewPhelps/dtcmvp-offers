@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import type { SwagSpec } from '@/lib/swag/swag-types'
-import { BENEFIT_TYPE_META, CANONICAL_BENEFIT_LABELS, DEPARTMENTS, CATEGORIES, DEFAULT_BRAND_PROFILE } from '@/lib/swag/swag-types'
+import { BENEFIT_TYPE_META, DEFAULT_BRAND_PROFILE } from '@/lib/swag/swag-types'
 import { computeSwag } from '@/lib/swag/swag-engine'
 import { lintSwagSpec, summarizeIssues, type ReviewIssue } from '@/lib/swag/review'
 import { fmtMoney, fmtMoneyCompact, fmtNumber, fmtPct } from '@/lib/swag/format'
@@ -48,7 +48,6 @@ export default function SwagReviewPanel({ spec }: Props) {
   const summary = useMemo(() => summarizeIssues(issues), [issues])
   const r = results.hundred
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({})
-  const [showReference, setShowReference] = useState(false)
 
   // Index issues by benefit for inline display
   const issuesByBenefit = useMemo(() => {
@@ -281,63 +280,6 @@ export default function SwagReviewPanel({ spec }: Props) {
         </p>
       </div>
 
-      {/* Canonical reference (collapsed by default) */}
-      <div className="p-4 md:p-6">
-        <button
-          onClick={() => setShowReference((s) => !s)}
-          className="flex items-center gap-2 text-xs uppercase tracking-widest text-[var(--text-secondary)] font-semibold hover:text-[var(--text-primary)] transition-colors"
-        >
-          <span>{showReference ? '▾' : '▸'}</span>
-          Canonical reference (labels, categories, departments)
-        </button>
-        {showReference && (
-          <div className="mt-3 space-y-4 text-xs">
-            <div>
-              <div className="text-[10px] uppercase tracking-widest text-[var(--text-tertiary)] font-semibold mb-1">
-                Benefit labels (revenue-generation)
-              </div>
-              <div className="font-mono text-[var(--text-secondary)]">
-                {CANONICAL_BENEFIT_LABELS['revenue-generation'].join(' · ')}
-              </div>
-            </div>
-            <div>
-              <div className="text-[10px] uppercase tracking-widest text-[var(--text-tertiary)] font-semibold mb-1">
-                Benefit labels (cost-saving)
-              </div>
-              <div className="font-mono text-[var(--text-secondary)]">
-                {CANONICAL_BENEFIT_LABELS['cost-saving'].join(' · ')}
-              </div>
-            </div>
-            <div>
-              <div className="text-[10px] uppercase tracking-widest text-[var(--text-tertiary)] font-semibold mb-1">
-                Benefit labels (time-saving)
-              </div>
-              <div className="font-mono text-[var(--text-secondary)]">
-                {CANONICAL_BENEFIT_LABELS['time-saving'].join(' · ')}
-              </div>
-            </div>
-            <div>
-              <div className="text-[10px] uppercase tracking-widest text-[var(--text-tertiary)] font-semibold mb-1">
-                Categories
-              </div>
-              <div className="font-mono text-[var(--text-secondary)]">
-                {CATEGORIES.join(' · ')}
-              </div>
-            </div>
-            <div>
-              <div className="text-[10px] uppercase tracking-widest text-[var(--text-tertiary)] font-semibold mb-1">
-                Departments
-              </div>
-              <div className="font-mono text-[var(--text-secondary)]">
-                {DEPARTMENTS.join(' · ')}
-              </div>
-            </div>
-            <p className="text-[10px] text-[var(--text-tertiary)]">
-              Attributed Revenue must include a channel in parens, e.g. "Attributed Revenue (SMS)" — lint will flag the bare form.
-            </p>
-          </div>
-        )}
-      </div>
     </div>
   )
 }

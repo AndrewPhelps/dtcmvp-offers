@@ -165,6 +165,21 @@ export function listAllSwagSpecs(filterStatus?: SwagStatus): Omit<SwagSpecRow, '
 }
 
 /**
+ * Same as listAllSwagSpecs but includes spec_json so the caller can run
+ * checks (e.g. lint) server-side before returning a trimmed payload.
+ */
+export function listAllSwagSpecsWithJson(filterStatus?: SwagStatus): SwagSpecRow[] {
+  if (filterStatus) {
+    return db().prepare(
+      `SELECT * FROM swag_specs WHERE status = ? ORDER BY updated_at DESC`
+    ).all(filterStatus) as SwagSpecRow[];
+  }
+  return db().prepare(
+    `SELECT * FROM swag_specs ORDER BY updated_at DESC`
+  ).all() as SwagSpecRow[];
+}
+
+/**
  * Get a single spec regardless of status (for admin preview).
  */
 export function getAdminSwagSpec(slug: string): SwagSpecRow | null {

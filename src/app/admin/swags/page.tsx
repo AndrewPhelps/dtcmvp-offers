@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
+import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import Modal from '@/components/common/Modal';
 import Button from '@/components/common/Button';
 import type { SwagSpec } from '@/lib/swag/swag-types';
@@ -18,6 +19,12 @@ const SwagReviewPanel = dynamic(
 
 type Status = 'draft' | 'approved' | 'needs-regen';
 
+interface LintCounts {
+  red: number;
+  yellow: number;
+  error: boolean;
+}
+
 interface SpecRow {
   slug: string;
   partner_name: string;
@@ -30,11 +37,12 @@ interface SpecRow {
   generated_by: string | null;
   created_at: string;
   updated_at: string;
+  lintCounts: LintCounts;
 }
 
 interface AdminSpecResponse {
   spec: SwagSpec;
-  meta: SpecRow;
+  meta: Omit<SpecRow, 'lintCounts'>;
 }
 
 const STATUS_FILTERS: Array<{ key: Status | 'all'; label: string }> = [
@@ -52,6 +60,26 @@ const statusBadgeClass: Record<Status, string> = {
 
 const REVIEWER = 'peter';
 
+type SortKey = 'partner' | 'status' | 'tier' | 'red' | 'yellow' | 'updated' | 'reviewed';
+type SortDir = 'asc' | 'desc';
+
+const COLUMNS: Array<{ key: SortKey; label: string; numeric?: boolean }> = [
+  { key: 'partner', label: 'Partner' },
+  { key: 'status', label: 'Status' },
+  { key: 'tier', label: 'Tier', numeric: true },
+  { key: 'red', label: 'Red', numeric: true },
+  { key: 'yellow', label: 'Yellow', numeric: true },
+  { key: 'updated', label: 'Updated' },
+  { key: 'reviewed', label: 'Reviewed' },
+];
+
+// Status priority for sorting: drafts and needs-regen to the top.
+const STATUS_SORT_ORDER: Record<Status, number> = {
+  'needs-regen': 0,
+  draft: 1,
+  approved: 2,
+};
+
 export default function AdminSwagsPage() {
   const [rows, setRows] = useState<SpecRow[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
@@ -63,6 +91,9 @@ export default function AdminSwagsPage() {
   const [selectedLoading, setSelectedLoading] = useState(false);
   const [actionBusy, setActionBusy] = useState(false);
   const [notesDraft, setNotesDraft] = useState('');
+  // Default sort: most reds first, then yellows — reviewer tackles problems first.
+  const [sortKey, setSortKey] = useState<SortKey>('red');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
 
   const loadList = useCallback(async () => {
     setLoading(true);
@@ -88,6 +119,54 @@ export default function AdminSwagsPage() {
     if (filter === 'all') return rows;
     return rows.filter((r) => r.status === filter);
   }, [rows, filter]);
+
+  const sorted = useMemo(() => {
+    const arr = [...filtered];
+    const dir = sortDir === 'asc' ? 1 : -1;
+    arr.sort((a, b) => {
+      switch (sortKey) {
+        case 'partner':
+          return dir * a.partner_name.localeCompare(b.partner_name);
+        case 'status':
+          return dir * (STATUS_SORT_ORDER[a.status] - STATUS_SORT_ORDER[b.status]);
+        case 'tier':
+          return dir * (a.tier - b.tier);
+        case 'red':
+          return dir * ((a.lintCounts?.red ?? 0) - (b.lintCounts?.red ?? 0));
+        case 'yellow':
+          return dir * ((a.lintCounts?.yellow ?? 0) - (b.lintCounts?.yellow ?? 0));
+        case 'updated':
+          return dir * a.updated_at.localeCompare(b.updated_at);
+        case 'reviewed':
+          return dir * ((a.reviewed_at ?? '').localeCompare(b.reviewed_at ?? ''));
+        default:
+          return 0;
+      }
+    });
+    return arr;
+  }, [filtered, sortKey, sortDir]);
+
+  const handleSort = useCallback((key: SortKey) => {
+    setSortKey((prevKey) => {
+      if (prevKey === key) {
+        // Toggle direction on same column.
+        setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+      } else {
+        // New column — numeric columns default to desc (more = more attention needed),
+        // text columns default to asc.
+        const col = COLUMNS.find((c) => c.key === key);
+        setSortDir(col?.numeric ? 'desc' : 'asc');
+      }
+      return key;
+    });
+  }, []);
+
+  const sortIcon = useCallback((key: SortKey) => {
+    if (sortKey !== key) return <ArrowUpDown className="w-3 h-3 opacity-50" />;
+    return sortDir === 'asc'
+      ? <ArrowUp className="w-3 h-3" />
+      : <ArrowDown className="w-3 h-3" />;
+  }, [sortKey, sortDir]);
 
   const openSpec = useCallback(async (slug: string) => {
     setSelectedSlug(slug);
@@ -210,40 +289,68 @@ export default function AdminSwagsPage() {
             <table className="w-full text-sm">
               <thead className="bg-[var(--bg-card-hover)] text-xs uppercase tracking-wide text-[var(--text-secondary)]">
                 <tr>
-                  <th className="text-left px-4 py-3">Partner</th>
-                  <th className="text-left px-4 py-3">Slug</th>
-                  <th className="text-left px-4 py-3">Status</th>
-                  <th className="text-left px-4 py-3">Tier</th>
-                  <th className="text-left px-4 py-3">Generated by</th>
-                  <th className="text-left px-4 py-3">Updated</th>
-                  <th className="text-left px-4 py-3">Reviewed</th>
+                  {COLUMNS.map((col) => {
+                    const active = sortKey === col.key;
+                    return (
+                      <th
+                        key={col.key}
+                        onClick={() => handleSort(col.key)}
+                        className={`text-left px-4 py-3 cursor-pointer select-none hover:text-[var(--text-primary)] transition-colors ${active ? 'text-[var(--text-primary)]' : ''}`}
+                      >
+                        <span className="inline-flex items-center gap-1.5">
+                          {col.label}
+                          {sortIcon(col.key)}
+                        </span>
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((r) => (
-                  <tr
-                    key={r.slug}
-                    onClick={() => openSpec(r.slug)}
-                    className="border-t border-[var(--border-default)] hover:bg-[var(--bg-card-hover)] cursor-pointer"
-                  >
-                    <td className="px-4 py-3 font-medium">{r.partner_name}</td>
-                    <td className="px-4 py-3 font-mono text-xs text-[var(--text-secondary)]">{r.slug}</td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${statusBadgeClass[r.status]}`}>
-                        {r.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">{r.tier}</td>
-                    <td className="px-4 py-3 text-[var(--text-secondary)]">{r.generated_by ?? '—'}</td>
-                    <td className="px-4 py-3 text-[var(--text-secondary)] whitespace-nowrap">{formatDate(r.updated_at)}</td>
-                    <td className="px-4 py-3 text-[var(--text-secondary)] whitespace-nowrap">
-                      {r.reviewed_by ? `${r.reviewed_by} · ${formatDate(r.reviewed_at)}` : '—'}
-                    </td>
-                  </tr>
-                ))}
-                {filtered.length === 0 && !loading && (
+                {sorted.map((r) => {
+                  const lc = r.lintCounts ?? { red: 0, yellow: 0, error: false };
+                  return (
+                    <tr
+                      key={r.slug}
+                      onClick={() => openSpec(r.slug)}
+                      className="border-t border-[var(--border-default)] hover:bg-[var(--bg-card-hover)] cursor-pointer"
+                    >
+                      <td className="px-4 py-3">
+                        <div className="font-medium">{r.partner_name}</div>
+                        <div className="text-xs font-mono text-[var(--text-tertiary)]">{r.slug}</div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${statusBadgeClass[r.status]}`}>
+                          {r.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">{r.tier}</td>
+                      <td className="px-4 py-3">
+                        {lc.error ? (
+                          <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-red-500/20 text-red-400 border border-red-500/40">err</span>
+                        ) : lc.red > 0 ? (
+                          <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-red-500/20 text-red-300 border border-red-500/40">{lc.red}</span>
+                        ) : (
+                          <span className="text-[var(--text-tertiary)]">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {lc.yellow > 0 ? (
+                          <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-yellow-500/20 text-yellow-300 border border-yellow-500/40">{lc.yellow}</span>
+                        ) : (
+                          <span className="text-[var(--text-tertiary)]">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-[var(--text-secondary)] whitespace-nowrap">{formatDate(r.updated_at)}</td>
+                      <td className="px-4 py-3 text-[var(--text-secondary)] whitespace-nowrap">
+                        {r.reviewed_by ? `${r.reviewed_by} · ${formatDate(r.reviewed_at)}` : '—'}
+                      </td>
+                    </tr>
+                  );
+                })}
+                {sorted.length === 0 && !loading && (
                   <tr>
-                    <td colSpan={7} className="px-4 py-10 text-center text-[var(--text-secondary)]">
+                    <td colSpan={COLUMNS.length} className="px-4 py-10 text-center text-[var(--text-secondary)]">
                       No specs match this filter.
                     </td>
                   </tr>
@@ -257,7 +364,7 @@ export default function AdminSwagsPage() {
       <Modal
         isOpen={Boolean(selectedSlug)}
         onClose={closeSpec}
-        maxWidth="max-w-6xl"
+        maxWidth="max-w-[95vw]"
         header={selectedSpec ? (
           <div className="flex items-center gap-3 flex-wrap">
             <h2 className="text-lg md:text-xl font-semibold">{selectedSpec.meta.partner_name}</h2>
@@ -313,13 +420,18 @@ export default function AdminSwagsPage() {
           <div className="p-10 text-center text-[var(--text-secondary)]">Loading spec…</div>
         )}
         {selectedSpec && (
-          <div className="p-4 md:p-6">
-            <SwagReviewPanel spec={selectedSpec.spec} />
-            <div className="pt-4 border-t-2 border-dashed border-[var(--border-default)]">
+          <div className="flex flex-col md:flex-row h-full md:h-[calc(90vh-10rem)]">
+            <div className="md:w-1/2 md:h-full overflow-y-auto p-4 md:p-6 md:border-r border-[var(--border-default)]">
+              <div className="text-xs uppercase tracking-widest text-[var(--text-secondary)] font-semibold mb-3">
+                Review panel (sample brand)
+              </div>
+              <SwagReviewPanel key={selectedSpec.meta.slug} spec={selectedSpec.spec} />
+            </div>
+            <div className="md:w-1/2 md:h-full overflow-y-auto p-4 md:p-6">
               <div className="text-xs uppercase tracking-widest text-[var(--text-secondary)] font-semibold mb-3">
                 Live calculator (what brands see)
               </div>
-              <SwagCalculator spec={selectedSpec.spec} />
+              <SwagCalculator key={selectedSpec.meta.slug} spec={selectedSpec.spec} />
             </div>
           </div>
         )}
