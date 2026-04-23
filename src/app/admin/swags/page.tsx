@@ -1,0 +1,329 @@
+'use client';
+
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
+import Modal from '@/components/common/Modal';
+import Button from '@/components/common/Button';
+import type { SwagSpec } from '@/lib/swag/swag-types';
+
+const SwagCalculator = dynamic(
+  () => import('@/components/swag/SwagCalculator'),
+  { ssr: false },
+);
+
+type Status = 'draft' | 'approved' | 'needs-regen';
+
+interface SpecRow {
+  slug: string;
+  partner_name: string;
+  tier: number;
+  status: Status;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  review_notes: string | null;
+  generated_at: string;
+  generated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface AdminSpecResponse {
+  spec: SwagSpec;
+  meta: SpecRow;
+}
+
+const STATUS_FILTERS: Array<{ key: Status | 'all'; label: string }> = [
+  { key: 'all', label: 'All' },
+  { key: 'draft', label: 'Draft' },
+  { key: 'approved', label: 'Approved' },
+  { key: 'needs-regen', label: 'Needs regen' },
+];
+
+const statusBadgeClass: Record<Status, string> = {
+  draft: 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/40',
+  approved: 'bg-green-500/20 text-green-400 border border-green-500/40',
+  'needs-regen': 'bg-red-500/20 text-red-400 border border-red-500/40',
+};
+
+const REVIEWER = 'peter';
+
+export default function AdminSwagsPage() {
+  const [rows, setRows] = useState<SpecRow[]>([]);
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  const [filter, setFilter] = useState<Status | 'all'>('all');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
+  const [selectedSpec, setSelectedSpec] = useState<AdminSpecResponse | null>(null);
+  const [selectedLoading, setSelectedLoading] = useState(false);
+  const [actionBusy, setActionBusy] = useState(false);
+  const [notesDraft, setNotesDraft] = useState('');
+
+  const loadList = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/swag/admin/list', { cache: 'no-store' });
+      if (!res.ok) throw new Error(`list failed: ${res.status}`);
+      const data = await res.json();
+      setRows(data.specs ?? []);
+      const c: Record<string, number> = {};
+      for (const { status, count } of data.counts ?? []) c[status] = count;
+      setCounts(c);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'unknown error');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadList(); }, [loadList]);
+
+  const filtered = useMemo(() => {
+    if (filter === 'all') return rows;
+    return rows.filter((r) => r.status === filter);
+  }, [rows, filter]);
+
+  const openSpec = useCallback(async (slug: string) => {
+    setSelectedSlug(slug);
+    setSelectedSpec(null);
+    setSelectedLoading(true);
+    setNotesDraft('');
+    try {
+      const res = await fetch(`/api/swag/admin/spec/${slug}`, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`load failed: ${res.status}`);
+      const data = (await res.json()) as AdminSpecResponse;
+      setSelectedSpec(data);
+      setNotesDraft(data.meta.review_notes ?? '');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'load failed');
+      setSelectedSlug(null);
+    } finally {
+      setSelectedLoading(false);
+    }
+  }, []);
+
+  const closeSpec = useCallback(() => {
+    setSelectedSlug(null);
+    setSelectedSpec(null);
+    setNotesDraft('');
+  }, []);
+
+  const setStatus = useCallback(async (status: Status) => {
+    if (!selectedSpec) return;
+    setActionBusy(true);
+    try {
+      const res = await fetch('/api/swag/admin/status', {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          slug: selectedSpec.meta.slug,
+          status,
+          reviewed_by: REVIEWER,
+          notes: notesDraft || null,
+        }),
+      });
+      if (!res.ok) throw new Error(`status update failed: ${res.status}`);
+      await loadList();
+      closeSpec();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'update failed');
+    } finally {
+      setActionBusy(false);
+    }
+  }, [selectedSpec, notesDraft, loadList, closeSpec]);
+
+  const deleteSpec = useCallback(async () => {
+    if (!selectedSpec) return;
+    if (!confirm(`Delete SWAG for ${selectedSpec.meta.partner_name}? This cannot be undone.`)) return;
+    setActionBusy(true);
+    try {
+      const res = await fetch(`/api/swag/admin/spec/${selectedSpec.meta.slug}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error(`delete failed: ${res.status}`);
+      await loadList();
+      closeSpec();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'delete failed');
+    } finally {
+      setActionBusy(false);
+    }
+  }, [selectedSpec, loadList, closeSpec]);
+
+  return (
+    <div className="min-h-screen bg-[var(--bg-body)] text-[var(--text-primary)] p-6 md:p-10">
+      <div className="max-w-7xl mx-auto">
+        <header className="mb-6 flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-semibold">SWAG review</h1>
+            <p className="text-sm text-[var(--text-secondary)] mt-1">
+              {rows.length} total
+              {' · '}
+              {(['draft', 'approved', 'needs-regen'] as Status[]).map((s, i) => (
+                <span key={s}>
+                  {i > 0 ? ' · ' : ''}
+                  <span className={statusBadgeClass[s].split(' ')[1]}>{s}</span>{' '}
+                  {counts[s] ?? 0}
+                </span>
+              ))}
+            </p>
+          </div>
+          <Button variant="secondary" size="sm" onClick={loadList} loading={loading}>
+            Refresh
+          </Button>
+        </header>
+
+        {error && (
+          <div className="mb-4 rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-400">
+            {error}
+          </div>
+        )}
+
+        <div className="mb-4 flex flex-wrap gap-2">
+          {STATUS_FILTERS.map((f) => {
+            const active = filter === f.key;
+            return (
+              <button
+                key={f.key}
+                onClick={() => setFilter(f.key)}
+                className={`px-3 py-1.5 rounded-md text-sm border transition-colors ${
+                  active
+                    ? 'bg-[var(--brand-green-primary)] text-[var(--bg-body)] border-[var(--brand-green-primary)] font-medium'
+                    : 'bg-[var(--bg-card)] text-[var(--text-secondary)] border-[var(--border-default)] hover:text-[var(--text-primary)]'
+                }`}
+              >
+                {f.label}
+                {f.key !== 'all' && (
+                  <span className="ml-1.5 opacity-70">{counts[f.key] ?? 0}</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="rounded-xl border border-[var(--border-default)] overflow-hidden bg-[var(--bg-card)]">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-[var(--bg-card-hover)] text-xs uppercase tracking-wide text-[var(--text-secondary)]">
+                <tr>
+                  <th className="text-left px-4 py-3">Partner</th>
+                  <th className="text-left px-4 py-3">Slug</th>
+                  <th className="text-left px-4 py-3">Status</th>
+                  <th className="text-left px-4 py-3">Tier</th>
+                  <th className="text-left px-4 py-3">Generated by</th>
+                  <th className="text-left px-4 py-3">Updated</th>
+                  <th className="text-left px-4 py-3">Reviewed</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((r) => (
+                  <tr
+                    key={r.slug}
+                    onClick={() => openSpec(r.slug)}
+                    className="border-t border-[var(--border-default)] hover:bg-[var(--bg-card-hover)] cursor-pointer"
+                  >
+                    <td className="px-4 py-3 font-medium">{r.partner_name}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-[var(--text-secondary)]">{r.slug}</td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${statusBadgeClass[r.status]}`}>
+                        {r.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">{r.tier}</td>
+                    <td className="px-4 py-3 text-[var(--text-secondary)]">{r.generated_by ?? '—'}</td>
+                    <td className="px-4 py-3 text-[var(--text-secondary)] whitespace-nowrap">{formatDate(r.updated_at)}</td>
+                    <td className="px-4 py-3 text-[var(--text-secondary)] whitespace-nowrap">
+                      {r.reviewed_by ? `${r.reviewed_by} · ${formatDate(r.reviewed_at)}` : '—'}
+                    </td>
+                  </tr>
+                ))}
+                {filtered.length === 0 && !loading && (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-10 text-center text-[var(--text-secondary)]">
+                      No specs match this filter.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <Modal
+        isOpen={Boolean(selectedSlug)}
+        onClose={closeSpec}
+        maxWidth="max-w-6xl"
+        header={selectedSpec ? (
+          <div className="flex items-center gap-3 flex-wrap">
+            <h2 className="text-lg md:text-xl font-semibold">{selectedSpec.meta.partner_name}</h2>
+            <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${statusBadgeClass[selectedSpec.meta.status]}`}>
+              {selectedSpec.meta.status}
+            </span>
+            <span className="text-xs text-[var(--text-secondary)]">
+              tier {selectedSpec.meta.tier} · slug {selectedSpec.meta.slug}
+            </span>
+          </div>
+        ) : selectedSlug ? (
+          <h2 className="text-lg font-semibold">Loading {selectedSlug}…</h2>
+        ) : null}
+        footer={selectedSpec ? (
+          <div className="px-4 md:px-8 py-4 flex flex-wrap items-center gap-3">
+            <label className="flex-1 min-w-[240px] flex items-center gap-2">
+              <span className="text-xs text-[var(--text-secondary)] shrink-0">Notes</span>
+              <input
+                value={notesDraft}
+                onChange={(e) => setNotesDraft(e.target.value)}
+                placeholder="Review notes (optional)"
+                className="flex-1 bg-[var(--bg-body)] border border-[var(--border-default)] rounded-md px-3 py-1.5 text-sm"
+              />
+            </label>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setStatus('needs-regen')}
+              loading={actionBusy}
+            >
+              Mark needs regen
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={deleteSpec}
+              loading={actionBusy}
+            >
+              Delete
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => setStatus('approved')}
+              loading={actionBusy}
+            >
+              Approve
+            </Button>
+          </div>
+        ) : undefined}
+      >
+        {selectedLoading && (
+          <div className="p-10 text-center text-[var(--text-secondary)]">Loading spec…</div>
+        )}
+        {selectedSpec && (
+          <div className="p-4 md:p-6">
+            <SwagCalculator spec={selectedSpec.spec} />
+          </div>
+        )}
+      </Modal>
+    </div>
+  );
+}
+
+function formatDate(iso: string | null): string {
+  if (!iso) return '—';
+  try {
+    const d = new Date(iso.replace(' ', 'T') + 'Z');
+    if (Number.isNaN(d.getTime())) return iso;
+    return d.toISOString().slice(0, 16).replace('T', ' ');
+  } catch {
+    return iso;
+  }
+}
