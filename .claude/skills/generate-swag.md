@@ -19,6 +19,8 @@ Or conversationally: "generate a SWAG for Klaviyo" / "make the SWAG for this par
 
 If no URL is provided, ask for one. If a partner name is given without a URL, do a web search to find their main site.
 
+**For batch runs across many partners at once, see "Running in batch (swarm mode)" below.**
+
 ## The exercise (5 steps)
 
 ### Step 1 — Read the website (waterfall order)
@@ -399,6 +401,117 @@ If during Step 1 you discover a live calculator on the partner's site, mention i
 2. If they approve, save to `partners/[slug].json`
 3. Note anything you're uncertain about — flag low-confidence SWAGs explicitly
 4. If the user wants changes ("drop benefit 3", "bump the upsell SWAG to 2%"), update the spec and re-verify the math
+
+## Running in batch (swarm mode)
+
+Use this when you need to generate many SWAGs at once instead of one at a time. The orchestrator (Peter, Sean, Jake, or whoever's running the conversation) fires N parallel agents, each running the 5-step skill above for one partner. Output is a directory of JSON files for human review and bulk upsert.
+
+### When to use
+
+- New backlog of partners (e.g., adding 30+ to the marketplace)
+- Quarterly refresh of stale SWAGs
+- Filling coverage gaps from `1800dtc.db`
+
+### Step 1 — Build the candidate list
+
+The source of truth for "which Shopify apps actually matter" is `1800dtc.db` on the droplet at `/app/data/1800dtc.db`. Pull candidates with:
+
+```js
+// Run inside the dtcmvp-offers-frontend container
+const Database = require('better-sqlite3');
+const db = new Database('/app/data/1800dtc.db', {readonly: true});
+const candidates = db.prepare(
+  "SELECT slug, name, brand_count, review_count FROM apps " +
+  "WHERE brand_count >= 10 OR verified = 1 " +
+  "ORDER BY COALESCE(brand_count, 0) DESC, COALESCE(review_count, 0) DESC"
+).all();
+```
+
+The `brand_count >= 10 OR verified = 1` filter captures both apps with broad DTC adoption AND verified Shopify-listed apps that haven't had brands scraped yet. As of 2026-04-24 this yields ~418 candidates.
+
+### Step 2 — Filter against current DB
+
+Pull the live SWAG slugs to skip what's already done:
+
+```bash
+curl -s https://offers.dtcmvp.com/api/swag/admin/list | \
+  jq -r '.specs[].slug' > /tmp/in-db.txt
+```
+
+Also maintain a skip list for partners that don't fit the SWAG framework: generic SaaS (Stripe, Webflow, Zapier, Notion), platform infra (Shopify, BigCommerce, WooCommerce), pure analytics tools without per-merchant ROI shape (PostHog, Datadog, Heap), and anything where the agent should obviously skip rather than try.
+
+### Step 3 — Fire the swarm
+
+Use the Agent tool to fan out one agent per partner. Recommended batch size: **30 agents per swarm**, run sequentially batch-by-batch to keep token usage predictable. Sonnet 4.6 is acceptable for this work; use Opus 4.7 only when quality issues appear in a Sonnet batch.
+
+Per-agent prompt template:
+
+```
+Generate a SWAG spec for {PARTNER_NAME}.
+
+URL: {URL}
+Slug: {SLUG}
+partnerName (exact, no parens or .com suffix): {PARTNER_NAME}
+Output path: /tmp/swag-batch-{TAG}/{SLUG}.json
+
+Read the skill at /Users/peter/Documents/GitHub/dtcmvp-offers/.claude/skills/generate-swag.md before starting. Reference fixtures: /Users/peter/Documents/GitHub/dtcmvp-offers/src/partners/aftersell.json, klaviyo.json, gorgias.json.
+
+Constraints:
+- Use ONLY canonical benefit labels: CVR Lift, AOV Lift, Repeat Rate Lift, LTV Lift, Cart Recovery, Upsell Revenue, Subscription Revenue, Attributed Revenue, Winback Revenue, Retention Revenue, List Growth Revenue, Ad Revenue, Organic Revenue, Flow Optimization, Ticket Deflection, Return Prevention, ROAS Improvement, Fee Avoidance, Shipping Optimization, Tool Consolidation, Workflow Automation
+- Channel-in-parens (e.g. "(Email)", "(SMS)") is ONLY allowed on "Attributed Revenue"
+- Use ONLY canonical category names: Apparel & Fashion, Beauty & Cosmetics, Health & Wellness, Sports & Fitness, Food & Drink, Home & Electronics, Baby & Kids, Pet & Vet, Other
+- NO em-dashes, en-dashes, or double-hyphens in any prose. NO AI-speak (leverage, robust, seamless, delve, moreover, crucial, vital, unlock, empower, meticulous, tapestry). Write plain English.
+- If you cannot find sufficient public info to build a credible SWAG, do NOT write a file — report "skipped: not enough info"
+
+Ship the JSON. One-line confirmation when done.
+```
+
+### Step 4 — Lint the output
+
+After the swarm returns, sanity-check the batch directory:
+
+```python
+import json, os, re
+EMDASH = '—'
+CANON = {'CVR Lift','AOV Lift','Repeat Rate Lift','LTV Lift','Cart Recovery','Upsell Revenue','Subscription Revenue','Attributed Revenue','Winback Revenue','Retention Revenue','List Growth Revenue','Ad Revenue','Organic Revenue','Flow Optimization','Ticket Deflection','Return Prevention','ROAS Improvement','Fee Avoidance','Shipping Optimization','Tool Consolidation','Workflow Automation'}
+AI = [r'\bleverag(e|ing|es)\b', r'\brobust\b', r'\bseamless(ly)?\b', r'\bdelve\b', r'\bmoreover\b', r'\bfurthermore\b', r'\bcrucial\b', r'\bvital\b', r'\bunlocks?\b', r'\bempowers?\b', r'\bmeticulous(ly)?\b', r'\btapestry\b']
+
+for f in os.listdir('/tmp/swag-batch-TAG'):
+    text = open(f'/tmp/swag-batch-TAG/{f}').read()
+    d = json.loads(text)
+    bad_labels = [b['label'] for b in d['benefits'] if b['label'].split(' (')[0] not in CANON]
+    bad_paren = [b['label'] for b in d['benefits'] if '(' in b['label'] and not b['label'].startswith('Attributed Revenue')]
+    em = text.count(EMDASH)
+    ai = sum(len(re.findall(p, text, re.IGNORECASE)) for p in AI)
+    if bad_labels or bad_paren or em or ai:
+        print(f, {'bad_labels': bad_labels, 'bad_paren': bad_paren, 'emdash': em, 'ai_speak': ai})
+```
+
+Anything flagged should be re-run on Opus or fixed by hand before upsert.
+
+### Step 5 — Hand off for upsert
+
+If you're running outside Peter's environment (e.g., Jake on his account), commit the batch directory to a branch or share via Slack/Drive. Peter or whoever has droplet access runs:
+
+```bash
+ssh deploy@142.93.27.155 'rm -rf /tmp/swag-batch-TAG && mkdir -p /tmp/swag-batch-TAG'
+scp /tmp/swag-batch-TAG/*.json deploy@142.93.27.155:/tmp/swag-batch-TAG/
+ssh deploy@142.93.27.155 'docker exec --user root dtcmvp-offers-frontend rm -rf /tmp/swag-batch-TAG && \
+  docker cp /tmp/swag-batch-TAG dtcmvp-offers-frontend:/tmp/swag-batch-TAG && \
+  docker exec --user root dtcmvp-offers-frontend chmod -R a+rx /tmp/swag-batch-TAG && \
+  docker exec dtcmvp-offers-frontend node /app/scripts/upsert-swag.js --batch /tmp/swag-batch-TAG'
+```
+
+All upserts land as `status=draft` for human review in `/admin/swags`.
+
+### Em-dash and AI-speak cleanup pass
+
+Sonnet agents in batch mode often miss em-dashes and slip in AI-speak. Run a second sweep after the initial generation:
+
+1. Re-pull the affected slugs from the DB to local files
+2. For each file: deterministic replace `" — "` with `", "` and bare `—` with `,`
+3. Fire one Sonnet agent per ~5 specs with the AI-speak word list and explicit instruction to rewrite (not just delete) any flagged sentences
+4. Re-lint and re-upsert. **Caveat:** `upsert-swag.js --batch` currently resets `status=draft` and clears `reviewed_by`/`reviewed_at` on every conflict (see `lib/swagDb.ts` `upsertSwagSpec` — only `preserveReview: true` keeps those, and the CLI doesn't expose that flag yet). For now, run cleanup BEFORE any human approval lands, or add a `--preserve-review` flag to the script before sweeping approved specs.
 
 ## Common pitfalls
 
