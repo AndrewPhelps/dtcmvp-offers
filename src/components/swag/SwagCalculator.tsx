@@ -22,6 +22,7 @@ import AskForIntroModal from './AskForIntroModal'
 import ProjectionChart from './ProjectionChart'
 import type { ProjectionMetric } from './ProjectionChart'
 import { useAuth } from '@/contexts/AuthContext'
+import { submitIntroRequest } from '@/lib/api'
 
 // Per-benefit colors: shades within each type so stacked bars are readable
 const BENEFIT_PALETTE: Record<BenefitType, string[]> = {
@@ -203,7 +204,31 @@ export default function SwagCalculator({ spec }: { spec: SwagSpec }) {
           results={results}
           onClose={() => setShowIntroModal(false)}
           onSubmit={(email) => {
-            console.log('Intro requested:', { email, slug: spec.slug, profile: profile.brandName })
+            const r = results.hundred
+            console.log('[intro] submitting', {
+              partnerSlug: spec.slug,
+              partnerName: spec.partnerName,
+              email,
+              brandName: profile.brandName,
+            })
+            submitIntroRequest({
+              partnerSlug: spec.slug,
+              partnerName: spec.partnerName,
+              email,
+              brandProfile: {
+                brandName: profile.brandName,
+                contactName: profile.contactName,
+                department: profile.department,
+                primaryCategory: profile.primaryCategory,
+                targetRoiMultiple: profile.targetRoiMultiple,
+              },
+              swagSummary: {
+                totalAnnualValue: r.totalAnnualValue,
+                maxMonthlyPrice: r.maxMonthlyPrice,
+              },
+            })
+              .then(() => console.log('[intro] submitted ok'))
+              .catch((err) => console.error('[intro] submit failed', err))
           }}
         />
       )}

@@ -245,6 +245,40 @@ export async function submitClaim(input: SubmitClaimInput): Promise<SubmitClaimR
   return res.json() as Promise<SubmitClaimResult>;
 }
 
+export interface SubmitIntroInput {
+  partnerSlug: string;
+  partnerName: string;
+  email: string;
+  brandProfile: {
+    brandName?: string;
+    contactName?: string;
+    department?: string;
+    primaryCategory?: string;
+    targetRoiMultiple?: number;
+  };
+  swagSummary: {
+    totalAnnualValue?: number;
+    maxMonthlyPrice?: number;
+  };
+}
+
+/**
+ * Submit a SWAG "Ask for an intro" request. Auth required.
+ * Server posts to Slack and logs verbosely; no Airtable record yet.
+ */
+export async function submitIntroRequest(input: SubmitIntroInput): Promise<{ success: true }> {
+  const res = await authFetch(`${API_URL}/offers/intros`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`Intro request failed (${res.status}): ${body}`);
+  }
+  return res.json() as Promise<{ success: true }>;
+}
+
 /**
  * Fetch claims belonging to the authenticated user (matched by email).
  */
