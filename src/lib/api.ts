@@ -304,6 +304,23 @@ export async function submitIntroRequest(input: SubmitIntroInput): Promise<{ suc
 }
 
 /**
+ * Append an outcome note to a claim. Server concatenates with existing
+ * Notes (timestamped); the previous content is never overwritten.
+ */
+export async function appendClaimNotes(claimId: string, notes: string): Promise<{ success: true; claim_id: string; notes: string }> {
+  const res = await authFetch(`${API_URL}/offers/claims/${encodeURIComponent(claimId)}/notes`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ notes }),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`appendClaimNotes failed (${res.status}): ${body}`);
+  }
+  return res.json() as Promise<{ success: true; claim_id: string; notes: string }>;
+}
+
+/**
  * Fetch claims belonging to the authenticated user (matched by email).
  */
 export async function getMyClaims(): Promise<ClaimRecord[]> {

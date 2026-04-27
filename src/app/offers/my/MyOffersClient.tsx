@@ -24,6 +24,9 @@ export default function MyOffersClient({ offers, partners }: MyOffersClientProps
   const [notesModalOpen, setNotesModalOpen] = useState(false);
   const [notesOfferId, setNotesOfferId] = useState<string | null>(null);
   const [notesValue, setNotesValue] = useState('');
+  const [existingNotes, setExistingNotes] = useState('');
+  const [notesSaving, setNotesSaving] = useState(false);
+  const [notesError, setNotesError] = useState<string | null>(null);
   const { claims, savedOfferIds, updateClaimNotes, unsaveOffer } = useBrand();
 
   const claimedOffers = useMemo(() => {
@@ -65,7 +68,9 @@ export default function MyOffersClient({ offers, partners }: MyOffersClientProps
   // Handle notes modal
   const openNotesModal = (offerId: string, currentNotes: string) => {
     setNotesOfferId(offerId);
-    setNotesValue(currentNotes);
+    setExistingNotes(currentNotes || '');
+    setNotesValue(''); // textarea is for the new entry only — server appends
+    setNotesError(null);
     setNotesModalOpen(true);
   };
 
@@ -73,13 +78,22 @@ export default function MyOffersClient({ offers, partners }: MyOffersClientProps
     setNotesModalOpen(false);
     setNotesOfferId(null);
     setNotesValue('');
+    setExistingNotes('');
+    setNotesError(null);
   };
 
-  const saveNotes = () => {
-    if (notesOfferId) {
-      updateClaimNotes(notesOfferId, notesValue);
+  const saveNotes = async () => {
+    if (!notesOfferId || !notesValue.trim()) return;
+    setNotesSaving(true);
+    setNotesError(null);
+    try {
+      await updateClaimNotes(notesOfferId, notesValue);
+      closeNotesModal();
+    } catch (err) {
+      setNotesError(err instanceof Error ? err.message : 'Failed to save outcome');
+    } finally {
+      setNotesSaving(false);
     }
-    closeNotesModal();
   };
 
   return (
@@ -391,7 +405,7 @@ export default function MyOffersClient({ offers, partners }: MyOffersClientProps
           <div className="flex items-center gap-3">
             <FileText className="w-5 h-5 text-[var(--brand-green-primary)]" />
             <h2 className="text-xl font-semibold text-[var(--text-primary)]">
-              {notesValue ? 'Edit Outcome' : 'Add Outcome'}
+              {existingNotes ? 'Add Outcome Update' : 'Add Outcome'}
             </h2>
           </div>
         }
@@ -399,11 +413,12 @@ export default function MyOffersClient({ offers, partners }: MyOffersClientProps
           <div className="flex items-center justify-end gap-2 md:gap-3 px-4 md:px-8 py-3 md:py-4">
             <button
               onClick={closeNotesModal}
-              className="px-3 md:px-4 py-2 rounded-lg text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+              disabled={notesSaving}
+              className="px-3 md:px-4 py-2 rounded-lg text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)] transition-colors cursor-pointer disabled:opacity-50"
             >
               Cancel
             </button>
-            <Button onClick={saveNotes}>
+            <Button onClick={saveNotes} loading={notesSaving} disabled={!notesValue.trim()}>
               Save Outcome
             </Button>
           </div>
@@ -412,16 +427,27 @@ export default function MyOffersClient({ offers, partners }: MyOffersClientProps
       >
         <div className="p-4 md:p-8">
           <p className="text-sm text-[var(--text-secondary)] mb-3 md:mb-4">
-            Record the outcome of this offer claim (e.g., call scheduled, partnership started, results achieved).
+            Record the outcome of this offer claim (e.g., call scheduled, partnership started, results achieved). New entries are appended — previous notes are preserved.
           </p>
+          {existingNotes && (
+            <div className="mb-4">
+              <p className="text-xs uppercase tracking-widest text-[var(--text-tertiary)] mb-1.5">Previous notes</p>
+              <pre className="whitespace-pre-wrap font-sans text-sm text-[var(--text-secondary)] bg-[var(--bg-body)] border border-[var(--border-default)] rounded-lg px-3 py-2.5 max-h-40 overflow-y-auto">
+                {existingNotes}
+              </pre>
+            </div>
+          )}
           <textarea
             value={notesValue}
             onChange={(e) => setNotesValue(e.target.value)}
-            placeholder="Add notes about this claim..."
+            placeholder={existingNotes ? 'Add a new update…' : 'Add notes about this claim...'}
             rows={5}
             className="w-full px-3 md:px-4 py-2.5 md:py-3 bg-[var(--bg-body)] border border-[var(--border-default)] rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:border-[var(--brand-green-primary)] resize-none"
             autoFocus
           />
+          {notesError && (
+            <p className="mt-2 text-xs text-red-400">{notesError}</p>
+          )}
         </div>
       </Modal>
     </div>

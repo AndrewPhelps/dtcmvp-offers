@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { brandProfile, getLoadingMessages } from '@/data/brandProfile';
 import { Offer } from '@/types';
-import { getMyClaims, ClaimRecord } from '@/lib/api';
+import { getMyClaims, appendClaimNotes, ClaimRecord } from '@/lib/api';
 import { useImpersonation } from '@/contexts/ImpersonationContext';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -11,6 +11,7 @@ export type BrandClaimStatus = 'submitted' | 'intro_sent';
 
 export interface BrandClaim {
   offerId: string;
+  claimId: string;
   status: BrandClaimStatus;
   notes: string;
   claimedAt: string;
@@ -50,7 +51,7 @@ interface BrandContextType {
   // Actions for claims
   claimOffer: (offerId: string) => void;
   getClaimByOfferId: (offerId: string) => BrandClaim | undefined;
-  updateClaimNotes: (offerId: string, notes: string) => void;
+  updateClaimNotes: (offerId: string, notes: string) => Promise<void>;
   markIntroSent: (offerId: string) => void;
   isOfferClaimed: (offerId: string) => boolean;
 
@@ -79,6 +80,7 @@ const initialState: BrandState = {
 function apiClaimToBrandClaim(c: ClaimRecord): BrandClaim {
   return {
     offerId: c.offer_slug,
+    claimId: c.claim_id,
     status: c.status === 'pending' ? 'submitted' : 'intro_sent',
     notes: c.notes ?? '',
     claimedAt: c.claimed_at,
@@ -264,6 +266,7 @@ export function BrandProvider({ children }: { children: ReactNode }) {
         ...prev.claims,
         {
           offerId,
+          claimId: '', // populated on next server refetch
           status: 'submitted',
           notes: '',
           claimedAt: new Date().toISOString(),
@@ -278,14 +281,19 @@ export function BrandProvider({ children }: { children: ReactNode }) {
     return state.claims.find((c) => c.offerId === offerId);
   };
 
-  // updateClaimNotes / markIntroSent are client-only — they update local state
-  // but do not persist to the backend. Adding notes/status edit endpoints is a
-  // separate task; until then these reset on reload.
-  const updateClaimNotes = (offerId: string, notes: string) => {
+  // Append a new outcome note to a claim. Persists server-side; previous
+  // Notes content is preserved (server concatenates).
+  const updateClaimNotes = async (offerId: string, notes: string) => {
+    const claim = state.claims.find((c) => c.offerId === offerId);
+    if (!claim?.claimId) {
+      console.warn('[Brand] updateClaimNotes: no claimId for', offerId);
+      return;
+    }
+    const result = await appendClaimNotes(claim.claimId, notes);
     setState((prev) => ({
       ...prev,
       claims: prev.claims.map((c) =>
-        c.offerId === offerId ? { ...c, notes } : c
+        c.offerId === offerId ? { ...c, notes: result.notes } : c,
       ),
     }));
   };
