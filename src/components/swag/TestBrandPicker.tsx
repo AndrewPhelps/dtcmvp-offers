@@ -76,7 +76,7 @@ export default function TestBrandPicker({ selected, onSelect }: Props) {
             setOpen(true)
           }}
           onFocus={() => setOpen(true)}
-          placeholder="Search brand contact by email…"
+          placeholder="Search brand contact by name or email…"
           className="flex-1 bg-transparent border-none outline-none text-amber-100 placeholder-amber-300/40 text-sm"
         />
         {loading && <span className="text-xs text-amber-300/60">searching…</span>}
