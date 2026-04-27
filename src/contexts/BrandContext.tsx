@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useEffect, useCallback, ReactNode 
 import { brandProfile, getLoadingMessages } from '@/data/brandProfile';
 import { Offer } from '@/types';
 import { getMyClaims, ClaimRecord } from '@/lib/api';
+import { useImpersonation } from '@/contexts/ImpersonationContext';
 import { useAuth } from '@/contexts/AuthContext';
 
 export type BrandClaimStatus = 'submitted' | 'intro_sent';
@@ -87,11 +88,16 @@ function apiClaimToBrandClaim(c: ClaimRecord): BrandClaim {
 export function BrandProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<BrandState>(initialState);
   const { user } = useAuth();
+  const { testBrand } = useImpersonation();
+  // Re-key the fetch by the effective identity (real user OR impersonated brand)
+  // so toggling impersonation refetches and never shows stale claims.
+  const effectiveIdentityKey = testBrand?.contactAirtableId || user?.email || null;
 
-  // Hydrate claims from the backend when a user becomes available.
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
+    // Clear immediately so a stale list never flashes during the refetch.
+    setState((prev) => ({ ...prev, claims: [] }));
     getMyClaims()
       .then((claims) => {
         if (cancelled) return;
@@ -101,7 +107,7 @@ export function BrandProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [user, effectiveIdentityKey]);
 
   // Offers available to the recommendation engine. Populated by the marketplace
   // page on mount from the API. Empty array on other routes — safe, since
