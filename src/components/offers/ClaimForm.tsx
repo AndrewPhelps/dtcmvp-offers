@@ -6,6 +6,7 @@ import { Button, Input, Textarea, Select, Checkbox } from '@/components/common';
 import { FormField } from '@/types';
 import { submitClaim } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { useImpersonation } from '@/contexts/ImpersonationContext';
 
 interface ClaimFormProps {
   offerSlug: string;
@@ -25,6 +26,8 @@ export default function ClaimForm({ offerSlug, offerName, formFields, onClaimed,
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
+  const { testBrand } = useImpersonation();
+  const effectiveEmail = testBrand?.email || user?.email;
 
   const handleChange = (fieldId: string, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [fieldId]: value }));
@@ -76,10 +79,14 @@ export default function ClaimForm({ offerSlug, offerName, formFields, onClaimed,
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      {/* Identity comes from session — show who's signing the claim. */}
-      {user?.email && (
+      {/* Identity comes from session — show who's signing the claim.
+          When admin is impersonating a brand, show that brand's email. */}
+      {effectiveEmail && (
         <p className="text-xs text-[var(--text-tertiary)]">
-          Signed in as <span className="text-[var(--text-secondary)]">{user.email}</span>
+          Signed in as <span className="text-[var(--text-secondary)]">{effectiveEmail}</span>
+          {testBrand && (
+            <span className="ml-2 text-amber-300/80">· admin testing</span>
+          )}
         </p>
       )}
 

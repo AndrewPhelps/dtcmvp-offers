@@ -22,8 +22,8 @@ import AskForIntroModal from './AskForIntroModal'
 import ProjectionChart from './ProjectionChart'
 import type { ProjectionMetric } from './ProjectionChart'
 import { useAuth } from '@/contexts/AuthContext'
-import { submitIntroRequest, type TestBrandMatch } from '@/lib/api'
-import TestBrandPicker from './TestBrandPicker'
+import { submitIntroRequest } from '@/lib/api'
+import { useImpersonation } from '@/contexts/ImpersonationContext'
 
 // Per-benefit colors: shades within each type so stacked bars are readable
 const BENEFIT_PALETTE: Record<BenefitType, string[]> = {
@@ -61,8 +61,8 @@ function groupByType(benefits: BenefitResult[]): { type: BenefitType; items: Ben
 
 export default function SwagCalculator({ spec }: { spec: SwagSpec }) {
   const { user } = useAuth()
+  const { testBrand } = useImpersonation()
   const [profile, setProfile] = useState<BrandProfile>(DEFAULT_BRAND_PROFILE)
-  const [testBrand, setTestBrand] = useState<TestBrandMatch | null>(null)
 
   useEffect(() => {
     if (user?.email) {
@@ -70,8 +70,8 @@ export default function SwagCalculator({ spec }: { spec: SwagSpec }) {
     }
   }, [user?.email])
 
-  // When an admin picks a test brand, populate the profile from it.
-  // Only overwrite the brand-identity fields; keep ROI / numeric inputs as-is.
+  // When an admin picks a test brand from the global picker, populate the
+  // profile's brand-identity fields. Numeric inputs (ROI etc.) stay as-is.
   useEffect(() => {
     if (!testBrand) return
     setProfile((s) => {
@@ -253,9 +253,6 @@ export default function SwagCalculator({ spec }: { spec: SwagSpec }) {
       )}
 
       <main className="min-h-screen px-6 pt-20 pb-10 max-w-[1400px] mx-auto">
-        {user?.is_admin && (
-          <TestBrandPicker selected={testBrand} onSelect={setTestBrand} />
-        )}
         {/* Header */}
         <header className="mb-10">
           <div className="flex items-center gap-3 mb-3">

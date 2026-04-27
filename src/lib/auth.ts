@@ -268,6 +268,9 @@ export async function signOut(): Promise<void> {
   localStorage.removeItem('supabase.auth.refresh_token');
   localStorage.removeItem('supabase.auth.expires_at');
   localStorage.removeItem('user');
+  // Clear admin impersonation on sign-out so the next sign-in starts clean.
+  const { clearImpersonation } = await import('@/contexts/ImpersonationContext');
+  clearImpersonation();
 
   document.cookie = `supabase.auth.token=; path=/; max-age=0; samesite=lax`;
   document.cookie = `supabase.auth.refresh_token=; path=/; max-age=0; samesite=lax`;
@@ -318,6 +321,12 @@ export async function authFetch(input: RequestInfo | URL, init?: RequestInit): P
   const token = localStorage.getItem('supabase.auth.token');
   const headers = new Headers(init?.headers);
   if (token) headers.set('Authorization', `Bearer ${token}`);
+
+  // Admin impersonation: stamp the impersonated contact id on every request.
+  // Backend honors it only for is_admin sessions and only on opted-in routes.
+  const { getImpersonatedContactId } = await import('@/contexts/ImpersonationContext');
+  const impersonateId = getImpersonatedContactId();
+  if (impersonateId) headers.set('X-Impersonate-Contact-Id', impersonateId);
 
   let response = await fetch(input, { ...init, headers });
 

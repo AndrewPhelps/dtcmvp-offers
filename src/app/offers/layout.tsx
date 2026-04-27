@@ -5,7 +5,10 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Sparkles, Loader2, Menu, X } from 'lucide-react';
 import { BrandProvider, useBrand } from '@/contexts';
+import { ImpersonationProvider, useImpersonation } from '@/contexts/ImpersonationContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/common';
+import TestBrandPicker from '@/components/swag/TestBrandPicker';
 
 const brandNavItems = [
   { href: '/offers', label: 'Find Offers', exact: true },
@@ -192,10 +195,24 @@ function OffersLayoutContent({
         </div>
       </div>
 
+      {/* Admin impersonation banner — visible across all brand-facing pages. */}
+      <AdminImpersonationBanner />
+
       {/* Main Content */}
       <main>
         {children}
       </main>
+    </div>
+  );
+}
+
+function AdminImpersonationBanner() {
+  const { user } = useAuth();
+  const { testBrand, setTestBrand } = useImpersonation();
+  if (!user?.is_admin) return null;
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3">
+      <TestBrandPicker selected={testBrand} onSelect={setTestBrand} />
     </div>
   );
 }
@@ -206,8 +223,10 @@ export default function OffersLayout({
   children: React.ReactNode;
 }) {
   return (
-    <BrandProvider>
-      <OffersLayoutContent>{children}</OffersLayoutContent>
-    </BrandProvider>
+    <ImpersonationProvider>
+      <BrandProvider>
+        <OffersLayoutContent>{children}</OffersLayoutContent>
+      </BrandProvider>
+    </ImpersonationProvider>
   );
 }
