@@ -35,8 +35,18 @@ export default function ClaimForm({ offerSlug, offerName, formFields, onClaimed,
     setError(null);
     setLoading(true);
 
+    const normalized = { ...formData };
+    for (const field of formFields) {
+      if (field.type === 'url') {
+        const raw = (normalized[field.id] as string | undefined)?.trim();
+        if (raw && !/^https?:\/\//i.test(raw)) {
+          normalized[field.id] = `https://${raw}`;
+        }
+      }
+    }
+
     try {
-      const result = await submitClaim({ slug: offerSlug, formData });
+      const result = await submitClaim({ slug: offerSlug, formData: normalized });
       setSubmitted(true);
       onClaimed?.(result.claim.claim_id);
       onSubmitted?.();
@@ -82,9 +92,9 @@ export default function ClaimForm({ offerSlug, offerName, formFields, onClaimed,
             return (
               <Input
                 key={field.id}
-                type={field.type}
+                type={field.type === 'url' ? 'text' : field.type}
                 label={field.label}
-                placeholder={field.placeholder}
+                placeholder={field.placeholder ?? (field.type === 'url' ? 'yourstore.com' : undefined)}
                 required={field.required}
                 value={(formData[field.id] as string) || ''}
                 onChange={(e) => handleChange(field.id, e.target.value)}
