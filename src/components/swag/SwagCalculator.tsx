@@ -22,7 +22,9 @@ import AskForIntroModal from './AskForIntroModal'
 import ProjectionChart from './ProjectionChart'
 import type { ProjectionMetric } from './ProjectionChart'
 import { useAuth } from '@/contexts/AuthContext'
-import { submitIntroRequest } from '@/lib/api'
+import { submitIntroRequest, type TestBrandMatch } from '@/lib/api'
+import TestBrandPicker from './TestBrandPicker'
+import { CATEGORIES, type Category } from '@/lib/swag/swag-types'
 
 // Per-benefit colors: shades within each type so stacked bars are readable
 const BENEFIT_PALETTE: Record<BenefitType, string[]> = {
@@ -61,12 +63,30 @@ function groupByType(benefits: BenefitResult[]): { type: BenefitType; items: Ben
 export default function SwagCalculator({ spec }: { spec: SwagSpec }) {
   const { user } = useAuth()
   const [profile, setProfile] = useState<BrandProfile>(DEFAULT_BRAND_PROFILE)
+  const [testBrand, setTestBrand] = useState<TestBrandMatch | null>(null)
 
   useEffect(() => {
     if (user?.email) {
       setProfile((s) => (s.contactEmail ? s : { ...s, contactEmail: user.email }))
     }
   }, [user?.email])
+
+  // When an admin picks a test brand, populate the profile from it.
+  // Only overwrite the brand-identity fields; keep ROI / numeric inputs as-is.
+  useEffect(() => {
+    if (!testBrand) return
+    setProfile((s) => {
+      const cat = testBrand.primaryCategoryBucket
+      const validCategory = cat && (CATEGORIES as readonly string[]).includes(cat) ? (cat as Category) : s.primaryCategory
+      return {
+        ...s,
+        brandName: testBrand.companyName || s.brandName,
+        contactName: testBrand.name || s.contactName,
+        contactEmail: testBrand.email || s.contactEmail,
+        primaryCategory: validCategory,
+      }
+    })
+  }, [testBrand])
 
   const [swagOverrides, setSwagOverrides] = useState<Record<string, number>>({})
   const [customPrice, setCustomPrice] = useState<number | null>(null)
@@ -234,6 +254,9 @@ export default function SwagCalculator({ spec }: { spec: SwagSpec }) {
       )}
 
       <main className="min-h-screen px-6 pt-20 pb-10 max-w-[1400px] mx-auto">
+        {user?.is_admin && (
+          <TestBrandPicker selected={testBrand} onSelect={setTestBrand} />
+        )}
         {/* Header */}
         <header className="mb-10">
           <div className="flex items-center gap-3 mb-3">

@@ -245,6 +245,30 @@ export async function submitClaim(input: SubmitClaimInput): Promise<SubmitClaimR
   return res.json() as Promise<SubmitClaimResult>;
 }
 
+export interface TestBrandMatch {
+  contactAirtableId: string;
+  name: string | null;
+  email: string | null;
+  title: string | null;
+  companyAirtableId: string | null;
+  companyName: string | null;
+  primaryCategoryBucket: string | null;
+}
+
+/**
+ * Admin-only: search Brand-type Contacts by email substring.
+ */
+export async function searchTestBrands(q: string): Promise<TestBrandMatch[]> {
+  if (!q || q.trim().length < 2) return [];
+  const res = await authFetch(`${API_URL}/offers/admin/test-brands?q=${encodeURIComponent(q.trim())}`);
+  if (!res.ok) {
+    if (res.status === 403 || res.status === 401) return [];
+    throw new Error(`searchTestBrands failed (${res.status})`);
+  }
+  const data = (await res.json()) as { contacts: TestBrandMatch[] };
+  return data.contacts || [];
+}
+
 export interface SubmitIntroInput {
   partnerSlug: string;
   partnerName: string;
