@@ -21,6 +21,7 @@ import SwagDisclaimer from './SwagDisclaimer'
 import AskForIntroModal from './AskForIntroModal'
 import ProjectionChart from './ProjectionChart'
 import type { ProjectionMetric } from './ProjectionChart'
+import { useAuth } from '@/contexts/AuthContext'
 
 // Per-benefit colors: shades within each type so stacked bars are readable
 const BENEFIT_PALETTE: Record<BenefitType, string[]> = {
@@ -57,7 +58,15 @@ function groupByType(benefits: BenefitResult[]): { type: BenefitType; items: Ben
 }
 
 export default function SwagCalculator({ spec }: { spec: SwagSpec }) {
+  const { user } = useAuth()
   const [profile, setProfile] = useState<BrandProfile>(DEFAULT_BRAND_PROFILE)
+
+  useEffect(() => {
+    if (user?.email) {
+      setProfile((s) => (s.contactEmail ? s : { ...s, contactEmail: user.email }))
+    }
+  }, [user?.email])
+
   const [swagOverrides, setSwagOverrides] = useState<Record<string, number>>({})
   const [customPrice, setCustomPrice] = useState<number | null>(null)
   const [view, setView] = useState<'swag' | 'brief' | 'inputs'>('swag')
