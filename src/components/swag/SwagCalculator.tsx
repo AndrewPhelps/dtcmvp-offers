@@ -24,7 +24,6 @@ import type { ProjectionMetric } from './ProjectionChart'
 import { useAuth } from '@/contexts/AuthContext'
 import { submitIntroRequest, type TestBrandMatch } from '@/lib/api'
 import TestBrandPicker from './TestBrandPicker'
-import { CATEGORIES, type Category } from '@/lib/swag/swag-types'
 
 // Per-benefit colors: shades within each type so stacked bars are readable
 const BENEFIT_PALETTE: Record<BenefitType, string[]> = {
