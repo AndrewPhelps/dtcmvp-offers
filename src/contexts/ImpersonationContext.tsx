@@ -42,10 +42,17 @@ export function ImpersonationProvider({ children }: { children: ReactNode }) {
   )
 }
 
+// No-op fallback so consumers (e.g. SwagCalculator reused in /admin/swags)
+// don't crash when rendered outside an ImpersonationProvider. In those
+// contexts there's no impersonation UI and no banner; the hook just
+// returns a stable null state.
+const NULL_CONTEXT: ImpersonationContextValue = {
+  testBrand: null,
+  setTestBrand: () => {},
+}
+
 export function useImpersonation(): ImpersonationContextValue {
-  const ctx = useContext(ImpersonationContext)
-  if (!ctx) throw new Error('useImpersonation must be used inside ImpersonationProvider')
-  return ctx
+  return useContext(ImpersonationContext) ?? NULL_CONTEXT
 }
 
 /**
