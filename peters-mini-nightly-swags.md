@@ -49,9 +49,10 @@ Smoke test recipe: `NO_SLACK=1 WAVE_SIZE=2 WAVES=1 OPUS_REWORK_CAP=2 /Users/bill
 These bit the initial setup. Worth re-checking if the cron stops producing specs:
 
 1. **Cron has minimal PATH.** `claude` lives at `/Users/bill/.local/bin/claude` which isn't in cron's default PATH. The script exports `PATH` at the top to fix this. Symptom: per-agent logs say `nohup: claude: No such file or directory` and waves complete in 0 seconds.
-2. **macOS bash is 3.2.** No `mapfile`, no associative arrays. The script uses `while read` loops instead. Symptom: `mapfile: command not found` early in step 4.
-3. **Backgrounding inside `$(...)` orphans children.** Don't use a `launch_agent()` helper that backgrounds via `&` and echoes `$!`. The PID won't be a child of the calling shell, `wait $pid` returns immediately, and agents become orphans. Launch directly in the loop body. Symptom: waves complete in 0-1 seconds with running `claude --print` processes still in `ps`.
-4. **`docker exec node -e` SSH escaping.** Use double-quoted SSH outer with single-quoted node inner. Avoid `!=""` literal comparisons in SQL through SSH; use `length(col)>0` instead. Symptom: `SqliteError: no such column: "" - should this be a string literal in single-quotes?`
+2. **Cron inherits launchctl's 256 fd soft limit.** Interactive shells have 1M; cron has 256. Each `claude --print` agent needs many fds, so 30 parallel agents blow past 256 immediately and exit with `error: An unknown error occurred, possibly due to low max file descriptors. Current limit: 256`. The script self-raises with `ulimit -n 65536` (hard limit is unlimited). Symptom in interactive testing: works fine. Symptom in cron: every agent log is exactly 254 bytes with the fd error and the run produces 0 specs but doesn't otherwise look broken.
+3. **macOS bash is 3.2.** No `mapfile`, no associative arrays. The script uses `while read` loops instead. Symptom: `mapfile: command not found` early in step 4.
+4. **Backgrounding inside `$(...)` orphans children.** Don't use a `launch_agent()` helper that backgrounds via `&` and echoes `$!`. The PID won't be a child of the calling shell, `wait $pid` returns immediately, and agents become orphans. Launch directly in the loop body. Symptom: waves complete in 0-1 seconds with running `claude --print` processes still in `ps`.
+5. **`docker exec node -e` SSH escaping.** Use double-quoted SSH outer with single-quoted node inner. Avoid `!=""` literal comparisons in SQL through SSH; use `length(col)>0` instead. Symptom: `SqliteError: no such column: "" - should this be a string literal in single-quotes?`
 
 ## coordination with the 9am machine
 
