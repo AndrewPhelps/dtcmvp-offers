@@ -228,6 +228,15 @@ PROMPT_EOF
     SKIPPED=$(( BATCH_COUNT - WRITTEN ))
     echo "  agents complete: $WRITTEN written, $SKIPPED skipped"
 
+    # Defensive abort: if the orchestrator hard-failed AND no specs were
+    # generated, the underlying problem (auth, fd-limit, PATH, network) will
+    # hit every remaining batch the same way. Bail instead of cascading.
+    if [[ "$ORCHESTRATOR_RC" -ne 0 && "$WRITTEN" -eq 0 ]]; then
+        echo "  ABORT: orchestrator rc=$ORCHESTRATOR_RC with 0 specs written. Stopping run to avoid cascading failures."
+        slack_post ":octagonal_sign: *SWAG run aborted at batch $batch_num/$BATCHES_PER_RUN* — orchestrator rc=$ORCHESTRATOR_RC, 0 specs written. Stopped early. Check \`/tmp/swag-batch-$BATCH_TAG-meta/orchestrator.log\` on the mini."
+        break
+    fi
+
     UPSERTED=0
     if [[ "$WRITTEN" -gt 0 ]]; then
         echo "  linting..."
