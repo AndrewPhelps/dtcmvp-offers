@@ -1,6 +1,6 @@
 # peter's mac mini — nightly SWAG generation
 
-Runs at 2am PT every night on this Mac Mini. Generates a batch of SWAG specs from the unscored portion of `1800dtc.db`, lints, reworks the worst with Opus, upserts to the droplet as drafts. Companion: a second machine on a different Claude account runs the same job at 9am. Together they target ~720 unscored partners.
+Runs **every 6 hours** on this Mac Mini (1am, 7am, 13:00, 19:00 PT) via a launchd agent. Generates a batch of SWAG specs from the unscored portion of `1800dtc.db`, lints, reworks the worst with Opus, upserts to the droplet as drafts. Companion: a second machine on a different Claude account runs the same job at 9am. Started life as a cron entry; switched to launchd because `crontab` install kept hitting EINTR under sustained Claude Code session load.
 
 ## locations
 
@@ -9,8 +9,10 @@ Runs at 2am PT every night on this Mac Mini. Generates a batch of SWAG specs fro
 | Script | `/Users/bill/scripts/swag-nightly/run.sh` (NOT in any git repo — lives on this Mac Mini only) |
 | Per-run log dir | `/Users/bill/scripts/swag-nightly/logs/$TAG/` (TAG = `YYYY-MM-DD_HH-MM-SS`) |
 | Per-agent prompts | `/Users/bill/scripts/swag-nightly/prompts/$TAG/` |
-| Cron stderr fallback | `/Users/bill/scripts/swag-nightly/cron.log` |
-| Crontab line | `0 2 * * * /Users/bill/scripts/swag-nightly/run.sh >> /Users/bill/scripts/swag-nightly/cron.log 2>&1` |
+| Cron/launchd log | `/Users/bill/scripts/swag-nightly/cron.log` (script's tee'd output also goes here) |
+| Launchd plist | `/Users/bill/Library/LaunchAgents/com.peter.swag-nightly.plist` (loaded — `launchctl list \| grep swag` to verify) |
+| Launchd stdout/stderr | `/Users/bill/scripts/swag-nightly/launchd-{stdout,stderr}.log` |
+| Cadence | 1am, 7am, 13:00, 19:00 PT (every 6 hours), via `StartCalendarInterval` in the plist |
 
 ## pipeline
 
@@ -58,13 +60,24 @@ These bit the initial setup. Worth re-checking if the cron stops producing specs
 
 No claim-based coordination. Both machines independently query `/api/swag/admin/list` at start. The 2am batch upserts by ~3am, well before the 9am machine queries. Worst case if 2am runs long: a few duplicate slugs get reprocessed; the upsert script overwrites the existing draft so no DB corruption.
 
-## removing the cron when the list depletes
+## known gotchas (continued)
 
-The script auto-detects an empty TODO and Slack-pings "list depleted, no work to do" then exits 0. Cron will keep firing nightly with that no-op result until you remove it. To remove:
+6. **`crontab` install fails with EINTR under heavy Claude Code session load.** Persistent — retried 120x over 2 hours and every attempt failed. Workaround: schedule via launchd (a plist in `~/Library/LaunchAgents/`) instead of cron. Plist install is a plain file write, no syscall path that EINTRs.
+7. **Cron-launched concurrent claudes intermittently fail with "Unknown error (Unexpected)".** Three nights in a row (May 3, 4, 5) all 150 cron-spawned agents bailed in 11 seconds with a 46-byte log containing only that text. Same script + same machine + same claude version reproduces FINE when launched manually or under `env -i + ulimit -n 65536` simulation. Specific to real cron context, but not deterministic. Defensive fixes in script: stagger launches by 0.3s and auto-retry only the agents whose logs match the `Unknown error` signature (so legitimate "skipped: not enough info" doesn't trigger pointless retries).
 
+## stopping or removing the schedule
+
+The script auto-detects an empty TODO and Slack-pings "list depleted, no work to do" then exits 0. Launchd will keep firing every 6 hours with that no-op result until you remove it.
+
+To stop:
 ```
-crontab -e
-# delete the SWAG line and the comment above it
+launchctl unload /Users/bill/Library/LaunchAgents/com.peter.swag-nightly.plist
 ```
 
-The classification-swarm cron above it is unrelated — leave that alone.
+To remove permanently:
+```
+launchctl unload /Users/bill/Library/LaunchAgents/com.peter.swag-nightly.plist
+rm /Users/bill/Library/LaunchAgents/com.peter.swag-nightly.plist
+```
+
+The classification-swarm cron entry is unrelated — leave it alone.
