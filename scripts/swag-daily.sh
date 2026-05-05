@@ -23,6 +23,18 @@ run_with_timeout() {
     return $rc
 }
 
+# Post to Slack. No-ops silently if SLACK_TOKEN or SLACK_CHANNEL is unset.
+# Failures are swallowed so a Slack outage can never break a run.
+slack_post() {
+    local text="$1"
+    [[ -z "${SLACK_TOKEN:-}" || -z "${SLACK_CHANNEL:-}" ]] && return 0
+    curl -s --max-time 10 -X POST https://slack.com/api/chat.postMessage \
+        -H "Authorization: Bearer ${SLACK_TOKEN}" \
+        -H "Content-Type: application/json; charset=utf-8" \
+        --data "$(jq -nc --arg ch "${SLACK_CHANNEL}" --arg t "$text" '{channel: $ch, text: $t}')" \
+        > /dev/null 2>&1 || true
+}
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKIP_FILE="$SCRIPT_DIR/swag-skip.json"
 LINT_SCRIPT="$SCRIPT_DIR/lint-batch.py"
@@ -41,6 +53,8 @@ LOG_FILE="$LOG_DIR/swag-daily-$(date +%Y%m%d).log"
 mkdir -p "$LOG_DIR"
 exec > >(tee -a "$LOG_FILE") 2>&1
 
+RUN_START_EPOCH=$(date +%s)
+
 echo ""
 echo "=========================================="
 echo "swag-daily started: $(date)"
@@ -50,6 +64,7 @@ echo "=========================================="
 LOCK_DIR="/tmp/swag-daily.lock"
 if ! mkdir "$LOCK_DIR" 2>/dev/null; then
     echo "ERROR: previous run still active (lock $LOCK_DIR exists). Exiting."
+    slack_post ":warning: SWAG daily skipped — previous run still active (lock held)"
     exit 1
 fi
 trap 'rmdir "$LOCK_DIR" 2>/dev/null' EXIT
@@ -59,6 +74,7 @@ echo "[1] Pulling existing slugs from offers API..."
 EXISTING=$(curl -s --max-time 30 https://offers.dtcmvp.com/api/swag/admin/list | jq -r '.specs[].slug' | sort -u)
 if [[ -z "$EXISTING" ]]; then
     echo "ERROR: failed to pull existing slugs"
+    slack_post ":x: SWAG daily failed at step [1] — could not pull existing slugs from offers API"
     exit 1
 fi
 EXISTING_COUNT=$(echo "$EXISTING" | wc -l | tr -d ' ')
@@ -69,6 +85,7 @@ echo "[2] Pulling candidates from 1800dtc.db..."
 CANDIDATES_JSON=$(ssh -o ConnectTimeout=15 -o BatchMode=yes dtcmvp-infra "docker exec dtcmvp-offers-frontend node -e 'const Database = require(\"better-sqlite3\"); const db = new Database(\"/app/data/1800dtc.db\", {readonly: true}); const rows = db.prepare(\"SELECT slug, name, website_url, brand_count FROM apps ORDER BY COALESCE(brand_count, 0) DESC, COALESCE(review_count, 0) DESC\").all(); console.log(JSON.stringify(rows));'")
 if [[ -z "$CANDIDATES_JSON" ]] || ! echo "$CANDIDATES_JSON" | jq empty 2>/dev/null; then
     echo "ERROR: failed to pull candidates"
+    slack_post ":x: SWAG daily failed at step [2] — could not pull candidates from 1800dtc.db (ssh dtcmvp-infra)"
     exit 1
 fi
 TOTAL_CANDIDATES=$(echo "$CANDIDATES_JSON" | jq 'length')
@@ -92,6 +109,7 @@ if [[ "$TOTAL_REMAINING" -eq 0 ]]; then
     fi
     echo ""
     echo "swag-daily complete: list drained"
+    slack_post ":checkered_flag: SWAG daily — candidate list drained, LaunchAgent removed. No more runs."
     exit 0
 fi
 
@@ -99,6 +117,8 @@ TO_PROCESS=$(( BATCH_SIZE * BATCHES_PER_RUN ))
 [[ "$TOTAL_REMAINING" -lt "$TO_PROCESS" ]] && TO_PROCESS=$TOTAL_REMAINING
 echo ""
 echo "[3] Will process $TO_PROCESS partners across up to $BATCHES_PER_RUN batches"
+
+slack_post ":rocket: *SWAG daily started* — $TOTAL_REMAINING candidates remaining, will process $TO_PROCESS across up to $BATCHES_PER_RUN batches of $BATCH_SIZE (dry_run=$DRY_RUN)"
 
 TOTAL_GENERATED=0
 TOTAL_SKIPPED_BY_AGENTS=0
@@ -125,6 +145,7 @@ for batch_num in $(seq 1 $BATCHES_PER_RUN); do
 
     echo ""
     echo "--- Batch $batch_num ($BATCH_COUNT partners, tag=$BATCH_TAG) ---"
+    slack_post "*Batch $batch_num/$BATCHES_PER_RUN starting* — $BATCH_COUNT partners (tag \`$BATCH_TAG\`)"
 
     echo "  resolving redirects..."
     > "$MANIFEST"
@@ -203,7 +224,8 @@ PROMPT_EOF
 
     if [[ "$WRITTEN" -gt 0 ]]; then
         echo "  linting..."
-        python3 "$LINT_SCRIPT" "$BATCH_DIR" || echo "  WARN: lint reported issues (review JSON)"
+        # Pipe linter via stdin so python3 doesn't need its own FDA grant for ~/Documents/.
+        python3 - "$BATCH_DIR" < "$LINT_SCRIPT" || echo "  WARN: lint reported issues (review JSON)"
 
         if [[ "$DRY_RUN" -eq 1 ]]; then
             echo "  (dry-run: skipping upsert)"
@@ -218,16 +240,23 @@ PROMPT_EOF
                 docker exec --user root dtcmvp-offers-frontend chmod -R a+rx /tmp/swag-batch-$BATCH_TAG && \
                 docker exec dtcmvp-offers-frontend node /app/scripts/upsert-swag.js --batch /tmp/swag-batch-$BATCH_TAG")
             echo "$UPSERT_OUT" | sed 's/^/    /'
-            UPSERTED=$(echo "$UPSERT_OUT" | grep -c "^upserted:" || echo 0)
-            FAILED=$(echo "$UPSERT_OUT" | grep -c "^failed:" || echo 0)
+            # grep -c always prints the count to stdout (even when 0), so the prior `|| echo 0`
+            # produced multi-line "0\n0" on no-match runs and broke `(( TOTAL_FAILED + FAILED ))`.
+            UPSERTED=$(echo "$UPSERT_OUT" | grep -c "^upserted:")
+            FAILED=$(echo "$UPSERT_OUT" | grep -c "^failed:")
         fi
         TOTAL_UPSERTED=$(( TOTAL_UPSERTED + UPSERTED ))
         TOTAL_FAILED=$(( TOTAL_FAILED + FAILED ))
+        slack_post "*Batch $batch_num/$BATCHES_PER_RUN done in ${ELAPSED}s* — agents: $WRITTEN written, $SKIPPED skipped · upsert: $UPSERTED ok, $FAILED failed"
     fi
 
     TOTAL_GENERATED=$(( TOTAL_GENERATED + WRITTEN ))
     TOTAL_SKIPPED_BY_AGENTS=$(( TOTAL_SKIPPED_BY_AGENTS + SKIPPED ))
 done
+
+RUN_ELAPSED=$(( $(date +%s) - RUN_START_EPOCH ))
+RUN_MINUTES=$(( RUN_ELAPSED / 60 ))
+RUN_SECONDS=$(( RUN_ELAPSED % 60 ))
 
 echo ""
 echo "[4] Daily run complete"
@@ -236,4 +265,11 @@ echo "    skipped (by agents): $TOTAL_SKIPPED_BY_AGENTS"
 echo "    upserted: $TOTAL_UPSERTED"
 echo "    failed (upsert): $TOTAL_FAILED"
 echo ""
-echo "swag-daily finished: $(date)"
+echo "swag-daily finished: $(date) (elapsed ${RUN_MINUTES}m${RUN_SECONDS}s)"
+
+if [[ "$TOTAL_FAILED" -gt 0 ]]; then
+    SUMMARY_ICON=":warning:"
+else
+    SUMMARY_ICON=":white_check_mark:"
+fi
+slack_post "$SUMMARY_ICON *SWAG daily complete in ${RUN_MINUTES}m${RUN_SECONDS}s* — generated: $TOTAL_GENERATED · skipped: $TOTAL_SKIPPED_BY_AGENTS · upserted: $TOTAL_UPSERTED · failed: $TOTAL_FAILED"
