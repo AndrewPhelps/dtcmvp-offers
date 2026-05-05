@@ -106,14 +106,14 @@ function getDb() {
 }
 
 function upsert(db, spec, generatedBy, status) {
+  // Throw instead of process.exit() so --batch mode's try/catch can recover.
+  // Single-spec mode catches at top-level main() and exits with rc=1 there.
   if (!spec.slug || !spec.partnerName) {
-    console.error('error: spec must have slug and partnerName');
-    process.exit(1);
+    throw new Error('spec must have slug and partnerName');
   }
 
   if (!VALID_STATUSES.includes(status)) {
-    console.error(`error: invalid status "${status}". must be one of: ${VALID_STATUSES.join(', ')}`);
-    process.exit(1);
+    throw new Error(`invalid status "${status}". must be one of: ${VALID_STATUSES.join(', ')}`);
   }
 
   db.prepare(`
@@ -282,6 +282,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error(err);
+  console.error(`error: ${err.message}`);
   process.exit(1);
 });

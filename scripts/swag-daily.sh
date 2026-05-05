@@ -8,6 +8,12 @@
 
 set -uo pipefail
 
+# launchd-spawned processes inherit a 256-FD soft limit on macOS. Each parallel
+# `claude -p` orchestrator (×30 sub-agents per batch) blew past 256 by batch 4,
+# producing "low max file descriptors" errors. Bump it here so the in-script
+# limit matches the plist's SoftResourceLimits.NumberOfFiles.
+ulimit -n 65536 2>/dev/null || true
+
 # Bash-native timeout: run_with_timeout SECONDS COMMAND [ARGS...]
 # Returns 124 on timeout, command's rc otherwise.
 run_with_timeout() {
@@ -222,6 +228,7 @@ PROMPT_EOF
     SKIPPED=$(( BATCH_COUNT - WRITTEN ))
     echo "  agents complete: $WRITTEN written, $SKIPPED skipped"
 
+    UPSERTED=0
     if [[ "$WRITTEN" -gt 0 ]]; then
         echo "  linting..."
         # Pipe linter via stdin so python3 doesn't need its own FDA grant for ~/Documents/.
@@ -229,8 +236,6 @@ PROMPT_EOF
 
         if [[ "$DRY_RUN" -eq 1 ]]; then
             echo "  (dry-run: skipping upsert)"
-            UPSERTED=0
-            FAILED=0
         else
             echo "  upserting via dtcmvp-infra..."
             ssh dtcmvp-infra "rm -rf /tmp/swag-batch-$BATCH_TAG && mkdir -p /tmp/swag-batch-$BATCH_TAG"
@@ -240,18 +245,24 @@ PROMPT_EOF
                 docker exec --user root dtcmvp-offers-frontend chmod -R a+rx /tmp/swag-batch-$BATCH_TAG && \
                 docker exec dtcmvp-offers-frontend node /app/scripts/upsert-swag.js --batch /tmp/swag-batch-$BATCH_TAG")
             echo "$UPSERT_OUT" | sed 's/^/    /'
-            # grep -c always prints the count to stdout (even when 0), so the prior `|| echo 0`
-            # produced multi-line "0\n0" on no-match runs and broke `(( TOTAL_FAILED + FAILED ))`.
             UPSERTED=$(echo "$UPSERT_OUT" | grep -c "^upserted:")
-            FAILED=$(echo "$UPSERT_OUT" | grep -c "^failed:")
         fi
-        TOTAL_UPSERTED=$(( TOTAL_UPSERTED + UPSERTED ))
-        TOTAL_FAILED=$(( TOTAL_FAILED + FAILED ))
-        slack_post "*Batch $batch_num/$BATCHES_PER_RUN done in ${ELAPSED}s* — agents: $WRITTEN written, $SKIPPED skipped · upsert: $UPSERTED ok, $FAILED failed"
     fi
 
+    # FAILED = WRITTEN - UPSERTED catches every failure mode (validation,
+    # silent crashes, "error:" lines that don't match "^failed:"). Mathematically
+    # complete: every spec the agents wrote either upserts or doesn't.
+    FAILED=$(( WRITTEN - UPSERTED ))
     TOTAL_GENERATED=$(( TOTAL_GENERATED + WRITTEN ))
     TOTAL_SKIPPED_BY_AGENTS=$(( TOTAL_SKIPPED_BY_AGENTS + SKIPPED ))
+    TOTAL_UPSERTED=$(( TOTAL_UPSERTED + UPSERTED ))
+    TOTAL_FAILED=$(( TOTAL_FAILED + FAILED ))
+
+    if [[ "$WRITTEN" -eq 0 ]]; then
+        slack_post ":x: *Batch $batch_num/$BATCHES_PER_RUN failed* in ${ELAPSED}s — orchestrator rc=$ORCHESTRATOR_RC, 0 specs generated. Likely fd-limit, rate-limit, or auth issue. Check \`/tmp/swag-batch-$BATCH_TAG-meta/orchestrator.log\` on the mini."
+    else
+        slack_post "*Batch $batch_num/$BATCHES_PER_RUN done in ${ELAPSED}s* — agents: $WRITTEN written, $SKIPPED skipped · upsert: $UPSERTED ok, $FAILED failed"
+    fi
 done
 
 RUN_ELAPSED=$(( $(date +%s) - RUN_START_EPOCH ))
