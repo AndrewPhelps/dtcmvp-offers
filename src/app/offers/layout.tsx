@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Sparkles, Loader2, Menu, X } from 'lucide-react';
@@ -94,11 +95,16 @@ function OffersLayoutContent({
       <nav className="border-b border-[var(--border-default)] bg-[var(--bg-body)] sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14 md:h-16">
-            {/* Logo/Title - styled like the original header */}
+            {/* Logo */}
             <Link href="/offers" className="flex items-center">
-              <h1 className="text-lg md:text-2xl font-bold text-[var(--text-primary)]">
-                dtcmvp <span className="hidden sm:inline text-sm md:text-lg uppercase tracking-widest text-[var(--brand-green-primary)] font-normal align-middle">Partner Offers</span>
-              </h1>
+              <Image
+                src="/dtcmvp-logo-white.png"
+                alt="dtcmvp"
+                width={771}
+                height={181}
+                priority
+                className="h-7 md:h-8 w-auto"
+              />
             </Link>
 
             {/* Desktop Navigation Links */}

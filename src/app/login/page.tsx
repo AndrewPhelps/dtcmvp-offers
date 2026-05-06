@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { sendOTP, verifyOTP, loginWithPassword } from '@/lib/auth';
 
@@ -90,11 +91,16 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--bg-body)] p-4">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-[var(--text-primary)]">
-            dtcmvp <span className="text-sm uppercase tracking-widest text-[var(--brand-green-primary)] font-normal align-middle">Partner Offers</span>
-          </h1>
-          <p className="text-xs text-[var(--text-tertiary)] uppercase tracking-widest mt-2">partner sign-in</p>
+        <div className="flex flex-col items-center mb-8">
+          <Image
+            src="/dtcmvp-logo-white.png"
+            alt="dtcmvp"
+            width={771}
+            height={181}
+            priority
+            className="h-10 w-auto"
+          />
+          <p className="text-xs text-[var(--text-tertiary)] uppercase tracking-widest mt-3">partner sign-in</p>
         </div>
 
         <div className="bg-[var(--bg-card)] border border-[var(--border-default)] rounded-xl p-8">
