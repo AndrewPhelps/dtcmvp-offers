@@ -2,10 +2,10 @@
 
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
-import { Search, Sparkles, ArrowRight, Trash2, CheckCircle2 } from 'lucide-react';
+import { Search, Sparkles, ArrowRight, Trash2, X, CheckCircle2 } from 'lucide-react';
 import { Card, MoleculeLoader } from '@/components/common';
 import { SwagListingDrawer } from '@/components/swags';
-import { Listing, Offer } from '@/types';
+import { Listing, Offer, BenefitType } from '@/types';
 import { tagBadgeStyle } from '@/lib/categoryColors';
 import { useBrand } from '@/contexts';
 import type { TagSummary } from '@/lib/api';
@@ -15,6 +15,87 @@ interface SwagsMarketplaceClientProps {
   tags: TagSummary[];
   /** When set (deep-link route /swags/[slug]), open the drawer on this listing on mount. */
   initialListingSlug?: string;
+}
+
+const BENEFIT_TYPE_LABEL: Record<BenefitType, string> = {
+  'revenue-generation': 'revenue generation',
+  'cost-saving': 'cost savings',
+  'time-saving': 'time savings',
+};
+
+function toggleSet<T>(prev: Set<T>, v: T): Set<T> {
+  const next = new Set(prev);
+  if (next.has(v)) next.delete(v);
+  else next.add(v);
+  return next;
+}
+
+interface FilterOption<T> {
+  value: T;
+  count: number;
+  display: string;
+}
+
+function FilterSection<T extends string>({
+  label,
+  options,
+  selected,
+  onToggle,
+  maxHeight = 'tall',
+}: {
+  label: string;
+  options: FilterOption<T>[];
+  selected: Set<T>;
+  onToggle: (v: T) => void;
+  /** "auto" = show all (no scroll); "tall" = capped with internal scroll. */
+  maxHeight?: 'auto' | 'tall';
+}) {
+  if (options.length === 0 && selected.size === 0) return null;
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">
+          {label}
+        </h3>
+        {selected.size > 0 && (
+          <span className="text-xs text-[var(--brand-green-primary)] font-medium">
+            {selected.size}
+          </span>
+        )}
+      </div>
+      <nav
+        className={`space-y-1 pr-1 ${
+          maxHeight === 'tall' ? 'max-h-[40vh] overflow-y-auto' : ''
+        }`}
+      >
+        {options.map((opt) => {
+          const isSelected = selected.has(opt.value);
+          return (
+            <button
+              key={String(opt.value)}
+              onClick={() => onToggle(opt.value)}
+              className={`group w-full text-left px-3 py-1.5 rounded-lg text-sm transition-colors flex items-center justify-between cursor-pointer ${
+                isSelected
+                  ? 'bg-[var(--brand-green-primary)]/10 text-[var(--brand-green-primary)] font-medium'
+                  : 'text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]'
+              }`}
+            >
+              <span className="truncate">{opt.display}</span>
+              <span
+                className={
+                  isSelected
+                    ? 'text-[var(--brand-green-primary)] font-mono text-xs'
+                    : 'text-[var(--text-tertiary)] group-hover:text-[var(--text-secondary)] font-mono text-xs'
+                }
+              >
+                {opt.count}
+              </span>
+            </button>
+          );
+        })}
+      </nav>
+    </div>
+  );
 }
 
 // Adapter: the recommendation engine in BrandContext takes the slim Offer shape.
@@ -49,7 +130,11 @@ function TypewriterText({ text, speed = 25 }: { text: string; speed?: number }) 
 
 export default function SwagsMarketplaceClient({ listings, tags, initialListingSlug }: SwagsMarketplaceClientProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
+  const [selectedBenefitTypes, setSelectedBenefitTypes] = useState<Set<BenefitType>>(new Set());
+  const [selectedBenefitLabels, setSelectedBenefitLabels] = useState<Set<string>>(new Set());
+  const [selectedDepartments, setSelectedDepartments] = useState<Set<string>>(new Set());
+  const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
   const [selectedListing, setSelectedListing] = useState<Listing | null>(() => {
     if (!initialListingSlug) return null;
     return listings.find((l) => l.slug === initialListingSlug) ?? null;
@@ -108,33 +193,83 @@ export default function SwagsMarketplaceClient({ listings, tags, initialListingS
     return rec ? rec.offerIds : null;
   }, [selectedRecommendation, recommendations]);
 
+  // Active pool = listings the brand could match (active, not hidden). Drives both
+  // option-count badges AND the rendered list (after applying user filters).
+  const activePool = useMemo(
+    () => listings.filter((l) => l.isActive && !hiddenOfferIds.includes(l.slug)),
+    [listings, hiddenOfferIds],
+  );
+
+  // Each filter's option list with counts, sorted by count desc.
+  // Counts use the OTHER active filters AND'd, so toggling one filter dimension
+  // updates the counts in the others contextually.
+  type FilterDim = 'categories' | 'benefitTypes' | 'benefitLabels' | 'departments' | 'tags';
+  const matchesAllExcept = useCallback(
+    (l: Listing, except: FilterDim) => {
+      if (except !== 'categories' && selectedCategories.size > 0 && !l.categories.some((c) => selectedCategories.has(c))) return false;
+      if (except !== 'benefitTypes' && selectedBenefitTypes.size > 0 && !l.benefitTypes.some((b) => selectedBenefitTypes.has(b))) return false;
+      if (except !== 'benefitLabels' && selectedBenefitLabels.size > 0 && !l.benefitLabels.some((b) => selectedBenefitLabels.has(b))) return false;
+      if (except !== 'departments' && selectedDepartments.size > 0 && !l.departments.some((d) => selectedDepartments.has(d))) return false;
+      if (except !== 'tags' && selectedTags.size > 0 && !l.tags.some((t) => selectedTags.has(t))) return false;
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        const hit =
+          l.name.toLowerCase().includes(q) ||
+          l.tagline.toLowerCase().includes(q) ||
+          l.shortDescription.toLowerCase().includes(q) ||
+          l.tags.some((t) => t.toLowerCase().includes(q));
+        if (!hit) return false;
+      }
+      return true;
+    },
+    [selectedCategories, selectedBenefitTypes, selectedBenefitLabels, selectedDepartments, selectedTags, searchQuery],
+  );
+
+  const buildOptionCounts = useCallback(
+    <T extends string,>(dim: FilterDim, getter: (l: Listing) => T[]) => {
+      const counts = new Map<T, number>();
+      for (const l of activePool) {
+        if (!matchesAllExcept(l, dim)) continue;
+        for (const v of getter(l)) {
+          counts.set(v, (counts.get(v) ?? 0) + 1);
+        }
+      }
+      return [...counts.entries()]
+        .sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0])))
+        .map(([value, count]) => ({ value, count }));
+    },
+    [activePool, matchesAllExcept],
+  );
+
+  const categoryOptions = useMemo(() => buildOptionCounts('categories', (l) => l.categories), [buildOptionCounts]);
+  const benefitTypeOptions = useMemo(() => buildOptionCounts<BenefitType>('benefitTypes', (l) => l.benefitTypes), [buildOptionCounts]);
+  const benefitLabelOptions = useMemo(() => buildOptionCounts('benefitLabels', (l) => l.benefitLabels), [buildOptionCounts]);
+  const departmentOptions = useMemo(() => buildOptionCounts('departments', (l) => l.departments), [buildOptionCounts]);
+  const tagOptions = useMemo(() => buildOptionCounts('tags', (l) => l.tags), [buildOptionCounts]);
+
+  const totalSelected =
+    selectedCategories.size +
+    selectedBenefitTypes.size +
+    selectedBenefitLabels.size +
+    selectedDepartments.size +
+    selectedTags.size;
+  const hasAnyFilter = totalSelected > 0;
+  const clearAllFilters = () => {
+    setSelectedCategories(new Set());
+    setSelectedBenefitTypes(new Set());
+    setSelectedBenefitLabels(new Set());
+    setSelectedDepartments(new Set());
+    setSelectedTags(new Set());
+  };
+
   const filteredListings = useMemo(() => {
     if (selectedRecommendationSlugs) {
-      return listings.filter(
-        (l) =>
-          selectedRecommendationSlugs.includes(l.slug) &&
-          l.isActive &&
-          !hiddenOfferIds.includes(l.slug),
-      );
+      return activePool.filter((l) => selectedRecommendationSlugs.includes(l.slug));
     }
-    return listings
-      .filter((l) => {
-        if (!l.isActive) return false;
-        if (hiddenOfferIds.includes(l.slug)) return false;
-        if (selectedTag && !l.tags.includes(selectedTag)) return false;
-        if (searchQuery) {
-          const q = searchQuery.toLowerCase();
-          return (
-            l.name.toLowerCase().includes(q) ||
-            l.tagline.toLowerCase().includes(q) ||
-            l.shortDescription.toLowerCase().includes(q) ||
-            l.tags.some((t) => t.toLowerCase().includes(q))
-          );
-        }
-        return true;
-      })
+    return activePool
+      .filter((l) => matchesAllExcept(l, 'tags' as FilterDim) && (selectedTags.size === 0 || l.tags.some((t) => selectedTags.has(t))))
       .sort((a, b) => (b.tier ?? 0) - (a.tier ?? 0));
-  }, [listings, hiddenOfferIds, searchQuery, selectedTag, selectedRecommendationSlugs]);
+  }, [activePool, matchesAllExcept, selectedTags, selectedRecommendationSlugs]);
 
   const handleListingClick = (listing: Listing) => {
     setSelectedListing(listing);
@@ -191,64 +326,68 @@ export default function SwagsMarketplaceClient({ listings, tags, initialListingS
                 />
               </div>
 
-              {tags.length > 0 && (
-                <div>
-                  <h3 className="text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider mb-3">
-                    filter by tag
-                  </h3>
-                  <nav className="space-y-1 max-h-[60vh] overflow-y-auto pr-1">
-                    <button
-                      onClick={() => {
-                        setSelectedTag(null);
-                        clearRecommendationView();
-                      }}
-                      className={`group w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-between cursor-pointer ${
-                        selectedTag === null
-                          ? 'bg-[var(--brand-green-primary)]/10 text-[var(--brand-green-primary)] font-medium'
-                          : 'text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]'
-                      }`}
-                    >
-                      <span>all swags</span>
-                      <span
-                        className={
-                          selectedTag === null
-                            ? 'text-[var(--brand-green-primary)]'
-                            : 'text-[var(--text-tertiary)] group-hover:text-[var(--text-secondary)]'
-                        }
-                      >
-                        {listings.filter((l) => l.isActive && !hiddenOfferIds.includes(l.slug)).length}
-                      </span>
-                    </button>
-                    {tags.map((tag) => {
-                      const isSelected = selectedTag === tag.name;
-                      return (
-                        <button
-                          key={tag.id}
-                          onClick={() => {
-                            setSelectedTag(isSelected ? null : tag.name);
-                            clearRecommendationView();
-                          }}
-                          className={`group w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-between cursor-pointer ${
-                            isSelected
-                              ? 'bg-[var(--brand-green-primary)]/10 text-[var(--brand-green-primary)] font-medium'
-                              : 'text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]'
-                          }`}
-                        >
-                          <span className="truncate">{tag.name}</span>
-                          <span
-                            className={
-                              isSelected
-                                ? 'text-[var(--brand-green-primary)]'
-                                : 'text-[var(--text-tertiary)] group-hover:text-[var(--text-secondary)]'
-                            }
-                          >
-                            {tag.count}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </nav>
-                </div>
+              {hasAnyFilter && (
+                <button
+                  onClick={clearAllFilters}
+                  className="flex items-center gap-1.5 text-xs text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+                >
+                  <X className="w-3 h-3" />
+                  clear filters ({totalSelected})
+                </button>
+              )}
+
+              <FilterSection
+                label="brand category"
+                options={categoryOptions.map((o) => ({ value: o.value, count: o.count, display: o.value }))}
+                selected={selectedCategories}
+                onToggle={(v) => {
+                  setSelectedCategories((prev) => toggleSet(prev, v));
+                  clearRecommendationView();
+                }}
+                maxHeight="auto"
+              />
+
+              <FilterSection
+                label="benefit type"
+                options={benefitTypeOptions.map((o) => ({ value: o.value, count: o.count, display: BENEFIT_TYPE_LABEL[o.value] }))}
+                selected={selectedBenefitTypes}
+                onToggle={(v) => {
+                  setSelectedBenefitTypes((prev) => toggleSet(prev, v));
+                  clearRecommendationView();
+                }}
+                maxHeight="auto"
+              />
+
+              <FilterSection
+                label="benefit"
+                options={benefitLabelOptions.map((o) => ({ value: o.value, count: o.count, display: o.value }))}
+                selected={selectedBenefitLabels}
+                onToggle={(v) => {
+                  setSelectedBenefitLabels((prev) => toggleSet(prev, v));
+                  clearRecommendationView();
+                }}
+              />
+
+              <FilterSection
+                label="department"
+                options={departmentOptions.map((o) => ({ value: o.value, count: o.count, display: o.value }))}
+                selected={selectedDepartments}
+                onToggle={(v) => {
+                  setSelectedDepartments((prev) => toggleSet(prev, v));
+                  clearRecommendationView();
+                }}
+              />
+
+              {tagOptions.length > 0 && (
+                <FilterSection
+                  label="tag"
+                  options={tagOptions.map((o) => ({ value: o.value, count: o.count, display: o.value }))}
+                  selected={selectedTags}
+                  onToggle={(v) => {
+                    setSelectedTags((prev) => toggleSet(prev, v));
+                    clearRecommendationView();
+                  }}
+                />
               )}
 
               {recommendations.length > 0 && (

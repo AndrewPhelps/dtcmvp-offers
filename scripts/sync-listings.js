@@ -13,6 +13,9 @@
  *   --limit N         process the first N specs (sorted by status, then slug)
  *   --status S        filter spec status (default: any). One of draft|approved|needs-regen
  *   --dry-run         print payloads, don't write to Airtable
+ *   --structured-only fast-path: skip LLM generation, only PATCH the 4
+ *                     structured-filter fields (Benefit Types/Labels,
+ *                     Departments, Categories) on existing listings
  *
  * Auth (only when not --dry-run):
  *   AIRTABLE_API_KEY  PAT with write access to the base
@@ -35,7 +38,7 @@ const LISTINGS_TABLE = 'Listings';
 
 // ── Args ──────────────────────────────────────────────────────────────
 function parseArgs(argv) {
-  const out = { slugs: null, limit: null, status: null, dryRun: false, outFile: null, concurrency: 1, skipExisting: false };
+  const out = { slugs: null, limit: null, status: null, dryRun: false, outFile: null, concurrency: 1, skipExisting: false, structuredOnly: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--dry-run') out.dryRun = true;
@@ -45,8 +48,37 @@ function parseArgs(argv) {
     else if (a === '--out') out.outFile = argv[++i];
     else if (a === '--concurrency') out.concurrency = parseInt(argv[++i], 10);
     else if (a === '--skip-existing') out.skipExisting = true;
+    else if (a === '--structured-only') out.structuredOnly = true;
   }
   return out;
+}
+
+// ── Derive structured filter fields from a SWAG spec ──────────────────
+//
+// Returns the 4 dimensions that drive the marketplace sidebar filters:
+//   Benefit Types   — unique spec.benefits[].type values
+//   Benefit Labels  — unique spec.benefits[].label values
+//   Departments     — keys of spec.narrative.byDepartment minus "Other"
+//   Categories      — keys of spec.narrative.byCategory minus "Other"
+//
+// All four feed Airtable multipleSelects on the Listings table. The
+// "Other" fallback bucket on narrative is intentional template fallback
+// for the SWAG renderer, not a meaningful filter dimension; we strip it.
+function deriveStructuredFields(spec) {
+  const benefits = Array.isArray(spec.benefits) ? spec.benefits : [];
+  const benefitTypes = [...new Set(benefits.map(b => b.type).filter(Boolean))];
+  const benefitLabels = [...new Set(benefits.map(b => b.label).filter(Boolean))];
+
+  const narr = spec.narrative || {};
+  const departments = Object.keys(narr.byDepartment || {}).filter(k => k !== 'Other');
+  const categories = Object.keys(narr.byCategory || {}).filter(k => k !== 'Other');
+
+  return {
+    'Benefit Types': benefitTypes,
+    'Benefit Labels': benefitLabels,
+    'Departments': departments,
+    'Categories': categories,
+  };
 }
 
 // ── Remote DB read (SSH + docker exec via stdin pipe — no file write) ──
@@ -220,7 +252,15 @@ async function generateContent(spec) {
 }
 
 // ── Build Airtable payload ────────────────────────────────────────────
-function buildPayload({ slug, spec, logoUrl, generated }) {
+function buildPayload({ slug, spec, logoUrl, generated, structuredOnly }) {
+  const structured = deriveStructuredFields(spec);
+
+  if (structuredOnly) {
+    // Fast path: only update the 4 structured-filter fields on an existing
+    // record. Don't touch Status/Active or anything human-curated.
+    return { fields: structured };
+  }
+
   return {
     fields: {
       Name: spec.partnerName,
@@ -234,6 +274,7 @@ function buildPayload({ slug, spec, logoUrl, generated }) {
       'Partner URL': spec.partnerUrl || null,
       Status: 'draft',
       Active: true,
+      ...structured,
     },
   };
 }
@@ -353,17 +394,19 @@ async function main() {
     }
 
     try {
-      const generated = await generateContent(row.spec);
+      // --structured-only skips the LLM call entirely.
+      const generated = args.structuredOnly ? null : await generateContent(row.spec);
       const payload = buildPayload({
         slug,
         spec: row.spec,
         logoUrl: row.logo_url,
         generated,
+        structuredOnly: args.structuredOnly,
       });
 
       if (args.dryRun) {
         collectedPayloads.push({ slug, spec_status: row.spec_status, fields: payload.fields });
-        console.error(`[${slug}] generated (dry-run)`);
+        console.error(`[${slug}] ${args.structuredOnly ? 'structured' : 'generated'} (dry-run)`);
         summary.skipped++;
       } else {
         const existing = await findExistingBySlug(slug, process.env.AIRTABLE_API_KEY);
@@ -371,6 +414,10 @@ async function main() {
           await updateListing(existing.id, payload, process.env.AIRTABLE_API_KEY);
           console.error(`[${slug}] UPDATED ${existing.id}`);
           summary.updated++;
+        } else if (args.structuredOnly) {
+          // structured-only mode never creates new rows; that requires LLM.
+          console.error(`[${slug}] SKIP: not in Airtable yet (run without --structured-only first)`);
+          summary.skipped++;
         } else {
           const created = await createListing(payload, process.env.AIRTABLE_API_KEY);
           console.error(`[${slug}] CREATED ${created.id}`);

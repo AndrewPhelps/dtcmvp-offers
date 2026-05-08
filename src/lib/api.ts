@@ -8,7 +8,7 @@
  * the latest hourly Airtable sync.
  */
 
-import { Listing, ListingChampion, BrandRequest, RequestStatus } from '@/types';
+import { Listing, ListingChampion, BrandRequest, BenefitType, RequestStatus } from '@/types';
 import { authFetch } from '@/lib/auth';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://webhooks.dtcmvp.com/api';
@@ -50,6 +50,12 @@ interface ApiListing {
   status: 'active' | 'draft' | 'archived';
   is_active: boolean;
   created_at: string | null;
+  // Structured filter dimensions (populated by sync-listings.js from each spec).
+  // Backend may return null/undefined while the sync is still backfilling — fall back to [].
+  benefit_types?: BenefitType[] | null;
+  benefit_labels?: string[] | null;
+  departments?: string[] | null;
+  categories?: string[] | null;
 }
 
 interface ApiRequest {
@@ -101,6 +107,10 @@ function mapApiListing(a: ApiListing): Listing {
     status: a.status,
     isActive: a.is_active,
     createdAt: a.created_at || '',
+    benefitTypes: a.benefit_types || [],
+    benefitLabels: a.benefit_labels || [],
+    departments: a.departments || [],
+    categories: a.categories || [],
   };
 }
 

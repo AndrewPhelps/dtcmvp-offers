@@ -11,6 +11,9 @@ export interface ListingChampion {
   linkedInUrl?: string;
 }
 
+/** Benefit type from the underlying SWAG spec. Drives sidebar filter section + card grouping. */
+export type BenefitType = 'cost-saving' | 'revenue-generation' | 'time-saving';
+
 export interface Listing {
   airtableId: string;        // Airtable record ID (canonical for downstream linking)
   slug: string;              // URL key + join key with swags.db
@@ -18,7 +21,7 @@ export interface Listing {
   tagline: string;           // one-sentence value prop
   shortDescription: string;  // 2-3 sentence overview (LLM-generated from SWAG spec)
   benefitBullets: string[];  // 3-5 plain-English bullets (LLM-generated)
-  tags: string[];            // lowercase, e.g. ["email", "sms", "crm"]
+  tags: string[];            // descriptive tag chips (post-consolidation, ~45 canonical buckets)
   tier: number;              // 0/1/2 — sort key for the marketplace
   logoUrl?: string;          // partner logo (from 1800dtc.db apps.logo_url)
   partnerUrl?: string;       // resolved canonical (no 1800dtc redirects)
@@ -28,6 +31,12 @@ export interface Listing {
   status: 'active' | 'draft' | 'archived';
   isActive: boolean;
   createdAt: string;
+  // Structured filter dimensions, derived from the underlying SwagSpec by sync-listings.js.
+  // All four are deduped sets of canonical vocabulary values.
+  benefitTypes: BenefitType[];   // unique values across spec.benefits[].type
+  benefitLabels: string[];       // unique values across spec.benefits[].label (canonical 21)
+  departments: string[];         // keys of spec.narrative.byDepartment minus "Other" (canonical 19)
+  categories: string[];          // keys of spec.narrative.byCategory minus "Other" (canonical 9)
 }
 
 export type RequestStatus = 'generated' | 'intro_requested' | 'intro_sent' | 'completed';
