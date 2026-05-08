@@ -22,8 +22,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "dtcmvp offers",
-  description: "Discover and claim exclusive offers from dtcmvp partners",
+  title: "dtcmvp partners",
+  description: "Discover Shopify partners and generate ROI analyses (SWAGs) tailored to your store",
 };
 
 export default function RootLayout({
