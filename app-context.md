@@ -33,9 +33,11 @@ Live at **https://partners.dtcmvp.com** (deployed via `./deploy/deploy.sh` → D
   - **`generate swag`** (primary) — first-time only. Subsequent visits show **`view swag`**.
 - Generate SWAG → `SwagLoader` plays for ~3-5s (typewriter steps + 3D MoleculeLoader) while the spec is fetched and a Request record is upserted. Then the modal swaps to `SwagCalculator` with the partner's spec loaded and the brand's profile applied.
 - View SWAG (existing Request) → skips the loader, opens `SwagCalculator` directly.
+- Inside the calculator, **`Ask for an intro`** opens a confirmation modal; on submit the CTA flips in-place to **`Intro Requested {date}`** (inline + sticky + the Brief panel). Optimistic local state, persists across reloads via the `intro_requested_at` field on the Request.
 - `find swags for me` — green button in the navbar runs the recommendation engine (3D MoleculeLoader animation + brand profile from `data/brandProfile.ts`). Surfaces 2-3 listings as a session-scoped recommendation set.
-- `my swags`: two tabs.
-  - **created** — Request records for the logged-in brand. Click any to reopen the calculator. "Add outcome" appends a server-side note (timestamps preserved).
+- `my swags`: three tabs.
+  - **created**: every Request record for the logged-in brand. Click any to reopen the calculator. "Add outcome" appends a server-side note (timestamps preserved).
+  - **intro requested**: subset of `created` where the brand has clicked Ask for an intro. Each row shows an `intro requested {date}` chip.
   - **saved for later** — listings the brand bookmarked but hasn't generated yet.
 - `/[slug]` — deep-linkable URL. Renders the marketplace with the drawer pre-opened on that listing.
 
@@ -56,12 +58,14 @@ Live at **https://partners.dtcmvp.com** (deployed via `./deploy/deploy.sh` → D
 - `POST /api/listings/requests` (auth) — upsert a Request for the authed contact + listing.
 - `GET /api/listings/requests/mine` (auth) — Request records for the logged-in brand.
 - `PUT /api/listings/requests/:airtableId/notes` (auth) — append outcome note.
-- `POST /api/listings/intros` (auth) — "Ask for an intro" submission from inside SwagCalculator.
+- `POST /api/listings/intros` (auth): "Ask for an intro" submission from inside SwagCalculator. Side effects: (a) Slack notification to the intros channel with airtable links to the Meeting + Request records; (b) creates an Airtable Meeting record (`Status='Drafted'`, `SWAG Request=true`, with Brand / Partner / Participant / Host links resolved server-side); (c) PATCHes the matching Request with `Intro Requested At` and backfills the SWAG snapshot fields (`SWAG Total Annual Value`, `SWAG Max Monthly Price`, `SWAG Target ROI Multiple`).
 - `GET /api/listings/admin/test-brands` (admin) — search Brand contacts for impersonation.
 
 **Data plumbing:**
 - Airtable Listings → `listings_listings` SQLite mirror, hourly sync via PM2 cron. See backend plan for the sync runner shape.
-- `Requests` Airtable table dedupes on `(Listing, Contact)` — `createRequest` upserts.
+- `Requests` Airtable table dedupes on `(Listing, Contact)`. `createRequest` upserts. SWAG snapshot fields stay null at create-time (the calculator hasn't computed numbers yet) and are backfilled by the intros handler at intro-time, capturing the values the brand saw when they engaged.
+- Every Listing has a `Partner` linked record (Companies, Type=Partner). Coverage went 0% → 100% via a four-stage matcher: exact-domain (514) → Shopify App Store slug (30) → LLM swarm via `claude -p` headless (147 high-confidence + 24 medium) → exact-name recovery (6) → newly-created Companies for genuinely-not-in-pool partners (388 vendors covering 396 listings). One-off scripts in `dtcmvp-app/scripts/match-listing-partners*.js` and `create-missing-partners.js`. Idempotent on re-runs.
+- Meeting `Host` resolves to the first Contact at the Partner Company (whether or not LinkedIn is set). Falls back to `null` when the Partner has no linked Contacts; admins fill in manually.
 
 ## project structure
 
@@ -148,8 +152,10 @@ ApiListing {
 ApiRequest {
   airtable_id, listing_slug, listing_name,
   status: 'generated'|'intro_requested'|'intro_sent'|'completed',
-  generated_at, notes,
-  swag_total_annual_value, swag_max_monthly_price, swag_target_roi_multiple
+  generated_at,
+  intro_requested_at,                            // null until the brand clicks Ask for an intro
+  notes,
+  swag_total_annual_value, swag_max_monthly_price, swag_target_roi_multiple   // backfilled at intro-time
 }
 ```
 
