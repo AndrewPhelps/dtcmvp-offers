@@ -1,15 +1,16 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { Bookmark, EyeOff, ArrowLeft, Sparkles, Eye, Loader2 } from 'lucide-react';
 import { Modal, Button } from '@/components/common';
 import { Listing } from '@/types';
 import { useBrand } from '@/contexts';
+import { useImpersonation } from '@/contexts/ImpersonationContext';
 import { tagBadgeStyle } from '@/lib';
-import type { SwagSpec } from '@/lib/swag/swag-types';
-import { DEFAULT_BRAND_PROFILE } from '@/lib/swag/swag-types';
+import type { SwagSpec, BrandProfile, Category } from '@/lib/swag/swag-types';
+import { DEFAULT_BRAND_PROFILE, CATEGORIES } from '@/lib/swag/swag-types';
 
 const SwagCalculator = dynamic(() => import('@/components/swag/SwagCalculator'), { ssr: false });
 const SwagLoader = dynamic(() => import('@/components/swag/SwagLoader'), { ssr: false });
@@ -44,6 +45,23 @@ export default function SwagListingDrawer({
     hasGeneratedForListing,
     generateSwag,
   } = useBrand();
+
+  // Mirror the SwagCalculator's testBrand merge so the loader animation
+  // shows the impersonated brand's identity instead of the Sunday Swagger /
+  // Kyle Moloo fixture defaults. Financial values stay as the defaults —
+  // the test-brand picker only carries identity + category.
+  const { testBrand } = useImpersonation();
+  const loaderProfile: BrandProfile = useMemo(() => {
+    if (!testBrand) return DEFAULT_BRAND_PROFILE;
+    const cat = testBrand.primaryCategoryBucket;
+    return {
+      ...DEFAULT_BRAND_PROFILE,
+      brandName: testBrand.companyName || DEFAULT_BRAND_PROFILE.brandName,
+      contactName: testBrand.name || DEFAULT_BRAND_PROFILE.contactName,
+      contactEmail: testBrand.email || DEFAULT_BRAND_PROFILE.contactEmail,
+      ...(cat && CATEGORIES.includes(cat as Category) ? { primaryCategory: cat as Category } : {}),
+    };
+  }, [testBrand]);
 
   // Reset on open / close
   useEffect(() => {
@@ -277,7 +295,7 @@ export default function SwagListingDrawer({
       <Modal isOpen={isOpen} onClose={onClose} header={detailHeader} maxWidth="max-w-6xl">
         <div className="relative min-h-[480px]">
           <SwagLoader
-            profile={DEFAULT_BRAND_PROFILE}
+            profile={loaderProfile}
             partnerName={listing.name}
             onComplete={() => setLoaderDone(true)}
           />
