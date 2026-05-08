@@ -23,6 +23,17 @@ const BENEFIT_TYPE_LABEL: Record<BenefitType, string> = {
   'time-saving': 'time savings',
 };
 
+// Collapse all "Attributed Revenue (X)" variants to a single "Attributed Revenue"
+// option in the filter sidebar. The skill's canonical vocabulary technically
+// allows specific channels (Email, SMS, Affiliate, etc.) but swarm agents
+// invented a long tail (Partner, Podcast, Treasury, Wallet, etc.) that dilutes
+// the filter without adding signal. Collapse for filter purposes; raw labels
+// are preserved on the spec for narrative + display.
+function normalizeBenefitLabel(label: string): string {
+  if (label.startsWith('Attributed Revenue')) return 'Attributed Revenue';
+  return label;
+}
+
 function toggleSet<T>(prev: Set<T>, v: T): Set<T> {
   const next = new Set(prev);
   if (next.has(v)) next.delete(v);
@@ -65,7 +76,7 @@ function FilterSection<T extends string>({
       </div>
       <nav
         className={`space-y-1 pr-1 ${
-          maxHeight === 'tall' ? 'max-h-[40vh] overflow-y-auto' : ''
+          maxHeight === 'tall' ? 'max-h-[40vh] overflow-y-auto overscroll-contain' : ''
         }`}
       >
         {options.map((opt) => {
@@ -204,11 +215,19 @@ export default function SwagsMarketplaceClient({ listings, tags, initialListingS
   // Counts use the OTHER active filters AND'd, so toggling one filter dimension
   // updates the counts in the others contextually.
   type FilterDim = 'categories' | 'benefitTypes' | 'benefitLabels' | 'departments' | 'tags';
+  // Project a listing's benefit labels through the normalizer (collapses
+  // `Attributed Revenue (X)` → `Attributed Revenue`). Always dedupe; a listing
+  // with both Email + SMS variants should count once for the collapsed label.
+  const normalizedBenefitLabels = useCallback(
+    (l: Listing) => Array.from(new Set(l.benefitLabels.map(normalizeBenefitLabel))),
+    [],
+  );
+
   const matchesAllExcept = useCallback(
     (l: Listing, except: FilterDim) => {
       if (except !== 'categories' && selectedCategories.size > 0 && !l.categories.some((c) => selectedCategories.has(c))) return false;
       if (except !== 'benefitTypes' && selectedBenefitTypes.size > 0 && !l.benefitTypes.some((b) => selectedBenefitTypes.has(b))) return false;
-      if (except !== 'benefitLabels' && selectedBenefitLabels.size > 0 && !l.benefitLabels.some((b) => selectedBenefitLabels.has(b))) return false;
+      if (except !== 'benefitLabels' && selectedBenefitLabels.size > 0 && !normalizedBenefitLabels(l).some((b) => selectedBenefitLabels.has(b))) return false;
       if (except !== 'departments' && selectedDepartments.size > 0 && !l.departments.some((d) => selectedDepartments.has(d))) return false;
       if (except !== 'tags' && selectedTags.size > 0 && !l.tags.some((t) => selectedTags.has(t))) return false;
       if (searchQuery) {
@@ -222,7 +241,7 @@ export default function SwagsMarketplaceClient({ listings, tags, initialListingS
       }
       return true;
     },
-    [selectedCategories, selectedBenefitTypes, selectedBenefitLabels, selectedDepartments, selectedTags, searchQuery],
+    [selectedCategories, selectedBenefitTypes, selectedBenefitLabels, selectedDepartments, selectedTags, searchQuery, normalizedBenefitLabels],
   );
 
   const buildOptionCounts = useCallback(
@@ -243,7 +262,7 @@ export default function SwagsMarketplaceClient({ listings, tags, initialListingS
 
   const categoryOptions = useMemo(() => buildOptionCounts('categories', (l) => l.categories), [buildOptionCounts]);
   const benefitTypeOptions = useMemo(() => buildOptionCounts<BenefitType>('benefitTypes', (l) => l.benefitTypes), [buildOptionCounts]);
-  const benefitLabelOptions = useMemo(() => buildOptionCounts('benefitLabels', (l) => l.benefitLabels), [buildOptionCounts]);
+  const benefitLabelOptions = useMemo(() => buildOptionCounts('benefitLabels', normalizedBenefitLabels), [buildOptionCounts, normalizedBenefitLabels]);
   const departmentOptions = useMemo(() => buildOptionCounts('departments', (l) => l.departments), [buildOptionCounts]);
   const tagOptions = useMemo(() => buildOptionCounts('tags', (l) => l.tags), [buildOptionCounts]);
 
