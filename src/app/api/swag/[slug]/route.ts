@@ -23,6 +23,14 @@ export async function GET(
 
   try {
     const spec = JSON.parse(row.spec_json);
+    // Stub specs (skipped: true) have no benefits/narrative/pricing payload
+    // and crash the calculator's useMemos that .map() over them. Treat as
+    // not-found so the drawer's existing "SWAG spec not found" fallback
+    // renders instead. The Listing can still appear in the marketplace
+    // for the Ask-for-intro flow once we wire that to be skip-aware.
+    if (spec?.skipped) {
+      return NextResponse.json({ error: 'SWAG spec not found' }, { status: 404 });
+    }
     return NextResponse.json({ spec });
   } catch {
     return NextResponse.json({ error: 'Invalid spec data' }, { status: 500 });
