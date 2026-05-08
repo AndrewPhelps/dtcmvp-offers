@@ -4,12 +4,22 @@ import type { NextRequest } from 'next/server';
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Public routes (also excluded by the matcher below; in-function checks are defense in depth).
   if (pathname === '/login') return NextResponse.next();
   if (pathname.startsWith('/b/') || pathname === '/b') return NextResponse.next();
 
-  // Redirect old /brand/ paths to /b/ (301) so existing links in inboxes work
+  // Legacy paths → 301 to current canonical paths.
   if (pathname.startsWith('/brand/') || pathname === '/brand') {
     const newPath = pathname.replace(/^\/brand/, '/b');
+    return NextResponse.redirect(new URL(newPath + request.nextUrl.search, request.url), 301);
+  }
+  // /offers/* and /swags/* both collapse to root after the swags.dtcmvp.com move.
+  if (pathname.startsWith('/offers/') || pathname === '/offers') {
+    const newPath = pathname.replace(/^\/offers/, '') || '/';
+    return NextResponse.redirect(new URL(newPath + request.nextUrl.search, request.url), 301);
+  }
+  if (pathname.startsWith('/swags/') || pathname === '/swags') {
+    const newPath = pathname.replace(/^\/swags/, '') || '/';
     return NextResponse.redirect(new URL(newPath + request.nextUrl.search, request.url), 301);
   }
 
@@ -26,14 +36,10 @@ export async function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 
-// Only gate app routes — /api/* and static assets are implicitly excluded.
+// Gate everything except: login, brand magic-link, /api, Next.js internals, static assets.
+// /[slug] (deep links to listings) IS gated since it's brand-facing.
 export const config = {
   matcher: [
-    '/',
-    '/offers/:path*',
-    '/questionnaire/:path*',
-    '/questionnaire',
-    '/admin/:path*',
-    '/admin',
+    '/((?!login|b/|api/|_next/|favicon|.*\\.(?:png|jpg|jpeg|svg|webp|ico|gif|css|js|woff|woff2|ttf)).*)',
   ],
 };

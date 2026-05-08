@@ -1,112 +1,17 @@
 /**
- * API client for the offers backend.
+ * API client for the SWAG marketplace backend.
  *
  * Base URL comes from NEXT_PUBLIC_API_URL (baked at build time).
- * Backend lives at https://webhooks.dtcmvp.com/api — see dtcmvp-app/handlers/offers.
+ * Backend lives at https://webhooks.dtcmvp.com/api — see dtcmvp-app/handlers/listings.
  *
  * Server-side fetches (RSC) use `{ cache: 'no-store' }` so each request reflects
- * the latest hourly Airtable sync. For static generation we'd switch to
- * `{ next: { revalidate: 3600 } }` but SSR is fine at current traffic.
+ * the latest hourly Airtable sync.
  */
 
-import { Offer, Partner, FormField, OfferChampion } from '@/types';
+import { Listing, ListingChampion, BrandRequest, RequestStatus } from '@/types';
 import { authFetch } from '@/lib/auth';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://webhooks.dtcmvp.com/api';
-
-// ----- API response shapes (snake_case, what the backend returns) -----
-
-interface ApiOffer {
-  airtable_id: string;
-  slug: string;
-  name: string;
-  partner_airtable_id: string | null;
-  partner_name: string | null;
-  partner_website: string | null;
-  partner_logo_url: string | null;
-  partner_description: string | null;
-  short_description: string | null;
-  full_description: string | null;
-  video_url: string | null;
-  category: string | null;
-  tags: string[];
-  claim_instructions: string | null;
-  form_fields: FormField[];
-  status: 'active' | 'draft' | 'archived';
-  is_active: boolean;
-  sample_deliverable_url: string | null;
-  champion_name: string | null;
-  champion_title: string | null;
-  champion_brand: string | null;
-  champion_avatar_url: string | null;
-  champion_linkedin_url: string | null;
-  airtable_created_at: string | null;
-}
-
-interface ApiCategoryCount {
-  category: string;
-  offer_count: number;
-}
-
-interface ApiTagCount {
-  name: string;
-  offer_count: number;
-}
-
-interface ApiPartnerSummary {
-  partner_airtable_id: string;
-  partner_name: string;
-  offer_count: number;
-}
-
-// ----- Mappers: backend snake_case → frontend Offer type -----
-
-function mapApiOffer(a: ApiOffer): Offer {
-  const champion: OfferChampion | undefined = a.champion_name
-    ? {
-        name: a.champion_name,
-        title: a.champion_title || '',
-        brand: a.champion_brand || '',
-        avatarUrl: a.champion_avatar_url || '',
-        linkedInUrl: a.champion_linkedin_url || undefined,
-      }
-    : undefined;
-
-  return {
-    id: a.slug,
-    partnerId: a.partner_airtable_id || '',
-    name: a.name,
-    shortDescription: a.short_description || '',
-    fullDescription: a.full_description || '',
-    videoUrl: a.video_url || undefined,
-    categoryId: a.category ? slugifyCategory(a.category) : '',
-    tagIds: (a.tags || []).map(slugifyTag),
-    claimInstructions: a.claim_instructions || undefined,
-    formFields: a.form_fields || [],
-    status: a.status,
-    isActive: a.is_active,
-    sampleDeliverablePdf: a.sample_deliverable_url || undefined,
-    champion,
-    createdAt: a.airtable_created_at || '',
-  };
-}
-
-// Derive the category slug used by the existing UI (`operations`, `email-sms-subscribers`)
-// from the Airtable display name ("Operations", "Email, SMS & Subscribers").
-export function slugifyCategory(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/&/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
-}
-
-export function slugifyTag(name: string): string {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-}
-
-// ----- Fetchers -----
 
 async function apiGet<T>(path: string): Promise<T> {
   const url = `${API_URL}${path}`;
@@ -117,64 +22,122 @@ async function apiGet<T>(path: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-function partnerFromApiOffer(a: ApiOffer): Partner | null {
-  if (!a.partner_airtable_id) return null;
+export function slugifyTag(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+// ----- Listings + Requests -----
+
+interface ApiListing {
+  airtable_id: string;
+  slug: string;
+  name: string;
+  tagline: string | null;
+  short_description: string | null;
+  benefit_bullets: string | null;       // newline-separated; we split on the client
+  tags: string[];
+  tier: number | null;
+  logo_url: string | null;
+  partner_url: string | null;
+  video_url: string | null;
+  partner_airtable_id: string | null;
+  champion_airtable_id: string | null;
+  champion_name: string | null;
+  champion_title: string | null;
+  champion_brand: string | null;        // company name from Champion lookup
+  champion_avatar_url: string | null;
+  champion_linkedin_url: string | null;
+  status: 'active' | 'draft' | 'archived';
+  is_active: boolean;
+  created_at: string | null;
+}
+
+interface ApiRequest {
+  airtable_id: string;
+  listing_slug: string;
+  listing_name: string;
+  status: RequestStatus;
+  generated_at: string;
+  notes: string | null;
+  swag_total_annual_value: number | null;
+  swag_max_monthly_price: number | null;
+  swag_target_roi_multiple: number | null;
+}
+
+interface ApiTagCount {
+  name: string;
+  listing_count: number;
+}
+
+function mapApiListing(a: ApiListing): Listing {
+  const champion: ListingChampion | undefined = a.champion_name
+    ? {
+        airtableId: a.champion_airtable_id || undefined,
+        name: a.champion_name,
+        title: a.champion_title || '',
+        brand: a.champion_brand || '',
+        avatarUrl: a.champion_avatar_url || '',
+        linkedInUrl: a.champion_linkedin_url || undefined,
+      }
+    : undefined;
+
   return {
-    id: a.partner_airtable_id,
-    name: a.partner_name || a.partner_airtable_id,
-    website: a.partner_website || '',
-    logo: a.partner_logo_url || undefined,
-    description: a.partner_description || '',
+    airtableId: a.airtable_id,
+    slug: a.slug,
+    name: a.name,
+    tagline: a.tagline || '',
+    shortDescription: a.short_description || '',
+    benefitBullets: (a.benefit_bullets || '')
+      .split(/\r?\n/)
+      .map((s) => s.replace(/^[-*•\s]+/, '').trim())
+      .filter(Boolean),
+    tags: a.tags || [],
+    tier: a.tier ?? 0,
+    logoUrl: a.logo_url || undefined,
+    partnerUrl: a.partner_url || undefined,
+    videoUrl: a.video_url || undefined,
+    partnerAirtableId: a.partner_airtable_id || undefined,
+    champion,
+    status: a.status,
+    isActive: a.is_active,
+    createdAt: a.created_at || '',
   };
 }
 
-export async function getOffers(): Promise<Offer[]> {
-  const data = await apiGet<{ offers: ApiOffer[]; count: number }>('/offers');
-  return data.offers.map(mapApiOffer);
+function mapApiRequest(a: ApiRequest): BrandRequest {
+  return {
+    airtableId: a.airtable_id,
+    listingSlug: a.listing_slug,
+    listingName: a.listing_name,
+    status: a.status,
+    generatedAt: a.generated_at,
+    notes: a.notes || undefined,
+    swagSnapshot:
+      a.swag_total_annual_value !== null || a.swag_max_monthly_price !== null
+        ? {
+            totalAnnualValue: a.swag_total_annual_value ?? undefined,
+            maxMonthlyPrice: a.swag_max_monthly_price ?? undefined,
+            targetRoiMultiple: a.swag_target_roi_multiple ?? undefined,
+          }
+        : undefined,
+  };
 }
 
-/**
- * Fetch offers + derive the unique partner list (with logos) from the same
- * response. The backend denormalizes partner info onto each offer, so one
- * API call covers both views.
- */
-export async function getOffersAndPartners(): Promise<{ offers: Offer[]; partners: Partner[] }> {
-  const data = await apiGet<{ offers: ApiOffer[]; count: number }>('/offers');
-  const offers = data.offers.map(mapApiOffer);
-  const partnerMap = new Map<string, Partner>();
-  for (const a of data.offers) {
-    const p = partnerFromApiOffer(a);
-    if (p && !partnerMap.has(p.id)) partnerMap.set(p.id, p);
-  }
-  return { offers, partners: Array.from(partnerMap.values()) };
+export async function getListings(): Promise<Listing[]> {
+  const data = await apiGet<{ listings: ApiListing[]; count: number }>('/listings');
+  return data.listings.map(mapApiListing);
 }
 
-export async function getOfferBySlug(slug: string): Promise<{ offer: Offer; partner: Partner | null } | null> {
+export async function getListingBySlug(slug: string): Promise<Listing | null> {
   try {
-    const data = await apiGet<{ offer: ApiOffer }>(`/offers/${encodeURIComponent(slug)}`);
-    return {
-      offer: mapApiOffer(data.offer),
-      partner: partnerFromApiOffer(data.offer),
-    };
+    const data = await apiGet<{ listing: ApiListing }>(
+      `/listings/${encodeURIComponent(slug)}`,
+    );
+    return mapApiListing(data.listing);
   } catch (err) {
     if (err instanceof Error && err.message.includes('404')) return null;
     throw err;
   }
-}
-
-export interface CategorySummary {
-  id: string;     // slug form
-  name: string;   // display name from Airtable
-  count: number;
-}
-
-export async function getCategorySummaries(): Promise<CategorySummary[]> {
-  const data = await apiGet<{ categories: ApiCategoryCount[] }>('/offers/categories');
-  return data.categories.map((c) => ({
-    id: slugifyCategory(c.category),
-    name: c.category,
-    count: c.offer_count,
-  }));
 }
 
 export interface TagSummary {
@@ -183,67 +146,82 @@ export interface TagSummary {
   count: number;
 }
 
-export async function getTagSummaries(): Promise<TagSummary[]> {
-  const data = await apiGet<{ tags: ApiTagCount[] }>('/offers/tags');
+export async function getListingTagSummaries(): Promise<TagSummary[]> {
+  const data = await apiGet<{ tags: ApiTagCount[] }>('/listings/tags');
   return data.tags.map((t) => ({
     id: slugifyTag(t.name),
     name: t.name,
-    count: t.offer_count,
+    count: t.listing_count,
   }));
 }
 
-export interface PartnerSummary {
-  airtableId: string;
-  name: string;
-  count: number;
+export interface CreateRequestInput {
+  listingSlug: string;
+  swagSnapshot?: {
+    totalAnnualValue?: number;
+    maxMonthlyPrice?: number;
+    targetRoiMultiple?: number;
+  };
 }
 
-export async function getPartnerSummaries(): Promise<PartnerSummary[]> {
-  const data = await apiGet<{ partners: ApiPartnerSummary[] }>('/offers/partners');
-  return data.partners.map((p) => ({
-    airtableId: p.partner_airtable_id,
-    name: p.partner_name,
-    count: p.offer_count,
-  }));
-}
-
-// ----- Claims -----
-
-export interface SubmitClaimInput {
-  slug: string;
-  formData: Record<string, string | boolean>;
-}
-
-export interface ClaimRecord {
-  claim_id: string;
-  offer_slug: string;
-  offer_name: string;
-  status: 'pending' | 'reviewed' | 'completed';
-  claimed_at: string;
-  notes?: string | null;
-  reviewed_at?: string | null;
-}
-
-export interface SubmitClaimResult {
+export interface CreateRequestResult {
   success: true;
-  claim: ClaimRecord;
+  request: BrandRequest;
+  isNew: boolean;
 }
 
 /**
- * Submit a claim. Auth required — backend derives identity from session.
+ * Upsert a Request for the authenticated brand contact + given listing.
+ * Backend dedupes on (contact, listing) — second call for the same pair
+ * returns the existing record with `isNew: false`.
  */
-export async function submitClaim(input: SubmitClaimInput): Promise<SubmitClaimResult> {
-  const res = await authFetch(`${API_URL}/offers/claims`, {
+export async function createRequest(input: CreateRequestInput): Promise<CreateRequestResult> {
+  const res = await authFetch(`${API_URL}/listings/requests`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   });
   if (!res.ok) {
     const body = await res.text().catch(() => '');
-    throw new Error(`Claim submission failed (${res.status}): ${body}`);
+    throw new Error(`createRequest failed (${res.status}): ${body}`);
   }
-  return res.json() as Promise<SubmitClaimResult>;
+  const data = (await res.json()) as { success: true; request: ApiRequest; is_new: boolean };
+  return { success: true, request: mapApiRequest(data.request), isNew: data.is_new };
 }
+
+/** Fetch all Requests belonging to the authenticated brand contact. */
+export async function getMyRequests(): Promise<BrandRequest[]> {
+  const res = await authFetch(`${API_URL}/listings/requests/mine`);
+  if (!res.ok) {
+    if (res.status === 401) return [];
+    const body = await res.text().catch(() => '');
+    throw new Error(`getMyRequests failed (${res.status}): ${body}`);
+  }
+  const data = (await res.json()) as { requests: ApiRequest[] };
+  return data.requests.map(mapApiRequest);
+}
+
+/** Append an outcome note to a Request. Concatenated server-side, never overwritten. */
+export async function appendRequestNotes(
+  airtableId: string,
+  notes: string,
+): Promise<{ success: true; airtable_id: string; notes: string }> {
+  const res = await authFetch(
+    `${API_URL}/listings/requests/${encodeURIComponent(airtableId)}/notes`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notes }),
+    },
+  );
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`appendRequestNotes failed (${res.status}): ${body}`);
+  }
+  return res.json() as Promise<{ success: true; airtable_id: string; notes: string }>;
+}
+
+// ----- Admin-only helpers (still used by SwagCalculator AdminToolbar / TestBrandPicker) -----
 
 export interface TestBrandMatch {
   contactAirtableId: string;
@@ -255,12 +233,9 @@ export interface TestBrandMatch {
   primaryCategoryBucket: string | null;
 }
 
-/**
- * Admin-only: search Brand-type Contacts by email substring.
- */
 export async function searchTestBrands(q: string): Promise<TestBrandMatch[]> {
   if (!q || q.trim().length < 2) return [];
-  const res = await authFetch(`${API_URL}/offers/admin/test-brands?q=${encodeURIComponent(q.trim())}`);
+  const res = await authFetch(`${API_URL}/listings/admin/test-brands?q=${encodeURIComponent(q.trim())}`);
   if (!res.ok) {
     if (res.status === 403 || res.status === 401) return [];
     throw new Error(`searchTestBrands failed (${res.status})`);
@@ -268,6 +243,8 @@ export async function searchTestBrands(q: string): Promise<TestBrandMatch[]> {
   const data = (await res.json()) as { contacts: TestBrandMatch[] };
   return data.contacts || [];
 }
+
+// ----- "Ask for an intro" submission (fired from inside SwagCalculator) -----
 
 export interface SubmitIntroInput {
   partnerSlug: string;
@@ -286,12 +263,8 @@ export interface SubmitIntroInput {
   };
 }
 
-/**
- * Submit a SWAG "Ask for an intro" request. Auth required.
- * Server posts to Slack and logs verbosely; no Airtable record yet.
- */
 export async function submitIntroRequest(input: SubmitIntroInput): Promise<{ success: true }> {
-  const res = await authFetch(`${API_URL}/offers/intros`, {
+  const res = await authFetch(`${API_URL}/listings/intros`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
@@ -301,35 +274,4 @@ export async function submitIntroRequest(input: SubmitIntroInput): Promise<{ suc
     throw new Error(`Intro request failed (${res.status}): ${body}`);
   }
   return res.json() as Promise<{ success: true }>;
-}
-
-/**
- * Append an outcome note to a claim. Server concatenates with existing
- * Notes (timestamped); the previous content is never overwritten.
- */
-export async function appendClaimNotes(claimId: string, notes: string): Promise<{ success: true; claim_id: string; notes: string }> {
-  const res = await authFetch(`${API_URL}/offers/claims/${encodeURIComponent(claimId)}/notes`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ notes }),
-  });
-  if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    throw new Error(`appendClaimNotes failed (${res.status}): ${body}`);
-  }
-  return res.json() as Promise<{ success: true; claim_id: string; notes: string }>;
-}
-
-/**
- * Fetch claims belonging to the authenticated user (matched by email).
- */
-export async function getMyClaims(): Promise<ClaimRecord[]> {
-  const res = await authFetch(`${API_URL}/offers/claims/mine`);
-  if (!res.ok) {
-    if (res.status === 401) return [];
-    const body = await res.text().catch(() => '');
-    throw new Error(`getMyClaims failed (${res.status}): ${body}`);
-  }
-  const data = (await res.json()) as { claims: ClaimRecord[] };
-  return data.claims;
 }

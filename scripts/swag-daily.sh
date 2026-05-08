@@ -76,15 +76,15 @@ fi
 trap 'rmdir "$LOCK_DIR" 2>/dev/null' EXIT
 
 echo ""
-echo "[1] Pulling existing slugs from offers API..."
-EXISTING=$(curl -s --max-time 30 https://offers.dtcmvp.com/api/swag/admin/list | jq -r '.specs[].slug' | sort -u)
+echo "[1] Pulling existing slugs from swags API..."
+EXISTING=$(curl -s --max-time 30 https://swags.dtcmvp.com/api/swag/admin/list | jq -r '.specs[].slug' | sort -u)
 if [[ -z "$EXISTING" ]]; then
     echo "ERROR: failed to pull existing slugs"
-    slack_post ":x: SWAG daily failed at step [1] — could not pull existing slugs from offers API"
+    slack_post ":x: SWAG daily failed at step [1] — could not pull existing slugs from swags API"
     exit 1
 fi
 EXISTING_COUNT=$(echo "$EXISTING" | wc -l | tr -d ' ')
-echo "    existing in offers DB: $EXISTING_COUNT"
+echo "    existing in swags DB: $EXISTING_COUNT"
 
 echo ""
 echo "[2] Pulling candidates from 1800dtc.db..."

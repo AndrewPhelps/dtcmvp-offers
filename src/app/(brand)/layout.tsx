@@ -12,8 +12,8 @@ import { Button } from '@/components/common';
 import TestBrandPicker from '@/components/swag/TestBrandPicker';
 
 const brandNavItems = [
-  { href: '/offers', label: 'Find Offers', exact: true },
-  { href: '/offers/my', label: 'My Offers' },
+  { href: '/', label: 'swags', exact: true },
+  { href: '/my', label: 'my swags', exact: true },
 ];
 
 function NavActionsDesktop() {
@@ -21,67 +21,67 @@ function NavActionsDesktop() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const handleFindOffersForMe = () => {
+  const handleFindSwagsForMe = () => {
     startAnalysis();
-    // Only navigate if not already on /offers
-    if (pathname !== '/offers') {
-      router.push('/offers');
+    // Only navigate if not already on the marketplace
+    if (pathname !== '/') {
+      router.push('/');
     }
   };
 
   return (
-    <Button onClick={handleFindOffersForMe} disabled={isAnalyzing}>
+    <Button onClick={handleFindSwagsForMe} disabled={isAnalyzing}>
       {isAnalyzing ? (
         <>
           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          Analyzing...
+          analyzing...
         </>
       ) : (
         <>
           <Sparkles className="w-4 h-4 mr-2" />
-          Find Offers For Me
+          find swags for me
         </>
       )}
     </Button>
   );
 }
 
-interface MobileMenuFindOffersButtonProps {
+interface MobileMenuFindSwagsButtonProps {
   onClose: () => void;
 }
 
-function MobileMenuFindOffersButton({ onClose }: MobileMenuFindOffersButtonProps) {
+function MobileMenuFindSwagsButton({ onClose }: MobileMenuFindSwagsButtonProps) {
   const { startAnalysis, isAnalyzing } = useBrand();
   const router = useRouter();
   const pathname = usePathname();
 
-  const handleFindOffersForMe = () => {
+  const handleFindSwagsForMe = () => {
     startAnalysis();
-    // Only navigate if not already on /offers
-    if (pathname !== '/offers') {
-      router.push('/offers');
+    // Only navigate if not already on the marketplace
+    if (pathname !== '/') {
+      router.push('/');
     }
     onClose();
   };
 
   return (
-    <Button onClick={handleFindOffersForMe} disabled={isAnalyzing} className="w-full justify-center">
+    <Button onClick={handleFindSwagsForMe} disabled={isAnalyzing} className="w-full justify-center">
       {isAnalyzing ? (
         <>
           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          Analyzing...
+          analyzing...
         </>
       ) : (
         <>
           <Sparkles className="w-4 h-4 mr-2" />
-          Find Offers For Me
+          find swags for me
         </>
       )}
     </Button>
   );
 }
 
-function OffersLayoutContent({
+function SwagsLayoutContent({
   children,
 }: {
   children: React.ReactNode;
@@ -96,7 +96,7 @@ function OffersLayoutContent({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14 md:h-16">
             {/* Logo */}
-            <Link href="/offers" className="flex items-center">
+            <Link href="/" className="flex items-center">
               <Image
                 src="/dtcmvp-logo-white.png"
                 alt="dtcmvp"
@@ -132,7 +132,7 @@ function OffersLayoutContent({
 
             {/* Right side actions */}
             <div className="flex items-center gap-2">
-              {/* Desktop: Full Find Offers button */}
+              {/* Desktop: Full find-swags button */}
               <div className="hidden md:block">
                 <NavActionsDesktop />
               </div>
@@ -197,7 +197,7 @@ function OffersLayoutContent({
           })}
         </nav>
         <div className="p-4 border-t border-[var(--border-default)]">
-          <MobileMenuFindOffersButton onClose={() => setMobileMenuOpen(false)} />
+          <MobileMenuFindSwagsButton onClose={() => setMobileMenuOpen(false)} />
         </div>
       </div>
 
@@ -223,7 +223,7 @@ function AdminImpersonationBanner() {
   );
 }
 
-export default function OffersLayout({
+export default function SwagsLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -231,7 +231,7 @@ export default function OffersLayout({
   return (
     <ImpersonationProvider>
       <BrandProvider>
-        <OffersLayoutContent>{children}</OffersLayoutContent>
+        <SwagsLayoutContent>{children}</SwagsLayoutContent>
       </BrandProvider>
     </ImpersonationProvider>
   );

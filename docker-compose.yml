@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://webhooks.dtcmvp.com/api}
-        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://offers.dtcmvp.com}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://swags.dtcmvp.com}
     container_name: dtcmvp-offers-frontend
     environment:
       # Server-side only — consumed by the /api/auth/* Next.js route handler

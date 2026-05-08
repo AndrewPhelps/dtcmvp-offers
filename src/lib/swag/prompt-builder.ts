@@ -12,7 +12,7 @@ function buildPromptText(
     .map((b) => `- ${b.label}: ${fmtMoney(b.annualValue)}/yr`)
     .join('\n')
 
-  const bookingUrl = `https://offers.dtcmvp.com/offers/${spec.slug}`
+  const bookingUrl = `https://swags.dtcmvp.com/${spec.slug}`
 
   return `I'm ${profile.contactName || 'evaluating tools'} from ${profile.brandName} (${profile.primaryCategory !== 'Other' ? profile.primaryCategory + ', ' : ''}${profile.annualOrders.toLocaleString()} orders/yr, ${fmtMoney(profile.aov)} AOV). I'm evaluating ${spec.partnerName}, ${spec.tagline.toLowerCase()}.
 

@@ -2,58 +2,49 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { brandProfile, getLoadingMessages } from '@/data/brandProfile';
-import { Offer } from '@/types';
-import { getMyClaims, appendClaimNotes, ClaimRecord } from '@/lib/api';
+import { Offer, BrandRequest } from '@/types';
+import {
+  getMyRequests, createRequest as apiCreateRequest, appendRequestNotes,
+} from '@/lib/api';
 import { useImpersonation } from '@/contexts/ImpersonationContext';
 import { useAuth } from '@/contexts/AuthContext';
-
-export type BrandClaimStatus = 'submitted' | 'intro_sent';
-
-export interface BrandClaim {
-  offerId: string;
-  claimId: string;
-  status: BrandClaimStatus;
-  notes: string;
-  claimedAt: string;
-}
 
 export interface RecommendationSet {
   id: string;
   date: Date;
+  /** Listing slugs (the recommendation engine still uses Offer-shaped synthetic objects internally). */
   offerIds: string[];
 }
 
 interface BrandState {
   savedOfferIds: string[];
   hiddenOfferIds: string[];
-  claims: BrandClaim[];
+  requests: BrandRequest[];
 }
 
 interface BrandContextType {
-  // State
   savedOfferIds: string[];
   hiddenOfferIds: string[];
-  claims: BrandClaim[];
+  requests: BrandRequest[];
 
-  // Offers available for recommendation (populated by the marketplace page
-  // from the API; empty on routes that don't load offers).
+  /** The marketplace page feeds the recommendation engine with offer-shaped Listings. */
   setAvailableOffers: (offers: Offer[]) => void;
 
-  // Actions for saved offers
   saveOffer: (offerId: string) => void;
   unsaveOffer: (offerId: string) => void;
   isOfferSaved: (offerId: string) => boolean;
 
-  // Actions for hidden offers
   hideOffer: (offerId: string) => void;
   isOfferHidden: (offerId: string) => boolean;
 
-  // Actions for claims
-  claimOffer: (offerId: string) => void;
-  getClaimByOfferId: (offerId: string) => BrandClaim | undefined;
-  updateClaimNotes: (offerId: string, notes: string) => Promise<void>;
-  markIntroSent: (offerId: string) => void;
-  isOfferClaimed: (offerId: string) => boolean;
+  generateSwag: (input: {
+    listingSlug: string;
+    listingName: string;
+    swagSnapshot?: { totalAnnualValue?: number; maxMonthlyPrice?: number; targetRoiMultiple?: number };
+  }) => Promise<BrandRequest>;
+  getRequestByListingSlug: (slug: string) => BrandRequest | undefined;
+  hasGeneratedForListing: (slug: string) => boolean;
+  updateRequestNotes: (airtableId: string, notes: string) => Promise<void>;
 
   // Recommendations
   recommendations: RecommendationSet[];
@@ -70,22 +61,11 @@ interface BrandContextType {
 
 const BrandContext = createContext<BrandContextType | undefined>(undefined);
 
-// No demo claims/saves by default — real claims come from the POST /api/offers/claims flow.
 const initialState: BrandState = {
   savedOfferIds: [],
   hiddenOfferIds: [],
-  claims: [],
+  requests: [],
 };
-
-function apiClaimToBrandClaim(c: ClaimRecord): BrandClaim {
-  return {
-    offerId: c.offer_slug,
-    claimId: c.claim_id,
-    status: c.status === 'pending' ? 'submitted' : 'intro_sent',
-    notes: c.notes ?? '',
-    claimedAt: c.claimed_at,
-  };
-}
 
 export function BrandProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<BrandState>(initialState);
@@ -98,14 +78,13 @@ export function BrandProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
-    // Clear immediately so a stale list never flashes during the refetch.
-    setState((prev) => ({ ...prev, claims: [] }));
-    getMyClaims()
-      .then((claims) => {
+    setState((prev) => ({ ...prev, requests: [] }));
+    getMyRequests()
+      .then((requests) => {
         if (cancelled) return;
-        setState((prev) => ({ ...prev, claims: claims.map(apiClaimToBrandClaim) }));
+        setState((prev) => ({ ...prev, requests }));
       })
-      .catch((err) => console.error('[Brand] Failed to load claims:', err));
+      .catch((err) => console.error('[Brand] Failed to load SWAG requests:', err));
     return () => {
       cancelled = true;
     };
@@ -123,27 +102,17 @@ export function BrandProvider({ children }: { children: ReactNode }) {
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
   const loadingMessages = getLoadingMessages(brandProfile);
 
-  // Generate AI-like recommendations based on brand profile
+  // Generate AI-like recommendations from the available pool. Listings don't carry
+  // a category field anymore, so the priority-bucket matching from the offers era
+  // is gone — for now we just pick from the un-hidden, un-generated pool.
   const generateRecommendations = useCallback(() => {
-    const claimedOfferIds = state.claims.map((c) => c.offerId);
+    const generatedSlugs = state.requests.map((r) => r.listingSlug);
     const pool = availableOffers.filter(
-      (o) => o.isActive && !state.hiddenOfferIds.includes(o.id) && !claimedOfferIds.includes(o.id)
+      (o) => o.isActive && !state.hiddenOfferIds.includes(o.id) && !generatedSlugs.includes(o.id),
     );
-
-    // Simple matching based on brand profile - prioritize marketing/analytics for Marketing department
-    const priorityCategories = brandProfile.contactDepartment === 'Marketing'
-      ? ['analytics-insights', 'email-sms-subscribers', 'advertising-acquisition']
-      : ['operations', 'retention-loyalty', 'site-checkout'];
-
-    const prioritizedOffers = [
-      ...pool.filter((o) => priorityCategories.includes(o.categoryId)),
-      ...pool.filter((o) => !priorityCategories.includes(o.categoryId)),
-    ];
-
-    // Pick 2-3 offers
-    const count = Math.min(Math.floor(Math.random() * 2) + 2, prioritizedOffers.length);
-    return prioritizedOffers.slice(0, count);
-  }, [availableOffers, state.hiddenOfferIds, state.claims]);
+    const count = Math.min(Math.floor(Math.random() * 2) + 2, pool.length);
+    return pool.slice(0, count);
+  }, [availableOffers, state.hiddenOfferIds, state.requests]);
 
   // Start analysis (with AI simulation)
   const startAnalysis = useCallback(() => {
@@ -255,78 +224,88 @@ export function BrandProvider({ children }: { children: ReactNode }) {
     return state.hiddenOfferIds.includes(offerId);
   };
 
-  // Claims actions
-  const claimOffer = (offerId: string) => {
-    if (state.claims.some((c) => c.offerId === offerId)) {
-      return; // Already claimed
-    }
+  // ----- SWAG-era request actions -----
+
+  const generateSwag = async (input: {
+    listingSlug: string;
+    listingName: string;
+    swagSnapshot?: { totalAnnualValue?: number; maxMonthlyPrice?: number; targetRoiMultiple?: number };
+  }): Promise<BrandRequest> => {
+    // Optimistic local entry so the CTA flips to "View SWAG" while the POST is in-flight.
+    const existing = state.requests.find((r) => r.listingSlug === input.listingSlug);
+    if (existing) return existing;
+
+    const optimistic: BrandRequest = {
+      airtableId: '',
+      listingSlug: input.listingSlug,
+      listingName: input.listingName,
+      status: 'generated',
+      generatedAt: new Date().toISOString(),
+      swagSnapshot: input.swagSnapshot,
+    };
     setState((prev) => ({
       ...prev,
-      claims: [
-        ...prev.claims,
-        {
-          offerId,
-          claimId: '', // populated on next server refetch
-          status: 'submitted',
-          notes: '',
-          claimedAt: new Date().toISOString(),
-        },
-      ],
-      // Remove from saved if it was saved
-      savedOfferIds: prev.savedOfferIds.filter((id) => id !== offerId),
+      requests: [optimistic, ...prev.requests],
+      // Generating a SWAG implicitly removes the listing from "saved" — graduated.
+      savedOfferIds: prev.savedOfferIds.filter((id) => id !== input.listingSlug),
     }));
-  };
 
-  const getClaimByOfferId = (offerId: string) => {
-    return state.claims.find((c) => c.offerId === offerId);
-  };
-
-  // Append a new outcome note to a claim. Persists server-side; previous
-  // Notes content is preserved (server concatenates).
-  const updateClaimNotes = async (offerId: string, notes: string) => {
-    const claim = state.claims.find((c) => c.offerId === offerId);
-    if (!claim?.claimId) {
-      console.warn('[Brand] updateClaimNotes: no claimId for', offerId);
-      return;
+    try {
+      const result = await apiCreateRequest({
+        listingSlug: input.listingSlug,
+        swagSnapshot: input.swagSnapshot,
+      });
+      // Replace the optimistic record with the server-authoritative one.
+      setState((prev) => ({
+        ...prev,
+        requests: prev.requests.map((r) =>
+          r.listingSlug === input.listingSlug ? result.request : r,
+        ),
+      }));
+      return result.request;
+    } catch (err) {
+      console.error('[Brand] generateSwag failed:', err);
+      // Roll back the optimistic entry so the CTA reverts to "Generate SWAG".
+      setState((prev) => ({
+        ...prev,
+        requests: prev.requests.filter((r) => r.listingSlug !== input.listingSlug || r.airtableId !== ''),
+      }));
+      throw err;
     }
-    const result = await appendClaimNotes(claim.claimId, notes);
+  };
+
+  const getRequestByListingSlug = (slug: string) => {
+    return state.requests.find((r) => r.listingSlug === slug);
+  };
+
+  const hasGeneratedForListing = (slug: string) => {
+    return state.requests.some((r) => r.listingSlug === slug);
+  };
+
+  const updateRequestNotes = async (airtableId: string, notes: string) => {
+    const result = await appendRequestNotes(airtableId, notes);
     setState((prev) => ({
       ...prev,
-      claims: prev.claims.map((c) =>
-        c.offerId === offerId ? { ...c, notes: result.notes } : c,
+      requests: prev.requests.map((r) =>
+        r.airtableId === airtableId ? { ...r, notes: result.notes } : r,
       ),
     }));
-  };
-
-  const markIntroSent = (offerId: string) => {
-    setState((prev) => ({
-      ...prev,
-      claims: prev.claims.map((c) =>
-        c.offerId === offerId ? { ...c, status: 'intro_sent' as BrandClaimStatus } : c
-      ),
-    }));
-  };
-
-  const isOfferClaimed = (offerId: string) => {
-    return state.claims.some((c) => c.offerId === offerId);
   };
 
   const value: BrandContextType = {
     savedOfferIds: state.savedOfferIds,
     hiddenOfferIds: state.hiddenOfferIds,
-    claims: state.claims,
+    requests: state.requests,
     setAvailableOffers,
     saveOffer,
     unsaveOffer,
     isOfferSaved,
     hideOffer,
     isOfferHidden,
-    claimOffer,
-    getClaimByOfferId,
-    updateClaimNotes,
-    markIntroSent,
-    isOfferClaimed,
-    // Recommendations
+    generateSwag,
+    getRequestByListingSlug,
+    hasGeneratedForListing,
+    updateRequestNotes,
     recommendations,
     selectedRecommendation,
     isAnalyzing,
