@@ -64,6 +64,7 @@ interface ApiRequest {
   listing_name: string;
   status: RequestStatus;
   generated_at: string;
+  intro_requested_at: string | null;
   notes: string | null;
   swag_total_annual_value: number | null;
   swag_max_monthly_price: number | null;
@@ -121,6 +122,7 @@ function mapApiRequest(a: ApiRequest): BrandRequest {
     listingName: a.listing_name,
     status: a.status,
     generatedAt: a.generated_at,
+    introRequestedAt: a.intro_requested_at || undefined,
     notes: a.notes || undefined,
     swagSnapshot:
       a.swag_total_annual_value !== null || a.swag_max_monthly_price !== null

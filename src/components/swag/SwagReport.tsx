@@ -20,9 +20,11 @@ type Props = {
   results: SwagResults
   customPrice: number | null
   onAskForIntro?: () => void
+  /** ISO timestamp set when the user has already requested an intro for this Listing. */
+  introRequestedAt?: string
 }
 
-export default function SwagReport({ spec, profile, results, customPrice, onAskForIntro }: Props) {
+export default function SwagReport({ spec, profile, results, customPrice, onAskForIntro, introRequestedAt }: Props) {
   const r = results.hundred
   const vars = buildTemplateVars(spec, profile, results)
   const narrative = resolveNarrative(spec.narrative, profile.department, profile.primaryCategory, vars)
@@ -186,19 +188,33 @@ export default function SwagReport({ spec, profile, results, customPrice, onAskF
         </div>
       )}
 
-      {/* Ask for intro CTA */}
+      {/* Ask for intro CTA — flips to a confirmation panel once requested */}
       {onAskForIntro && (
-        <div className="mb-8 p-6 rounded-xl border-2 border-accent-green/30 bg-accent-green/5 text-center">
-          <h3 className="text-lg font-grotesk font-semibold text-text-primary mb-2">
-            Ready to explore {spec.partnerName}?
-          </h3>
-          <p className="text-sm text-text-secondary font-grotesk mb-4 max-w-md mx-auto">
-            dtcmvp will check with {spec.partnerName} to make sure it's a good fit, then connect you directly.
-          </p>
-          <button onClick={onAskForIntro} className="btn-primary px-8 py-3 text-sm">
-            Ask for an intro
-          </button>
-        </div>
+        introRequestedAt ? (
+          <div className="mb-8 p-6 rounded-xl border-2 border-accent-green/30 bg-accent-green/5 text-center">
+            <h3 className="text-lg font-grotesk font-semibold text-accent-green mb-2 inline-flex items-center gap-2">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 6 9 17l-5-5" />
+              </svg>
+              Intro requested {new Date(introRequestedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            </h3>
+            <p className="text-sm text-text-secondary font-grotesk max-w-md mx-auto">
+              dtcmvp will check with {spec.partnerName} to make sure it's a good fit, then connect you directly.
+            </p>
+          </div>
+        ) : (
+          <div className="mb-8 p-6 rounded-xl border-2 border-accent-green/30 bg-accent-green/5 text-center">
+            <h3 className="text-lg font-grotesk font-semibold text-text-primary mb-2">
+              Ready to explore {spec.partnerName}?
+            </h3>
+            <p className="text-sm text-text-secondary font-grotesk mb-4 max-w-md mx-auto">
+              dtcmvp will check with {spec.partnerName} to make sure it's a good fit, then connect you directly.
+            </p>
+            <button onClick={onAskForIntro} className="btn-primary px-8 py-3 text-sm">
+              Ask for an intro
+            </button>
+          </div>
+        )
       )}
 
       {/* AI Research */}

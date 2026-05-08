@@ -48,6 +48,8 @@ export interface BrandRequest {
   listingName: string;
   status: RequestStatus;
   generatedAt: string;
+  /** ISO timestamp set by the backend when the user clicks "Ask for an intro". */
+  introRequestedAt?: string;
   notes?: string;
   swagSnapshot?: {
     totalAnnualValue?: number;

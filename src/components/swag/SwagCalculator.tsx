@@ -24,6 +24,7 @@ import type { ProjectionMetric } from './ProjectionChart'
 import { useAuth } from '@/contexts/AuthContext'
 import { submitIntroRequest } from '@/lib/api'
 import { useImpersonation } from '@/contexts/ImpersonationContext'
+import { useBrand } from '@/contexts'
 
 // Per-benefit colors: shades within each type so stacked bars are readable
 const BENEFIT_PALETTE: Record<BenefitType, string[]> = {
@@ -62,6 +63,9 @@ function groupByType(benefits: BenefitResult[]): { type: BenefitType; items: Ben
 export default function SwagCalculator({ spec }: { spec: SwagSpec }) {
   const { user } = useAuth()
   const { testBrand } = useImpersonation()
+  const { getRequestByListingSlug, markRequestIntroRequested } = useBrand()
+  const existingRequest = getRequestByListingSlug(spec.slug)
+  const introRequestedAt = existingRequest?.introRequestedAt
   const [profile, setProfile] = useState<BrandProfile>(DEFAULT_BRAND_PROFILE)
 
   useEffect(() => {
@@ -246,7 +250,14 @@ export default function SwagCalculator({ spec }: { spec: SwagSpec }) {
                 maxMonthlyPrice: r.maxMonthlyPrice,
               },
             })
-              .then(() => console.log('[intro] submitted ok'))
+              .then(() => {
+                // Optimistically flip the CTA to "Intro Requested {date}" —
+                // the backend has already stamped it server-side; this just
+                // updates the local state so the UI reflects it immediately
+                // without waiting for a re-fetch.
+                markRequestIntroRequested(spec.slug)
+                console.log('[intro] submitted ok')
+              })
               .catch((err) => console.error('[intro] submit failed', err))
           }}
         />
@@ -320,32 +331,66 @@ export default function SwagCalculator({ spec }: { spec: SwagSpec }) {
             ))}
           </div>
           <button
-            onClick={() => setShowIntroModal(true)}
             ref={inlineBtnRef}
-            className="group btn-primary px-5 py-2 text-sm flex items-center justify-center gap-2 whitespace-nowrap w-full md:w-auto print:hidden"
+            onClick={introRequestedAt ? undefined : () => setShowIntroModal(true)}
+            disabled={!!introRequestedAt}
+            title={introRequestedAt ? new Date(introRequestedAt).toLocaleString() : undefined}
+            className={
+              introRequestedAt
+                ? 'px-5 py-2 text-sm flex items-center justify-center gap-2 whitespace-nowrap w-full md:w-auto rounded-md border border-accent-green/30 bg-accent-green/10 text-accent-green font-grotesk font-medium cursor-default print:hidden'
+                : 'group btn-primary px-5 py-2 text-sm flex items-center justify-center gap-2 whitespace-nowrap w-full md:w-auto print:hidden'
+            }
           >
-            Ask for an intro
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="arrow-nudge">
-              <path d="M5 12h14M12 5l7 7-7 7" />
-            </svg>
+            {introRequestedAt ? (
+              <>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 6 9 17l-5-5" />
+                </svg>
+                Intro Requested {new Date(introRequestedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </>
+            ) : (
+              <>
+                Ask for an intro
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="arrow-nudge">
+                  <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+              </>
+            )}
           </button>
         </div>
 
         {/* Fixed CTA - appears when tab row scrolls off screen */}
         {ctaFixed && (
           <button
-            onClick={() => setShowIntroModal(true)}
-            className="group sticky top-0 z-40 btn-primary px-5 py-2 text-sm flex items-center justify-center gap-2 whitespace-nowrap shadow-lg shadow-accent-green/20 print:hidden ml-auto"
+            onClick={introRequestedAt ? undefined : () => setShowIntroModal(true)}
+            disabled={!!introRequestedAt}
+            title={introRequestedAt ? new Date(introRequestedAt).toLocaleString() : undefined}
+            className={
+              introRequestedAt
+                ? 'sticky top-0 z-40 px-5 py-2 text-sm flex items-center justify-center gap-2 whitespace-nowrap rounded-md border border-accent-green/30 bg-accent-green/10 text-accent-green font-grotesk font-medium shadow-lg shadow-accent-green/20 cursor-default print:hidden ml-auto'
+                : 'group sticky top-0 z-40 btn-primary px-5 py-2 text-sm flex items-center justify-center gap-2 whitespace-nowrap shadow-lg shadow-accent-green/20 print:hidden ml-auto'
+            }
           >
-            Ask for an intro
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="arrow-nudge">
-              <path d="M5 12h14M12 5l7 7-7 7" />
-            </svg>
+            {introRequestedAt ? (
+              <>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 6 9 17l-5-5" />
+                </svg>
+                Intro Requested {new Date(introRequestedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </>
+            ) : (
+              <>
+                Ask for an intro
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="arrow-nudge">
+                  <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+              </>
+            )}
           </button>
         )}
 
         {view === 'brief' ? (
-          <SwagReport spec={spec} profile={profile} results={results} customPrice={customPrice} onAskForIntro={() => setShowIntroModal(true)} />
+          <SwagReport spec={spec} profile={profile} results={results} customPrice={customPrice} onAskForIntro={() => setShowIntroModal(true)} introRequestedAt={introRequestedAt} />
         ) : view === 'inputs' ? (
           /* Inputs tab: full-width version of the sidebar */
           <div className="max-w-xl mx-auto">

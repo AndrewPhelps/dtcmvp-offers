@@ -45,6 +45,11 @@ interface BrandContextType {
   getRequestByListingSlug: (slug: string) => BrandRequest | undefined;
   hasGeneratedForListing: (slug: string) => boolean;
   updateRequestNotes: (airtableId: string, notes: string) => Promise<void>;
+  /** Optimistically mark a Request as having had its intro requested. The
+   * backend already does this server-side when /api/listings/intros runs,
+   * but the calculator calls this on submit so the CTA label flips to
+   * "Intro Requested {date}" without waiting for a re-fetch. */
+  markRequestIntroRequested: (listingSlug: string, ts?: string) => void;
 
   // Recommendations
   recommendations: RecommendationSet[];
@@ -292,6 +297,18 @@ export function BrandProvider({ children }: { children: ReactNode }) {
     }));
   };
 
+  const markRequestIntroRequested = (listingSlug: string, ts?: string) => {
+    const stamp = ts || new Date().toISOString();
+    setState((prev) => ({
+      ...prev,
+      requests: prev.requests.map((r) =>
+        r.listingSlug === listingSlug && !r.introRequestedAt
+          ? { ...r, introRequestedAt: stamp }
+          : r,
+      ),
+    }));
+  };
+
   const value: BrandContextType = {
     savedOfferIds: state.savedOfferIds,
     hiddenOfferIds: state.hiddenOfferIds,
@@ -306,6 +323,7 @@ export function BrandProvider({ children }: { children: ReactNode }) {
     getRequestByListingSlug,
     hasGeneratedForListing,
     updateRequestNotes,
+    markRequestIntroRequested,
     recommendations,
     selectedRecommendation,
     isAnalyzing,
