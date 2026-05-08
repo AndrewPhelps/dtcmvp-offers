@@ -2,7 +2,7 @@
 
 import { notFound } from 'next/navigation';
 import SwagsMarketplaceClient from '../SwagsMarketplaceClient';
-import { getListings } from '@/lib/api';
+import { getListings, getListingTagSummaries } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,8 +12,11 @@ interface SwagListingDetailPageProps {
 
 export default async function SwagListingDetailPage({ params }: SwagListingDetailPageProps) {
   const { slug } = await params;
-  const listings = await getListings();
+  const [listings, tags] = await Promise.all([
+    getListings(),
+    getListingTagSummaries(),
+  ]);
   const found = listings.find((l) => l.slug === slug);
   if (!found) notFound();
-  return <SwagsMarketplaceClient listings={listings} initialListingSlug={slug} />;
+  return <SwagsMarketplaceClient listings={listings} tags={tags} initialListingSlug={slug} />;
 }

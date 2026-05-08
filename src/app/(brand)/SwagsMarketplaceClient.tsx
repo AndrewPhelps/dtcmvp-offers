@@ -2,15 +2,17 @@
 
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
-import { Search, Sparkles, ArrowRight, Trash2 } from 'lucide-react';
+import { Search, Sparkles, ArrowRight, Trash2, CheckCircle2 } from 'lucide-react';
 import { Card, MoleculeLoader } from '@/components/common';
 import { SwagListingDrawer } from '@/components/swags';
 import { Listing, Offer } from '@/types';
 import { tagBadgeStyle } from '@/lib/categoryColors';
 import { useBrand } from '@/contexts';
+import type { TagSummary } from '@/lib/api';
 
 interface SwagsMarketplaceClientProps {
   listings: Listing[];
+  tags: TagSummary[];
   /** When set (deep-link route /swags/[slug]), open the drawer on this listing on mount. */
   initialListingSlug?: string;
 }
@@ -45,8 +47,9 @@ function TypewriterText({ text, speed = 25 }: { text: string; speed?: number }) 
   );
 }
 
-export default function SwagsMarketplaceClient({ listings, initialListingSlug }: SwagsMarketplaceClientProps) {
+export default function SwagsMarketplaceClient({ listings, tags, initialListingSlug }: SwagsMarketplaceClientProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [selectedListing, setSelectedListing] = useState<Listing | null>(() => {
     if (!initialListingSlug) return null;
     return listings.find((l) => l.slug === initialListingSlug) ?? null;
@@ -111,15 +114,14 @@ export default function SwagsMarketplaceClient({ listings, initialListingSlug }:
         (l) =>
           selectedRecommendationSlugs.includes(l.slug) &&
           l.isActive &&
-          !hiddenOfferIds.includes(l.slug) &&
-          !generatedSlugs.includes(l.slug),
+          !hiddenOfferIds.includes(l.slug),
       );
     }
     return listings
       .filter((l) => {
         if (!l.isActive) return false;
         if (hiddenOfferIds.includes(l.slug)) return false;
-        if (generatedSlugs.includes(l.slug)) return false;
+        if (selectedTag && !l.tags.includes(selectedTag)) return false;
         if (searchQuery) {
           const q = searchQuery.toLowerCase();
           return (
@@ -132,7 +134,7 @@ export default function SwagsMarketplaceClient({ listings, initialListingSlug }:
         return true;
       })
       .sort((a, b) => (b.tier ?? 0) - (a.tier ?? 0));
-  }, [listings, hiddenOfferIds, generatedSlugs, searchQuery, selectedRecommendationSlugs]);
+  }, [listings, hiddenOfferIds, searchQuery, selectedTag, selectedRecommendationSlugs]);
 
   const handleListingClick = (listing: Listing) => {
     setSelectedListing(listing);
@@ -188,6 +190,66 @@ export default function SwagsMarketplaceClient({ listings, initialListingSlug }:
                   className="w-full pl-10 pr-4 py-2.5 bg-[var(--bg-card)] border border-[var(--border-default)] rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:border-[var(--brand-green-primary)] transition-colors"
                 />
               </div>
+
+              {tags.length > 0 && (
+                <div>
+                  <h3 className="text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider mb-3">
+                    filter by tag
+                  </h3>
+                  <nav className="space-y-1 max-h-[60vh] overflow-y-auto pr-1">
+                    <button
+                      onClick={() => {
+                        setSelectedTag(null);
+                        clearRecommendationView();
+                      }}
+                      className={`group w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-between cursor-pointer ${
+                        selectedTag === null
+                          ? 'bg-[var(--brand-green-primary)]/10 text-[var(--brand-green-primary)] font-medium'
+                          : 'text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]'
+                      }`}
+                    >
+                      <span>all swags</span>
+                      <span
+                        className={
+                          selectedTag === null
+                            ? 'text-[var(--brand-green-primary)]'
+                            : 'text-[var(--text-tertiary)] group-hover:text-[var(--text-secondary)]'
+                        }
+                      >
+                        {listings.filter((l) => l.isActive && !hiddenOfferIds.includes(l.slug)).length}
+                      </span>
+                    </button>
+                    {tags.map((tag) => {
+                      const isSelected = selectedTag === tag.name;
+                      return (
+                        <button
+                          key={tag.id}
+                          onClick={() => {
+                            setSelectedTag(isSelected ? null : tag.name);
+                            clearRecommendationView();
+                          }}
+                          className={`group w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-between cursor-pointer ${
+                            isSelected
+                              ? 'bg-[var(--brand-green-primary)]/10 text-[var(--brand-green-primary)] font-medium'
+                              : 'text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]'
+                          }`}
+                        >
+                          <span className="truncate">{tag.name}</span>
+                          <span
+                            className={
+                              isSelected
+                                ? 'text-[var(--brand-green-primary)]'
+                                : 'text-[var(--text-tertiary)] group-hover:text-[var(--text-secondary)]'
+                            }
+                          >
+                            {tag.count}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </nav>
+                </div>
+              )}
 
               {recommendations.length > 0 && (
                 <div>
@@ -297,55 +359,65 @@ export default function SwagsMarketplaceClient({ listings, initialListingSlug }:
                 </div>
 
                 <div className="flex flex-col gap-3 md:gap-5">
-                  {filteredListings.map((listing) => (
-                    <button
-                      key={listing.slug}
-                      onClick={() => handleListingClick(listing)}
-                      className="text-left cursor-pointer"
-                    >
-                      <Card
-                        variant="interactive"
-                        className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-8 p-5 md:p-10"
+                  {filteredListings.map((listing) => {
+                    const isGenerated = generatedSlugs.includes(listing.slug);
+                    return (
+                      <button
+                        key={listing.slug}
+                        onClick={() => handleListingClick(listing)}
+                        className="text-left cursor-pointer"
                       >
-                        <div className="w-12 h-12 md:w-16 md:h-16 rounded-xl bg-white flex items-center justify-center flex-shrink-0 overflow-hidden">
-                          {listing.logoUrl ? (
-                            <Image
-                              src={listing.logoUrl}
-                              alt={listing.name}
-                              width={64}
-                              height={64}
-                              className="w-full h-full object-contain p-1.5 md:p-2"
-                            />
-                          ) : (
-                            <span className="text-[var(--brand-green-primary)] font-semibold text-lg md:text-xl">
-                              {listing.name.slice(0, 2).toUpperCase()}
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-base md:text-xl font-semibold text-[var(--text-primary)] mb-1 md:mb-1.5">
-                            {listing.name}
-                          </h3>
-                          <p className="text-sm text-[var(--text-secondary)] mb-2 line-clamp-2 md:line-clamp-none">
-                            {listing.tagline}
-                          </p>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            {listing.tags.slice(0, 4).map((tag) => (
-                              <span
-                                key={tag}
-                                className={`text-xs px-2 py-0.5 rounded-full border ${tagBadgeStyle}`}
-                              >
-                                {tag}
+                        <Card
+                          variant="interactive"
+                          className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-8 p-5 md:p-10"
+                        >
+                          <div className="w-12 h-12 md:w-16 md:h-16 rounded-xl bg-white flex items-center justify-center flex-shrink-0 overflow-hidden">
+                            {listing.logoUrl ? (
+                              <Image
+                                src={listing.logoUrl}
+                                alt={listing.name}
+                                width={64}
+                                height={64}
+                                className="w-full h-full object-contain p-1.5 md:p-2"
+                              />
+                            ) : (
+                              <span className="text-[var(--brand-green-primary)] font-semibold text-lg md:text-xl">
+                                {listing.name.slice(0, 2).toUpperCase()}
                               </span>
-                            ))}
+                            )}
                           </div>
-                        </div>
 
-                        <ArrowRight className="hidden md:block w-5 h-5 text-[var(--text-tertiary)] flex-shrink-0" />
-                      </Card>
-                    </button>
-                  ))}
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-base md:text-xl font-semibold text-[var(--text-primary)] mb-1 md:mb-1.5">
+                              {listing.name}
+                            </h3>
+                            <p className="text-sm text-[var(--text-secondary)] mb-2 line-clamp-2 md:line-clamp-none">
+                              {listing.tagline}
+                            </p>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {listing.tags.slice(0, 4).map((tag) => (
+                                <span
+                                  key={tag}
+                                  className={`text-xs px-2 py-0.5 rounded-full border ${tagBadgeStyle}`}
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+
+                          {isGenerated ? (
+                            <div className="hidden md:flex items-center gap-1.5 text-[var(--brand-green-primary)] flex-shrink-0">
+                              <CheckCircle2 className="w-5 h-5" />
+                              <span className="text-xs uppercase tracking-wider font-medium">generated</span>
+                            </div>
+                          ) : (
+                            <ArrowRight className="hidden md:block w-5 h-5 text-[var(--text-tertiary)] flex-shrink-0" />
+                          )}
+                        </Card>
+                      </button>
+                    );
+                  })}
 
                   {filteredListings.length === 0 && (
                     <Card className="text-center py-12">

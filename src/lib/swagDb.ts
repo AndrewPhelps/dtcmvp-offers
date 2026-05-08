@@ -114,31 +114,34 @@ export interface SwagSpecRow {
 // ---- Public read ops (used by user-facing endpoints) ----
 
 /**
- * Get a single SWAG spec by slug. Only returns approved specs to end users.
+ * Get a single SWAG spec by slug. Public read — Listings.status (in Airtable)
+ * is what gates marketplace visibility, so any spec we have on disk for a
+ * listing the brand can see should be returned. The swag_specs.status field
+ * is an internal review-quality artifact and no longer gates public reads.
  */
 export function getSwagSpec(slug: string): SwagSpecRow | null {
   const row = db().prepare(
-    `SELECT * FROM swag_specs WHERE slug = ? AND status = 'approved'`
+    `SELECT * FROM swag_specs WHERE slug = ?`
   ).get(slug) as SwagSpecRow | undefined;
   return row ?? null;
 }
 
 /**
- * List approved SWAG spec slugs with partner names.
- * Used by the OfferDrawer to know which partners have SWAGs.
+ * List all SWAG spec slugs with partner names. See getSwagSpec note —
+ * swag_specs.status is no longer used to gate public reads.
  */
 export function listSwagSlugs(): { slug: string; partner_name: string }[] {
   return db().prepare(
-    `SELECT slug, partner_name FROM swag_specs WHERE status = 'approved' ORDER BY partner_name`
+    `SELECT slug, partner_name FROM swag_specs ORDER BY partner_name`
   ).all() as { slug: string; partner_name: string }[];
 }
 
 /**
- * Check if an approved SWAG spec exists for a given partner name (case-insensitive).
+ * Check if a SWAG spec exists for a given partner name (case-insensitive).
  */
 export function getSwagSlugByPartnerName(partnerName: string): string | null {
   const row = db().prepare(
-    `SELECT slug FROM swag_specs WHERE LOWER(partner_name) = LOWER(?) AND status = 'approved'`
+    `SELECT slug FROM swag_specs WHERE LOWER(partner_name) = LOWER(?)`
   ).get(partnerName) as { slug: string } | undefined;
   return row?.slug ?? null;
 }
