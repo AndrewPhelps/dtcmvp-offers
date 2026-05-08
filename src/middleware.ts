@@ -13,7 +13,8 @@ export async function middleware(request: NextRequest) {
     const newPath = pathname.replace(/^\/brand/, '/b');
     return NextResponse.redirect(new URL(newPath + request.nextUrl.search, request.url), 301);
   }
-  // /offers/* and /swags/* both collapse to root after the swags.dtcmvp.com move.
+  // /offers/* and /swags/* both collapse to root (legacy paths from the
+  // offers.dtcmvp.com → swags.dtcmvp.com → partners.dtcmvp.com migration).
   if (pathname.startsWith('/offers/') || pathname === '/offers') {
     const newPath = pathname.replace(/^\/offers/, '') || '/';
     return NextResponse.redirect(new URL(newPath + request.nextUrl.search, request.url), 301);

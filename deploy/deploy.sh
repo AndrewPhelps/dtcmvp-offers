@@ -125,8 +125,8 @@ sleep 4
 HEALTH=$(ssh "$SSH_TARGET" "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3005/ || echo ERR")
 echo "  http://127.0.0.1:3005/ → $HEALTH"
 
-PUBLIC=$(curl -s -o /dev/null -w '%{http_code}' https://swags.dtcmvp.com/ || echo ERR)
-echo "  https://swags.dtcmvp.com/ → $PUBLIC"
+PUBLIC=$(curl -s -o /dev/null -w '%{http_code}' https://partners.dtcmvp.com/ || echo ERR)
+echo "  https://partners.dtcmvp.com/ → $PUBLIC"
 
 echo ""
 echo "=== deploy complete ==="

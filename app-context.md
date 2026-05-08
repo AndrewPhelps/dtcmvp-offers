@@ -1,6 +1,6 @@
 # dtcmvp-offers — partner SWAG marketplace
 
-Standalone Next.js app at **swags.dtcmvp.com**. Brands discover Shopify-app partners that have a published dtcmvp **SWAG** (Scientific Wild-Ass Guess — a first-party ROI analysis), open the partner's detail modal, and click **Generate SWAG** to launch an interactive ROI calculator that computes what that tool is worth to their specific store. Generating a SWAG persists a `Request` record so the brand can come back to it from "my swags / created". Partners get warm intros from brands who have already seen the financial upside.
+Standalone Next.js app at **partners.dtcmvp.com**. Brands discover Shopify-app partners that have a published dtcmvp **SWAG** (Scientific Wild-Ass Guess — a first-party ROI analysis), open the partner's detail modal, and click **Generate SWAG** to launch an interactive ROI calculator that computes what that tool is worth to their specific store. Generating a SWAG persists a `Request` record so the brand can come back to it from "my swags / created". Partners get warm intros from brands who have already seen the financial upside.
 
 The marketplace was previously framed as "exclusive partner offers" with a claim-an-offer flow. The full pivot to SWAGs landed 2026-05-07 — see `~/.claude/plans/let-s-keep-pricing-off-ethereal-thimble.md` (backend / data layer) and `~/.claude/plans/ok-we-re-making-major-encapsulated-cloud.md` (frontend rewrite).
 
@@ -23,7 +23,7 @@ Admin tooling under `/admin/*`: `/admin/scrape-results` (1,126 apps from 1800dtc
 
 ## current state
 
-Live at **https://swags.dtcmvp.com** (deployed via `./deploy/deploy.sh` → DO droplet, host port 3005).
+Live at **https://partners.dtcmvp.com** (deployed via `./deploy/deploy.sh` → DO droplet, host port 3005).
 
 **Brand flow:**
 - Marketplace at `/`: one card per partner with a published SWAG. Card shows logo, partner name, tagline, tag chips. Clicking opens the detail modal.
@@ -42,7 +42,7 @@ Live at **https://swags.dtcmvp.com** (deployed via `./deploy/deploy.sh` → DO d
 **Auth (live, mirrors dtcmvp-2.0):**
 - Partner login at `/login` — OTP + password, proxied through `api.dtcmvpete.com`.
 - Brand login at `/b/[contactId]` — first-name verification against Airtable Contact ID. Old `/brand/...` URLs 301 to `/b/...`.
-- Old `/offers/*` and `/swags/*` URLs 301 to root-level paths (after the swags.dtcmvp.com move). Old `offers.dtcmvp.com` DNS is removed.
+- Old `/offers/*` and `/swags/*` URLs 301 to root-level paths (after the partners.dtcmvp.com move). Old `offers.dtcmvp.com` DNS is removed.
 - Middleware gates everything except `/login`, `/b/*`, `/api/*`, Next internals, and static assets. Cookie-based session with 45-min refresh.
 
 **Admin tooling:**
@@ -204,7 +204,7 @@ The standalone container bind-mounts `./data:/app/data:ro` for the scrape DB and
 | var | scope | purpose |
 |-----|-------|---------|
 | `NEXT_PUBLIC_API_URL` | build | `https://webhooks.dtcmvp.com/api` — Listings + Requests + auth + intros backend |
-| `NEXT_PUBLIC_APP_URL` | build | `https://swags.dtcmvp.com` (was `offers.dtcmvp.com` until 2026-05-07) |
+| `NEXT_PUBLIC_APP_URL` | build | `https://partners.dtcmvp.com` (was `offers.dtcmvp.com` until 2026-05-07, then `swags.dtcmvp.com` briefly the same day) |
 | `AUTH_API_URL` | runtime | `https://api.dtcmvpete.com` — auth proxy target |
 | `SCRAPE_DB_PATH` | runtime | `/app/data/1800dtc.db` (read by `lib/scrapeDb.ts`) |
 | `SWAG_DB_PATH` | runtime | `/app/swag-data/swags.db` (read/write by `lib/swagDb.ts`) |
