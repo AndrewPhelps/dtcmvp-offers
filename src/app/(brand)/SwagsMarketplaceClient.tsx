@@ -52,14 +52,11 @@ function FilterSection<T extends string>({
   options,
   selected,
   onToggle,
-  maxHeight = 'tall',
 }: {
   label: string;
   options: FilterOption<T>[];
   selected: Set<T>;
   onToggle: (v: T) => void;
-  /** "auto" = show all (no scroll); "tall" = capped with internal scroll. */
-  maxHeight?: 'auto' | 'tall';
 }) {
   if (options.length === 0 && selected.size === 0) return null;
   return (
@@ -74,11 +71,7 @@ function FilterSection<T extends string>({
           </span>
         )}
       </div>
-      <nav
-        className={`space-y-1 pr-1 ${
-          maxHeight === 'tall' ? 'max-h-[40vh] overflow-y-auto overscroll-contain' : ''
-        }`}
-      >
+      <nav className="space-y-1 pr-1">
         {options.map((opt) => {
           const isSelected = selected.has(opt.value);
           return (
@@ -330,7 +323,10 @@ export default function SwagsMarketplaceClient({ listings, tags, initialListingS
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8 relative z-10">
         <div className="flex flex-col md:flex-row gap-4 md:gap-8">
           <aside className="w-full md:w-64 md:flex-shrink-0">
-            <div className="md:sticky md:top-8 space-y-4 md:space-y-6">
+            {/* Sticky sidebar with one scrollable container — sections inside flow
+                naturally and scroll as a single unit instead of nested per-section
+                scrollbars (which created bottom-cutoff in the old design). */}
+            <div className="md:sticky md:top-8 md:max-h-[calc(100vh-2.5rem)] md:overflow-y-auto md:overscroll-contain space-y-4 md:space-y-6 pb-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-tertiary)]" />
                 <input
@@ -363,7 +359,6 @@ export default function SwagsMarketplaceClient({ listings, tags, initialListingS
                   setSelectedCategories((prev) => toggleSet(prev, v));
                   clearRecommendationView();
                 }}
-                maxHeight="auto"
               />
 
               <FilterSection
@@ -374,7 +369,6 @@ export default function SwagsMarketplaceClient({ listings, tags, initialListingS
                   setSelectedBenefitTypes((prev) => toggleSet(prev, v));
                   clearRecommendationView();
                 }}
-                maxHeight="auto"
               />
 
               <FilterSection
