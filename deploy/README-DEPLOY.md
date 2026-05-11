@@ -1,12 +1,22 @@
 # dtcmvp-offers deployment
 
-Standalone marketplace frontend. Deployed to the DO droplet at `142.93.27.155` alongside dtcmvpete, brand-portal, cal-platform, and webhook-server-v2. Subdomain `offers.dtcmvp.com` (TLS via Let's Encrypt).
+Standalone marketplace frontend. Deployed to the DO droplet at `142.93.27.155` alongside dtcmvpete, brand-portal, cal-platform, and webhook-server-v2. Subdomain `partners.dtcmvp.com` (TLS via Let's Encrypt; ZeroSSL is a working fallback — see SSL section below).
 
 | Port | Container |
 |---|---|
 | 3005 → container 3000 | `dtcmvp-offers-frontend` |
 
-Backend (`/api/offers/*`) lives in **dtcmvp-app** and is served by webhook-server-v2 at `webhooks.dtcmvp.com`. This frontend does not have its own backend.
+Backend (`/api/listings/*`) lives in **dtcmvp-app** (`handlers/listings/`) and is served by webhook-server-v2 at `webhooks.dtcmvp.com`. This frontend does not have its own backend.
+
+### Domain history
+
+| Subdomain | Live span |
+|---|---|
+| `offers.dtcmvp.com` | initial release through 2026-05-07 |
+| `swags.dtcmvp.com` | 2026-05-07 (same-day rename, never publicly advertised) |
+| `partners.dtcmvp.com` | 2026-05-08 onward (current) |
+
+The old A records were removed when the subdomain moved; no live 301 redirects from old subdomains exist. Old `/offers/*` and `/swags/*` path prefixes 301 to root paths via middleware.
 
 ---
 
@@ -15,8 +25,8 @@ Backend (`/api/offers/*`) lives in **dtcmvp-app** and is served by webhook-serve
 Peter/admin does these once. After this, `./deploy/deploy.sh` handles everything.
 
 ### 1. DNS
-Add A record in Namecheap: `offers.dtcmvp.com` → `142.93.27.155`
-Wait for propagation (~5 min): `dig +short offers.dtcmvp.com`
+Add A record in Namecheap: `partners.dtcmvp.com` → `142.93.27.155`
+Wait for propagation (~5 min): `dig +short partners.dtcmvp.com`
 
 ### 2. GitHub deploy key for the droplet
 The droplet needs read-only SSH access to this repo so it can `git pull`.
@@ -73,25 +83,68 @@ docker compose up -d --build
 curl -I http://127.0.0.1:3005/
 ```
 
-### 6. Install nginx site + SSL
+### 6. Install nginx vhost + SSL
+
+The `deploy` user has a narrow NOPASSWD sudo allowlist that only permits `cp /tmp/nginx-staging-*` → `/etc/nginx/sites-available/staging-*`. So vhost files installed via this path end up named `staging-dtcmvp-partners` even though they're production — confusing but functional (nginx doesn't care about filenames). When you have a root session, `sudo mv` it to a clean name. Until then:
 
 ```bash
-# Root session:
-ssh root@142.93.27.155
+# As deploy:
+ssh deploy@142.93.27.155
+cat > /tmp/nginx-staging-dtcmvp-partners <<'EOF'
+server {
+    server_name partners.dtcmvp.com;
 
-# Copy the nginx config into place
-cp /home/deploy/dtcmvp-offers/deploy/nginx-dtcmvp-offers /etc/nginx/sites-available/dtcmvp-offers
-ln -s /etc/nginx/sites-available/dtcmvp-offers /etc/nginx/sites-enabled/
-nginx -t && systemctl reload nginx
+    location / {
+        proxy_pass http://127.0.0.1:3005;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
 
-# Provision SSL (certbot will edit the nginx config in place and add HTTPS + redirect)
-certbot --nginx -d offers.dtcmvp.com
+    listen 80;
+}
+EOF
+sudo /bin/cp /tmp/nginx-staging-dtcmvp-partners /etc/nginx/sites-available/staging-dtcmvp-partners
+sudo /bin/ln -sf /etc/nginx/sites-available/staging-dtcmvp-partners /etc/nginx/sites-enabled/staging-dtcmvp-partners
+sudo /usr/sbin/nginx -t && sudo /usr/sbin/nginx -s reload
 ```
+
+Then provision SSL (certbot edits the vhost in place to add `listen 443 ssl` + HTTP→HTTPS redirect):
+
+**Primary path — Let's Encrypt:**
+
+```bash
+sudo /usr/bin/certbot --nginx -d partners.dtcmvp.com \
+  --non-interactive --agree-tos --email peter@peterdanieljames.com --redirect
+```
+
+**Fallback — ZeroSSL** (use when LE has an outage; both speak ACME and the cert is interchangeable):
+
+```bash
+# Get free EAB credentials by email (no signup needed):
+curl -s -X POST 'https://api.zerossl.com/acme/eab-credentials-email' \
+  --data-urlencode 'email=peter@peterdanieljames.com'
+# → {"success":true,"eab_kid":"...","eab_hmac_key":"..."}
+
+# Plug those into certbot:
+sudo /usr/bin/certbot \
+  --server https://acme.zerossl.com/v2/DV90 \
+  --eab-kid '<KID>' --eab-hmac-key '<HMAC>' \
+  --nginx -d partners.dtcmvp.com \
+  --non-interactive --agree-tos --email peter@peterdanieljames.com --redirect
+```
+
+Either path's cert auto-renews via certbot's systemd timer / cron. The `partners.dtcmvp.com` cert was issued via ZeroSSL on 2026-05-08 because of a multi-hour LE outage; renewal continues against the same CA.
 
 Test public URL:
 
 ```bash
-curl -I https://offers.dtcmvp.com/
+curl -I https://partners.dtcmvp.com/
 ```
 
 ---
@@ -113,9 +166,9 @@ git add . && git commit -m "..." && git push origin master
 
 ---
 
-## `/scrape-results` admin viewer — scrape DB sync
+## `/admin/scrape-results` admin viewer — scrape DB sync
 
-The admin-only `/scrape-results` page reads from `/app/data/1800dtc.db` inside
+The admin-only `/admin/scrape-results` page reads from `/app/data/1800dtc.db` inside
 the container, which is bind-mounted from `~/dtcmvp-offers/data/` on the host.
 The DB is gitignored (~300 MB) so it ships out-of-band.
 
@@ -133,7 +186,7 @@ scp /Users/peter/Documents/GitHub/dtcmvp-offers/1800dtc/1800dtc.db \
 ./deploy/deploy.sh
 ```
 
-If the file isn't present, the `/scrape-results` page renders a clear error
+If the file isn't present, `/admin/scrape-results` renders a clear error
 ("Couldn't open the scrape database") with the expected path.
 
 ### Monthly auto-refresh (host cron)
@@ -199,7 +252,7 @@ Deferred until the standalone production deploy is stable.
 
 ```
 User's browser
-    │ https://offers.dtcmvp.com
+    │ https://partners.dtcmvp.com
     ▼
 DO droplet nginx (port 443)
     │ proxy_pass
@@ -207,15 +260,15 @@ DO droplet nginx (port 443)
 localhost:3005  →  dtcmvp-offers-frontend (Next.js 16 standalone)
                        │ fetch NEXT_PUBLIC_API_URL
                        ▼
-                  https://webhooks.dtcmvp.com/api/offers/*
+                  https://webhooks.dtcmvp.com/api/listings/*
                        │
                        ▼
                   webhook-server-v2 container
                        │
                        ▼
-                  handlers/offers (SQLite + Airtable)
+                  handlers/listings (SQLite + Airtable)
 ```
 
 ---
 
-*Last updated: 2026-04-13*
+*Last updated: 2026-05-11*

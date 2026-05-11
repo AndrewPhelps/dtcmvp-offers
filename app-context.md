@@ -41,6 +41,15 @@ Live at **https://partners.dtcmvp.com** (deployed via `./deploy/deploy.sh` → D
   - **saved for later** — listings the brand bookmarked but hasn't generated yet.
 - `/[slug]` — deep-linkable URL. Renders the marketplace with the drawer pre-opened on that listing.
 
+**Marketplace sidebar — five structured filter sections** (AND across sections, OR within):
+1. **brand category** — `spec.narrative.byCategory` keys minus `Other` (canonical 9: Apparel & Fashion, Beauty & Cosmetics, Health & Wellness, Sports & Fitness, Food & Drink, Home & Electronics, Baby & Kids, Pet & Vet)
+2. **benefit type** — `spec.benefits[].type` (3 buckets: cost-saving / revenue-generation / time-saving)
+3. **benefit** — `spec.benefits[].label` (canonical 21: CVR Lift, AOV Lift, Ticket Deflection, Attributed Revenue, etc.). All `Attributed Revenue (X)` variants collapse to a single `Attributed Revenue` option in the filter — the underlying spec still carries the specific channel (Email / SMS / Affiliate / DM / Organic / Display) for narrative + drawer copy.
+4. **department** — `spec.narrative.byDepartment` keys minus `Other` (canonical 19: CX / Support, Performance / Paid, Retention / CRM, etc.)
+5. **tag** — free-form descriptive tags from the spec. Originally 976 long-tail values; consolidated 2026-05-08 to 51 canonical buckets via an algorithmic pre-pass (754 deterministic remaps) + Sonnet residual review (222 remaining). Vertical-named tags (apparel, beauty, etc.) were dropped from this dimension since brand category covers them.
+
+The four structured dimensions are derived from each Listing's underlying SwagSpec by `scripts/sync-listings.js` and pushed to Airtable Listings as `Benefit Types` / `Benefit Labels` / `Departments` / `Categories` multipleSelects, then mirrored to `listings_listings` SQLite.
+
 **Auth (live, mirrors dtcmvp-2.0):**
 - Partner login at `/login` — OTP + password, proxied through `api.dtcmvpete.com`.
 - Brand login at `/b/[contactId]` — first-name verification against Airtable Contact ID. Old `/brand/...` URLs 301 to `/b/...`.
@@ -66,6 +75,10 @@ Live at **https://partners.dtcmvp.com** (deployed via `./deploy/deploy.sh` → D
 - `Requests` Airtable table dedupes on `(Listing, Contact)`. `createRequest` upserts. SWAG snapshot fields stay null at create-time (the calculator hasn't computed numbers yet) and are backfilled by the intros handler at intro-time, capturing the values the brand saw when they engaged.
 - Every Listing has a `Partner` linked record (Companies, Type=Partner). Coverage went 0% → 100% via a four-stage matcher: exact-domain (514) → Shopify App Store slug (30) → LLM swarm via `claude -p` headless (147 high-confidence + 24 medium) → exact-name recovery (6) → newly-created Companies for genuinely-not-in-pool partners (388 vendors covering 396 listings). One-off scripts in `dtcmvp-app/scripts/match-listing-partners*.js` and `create-missing-partners.js`. Idempotent on re-runs.
 - Meeting `Host` resolves to the first Contact at the Partner Company (whether or not LinkedIn is set). Falls back to `null` when the Partner has no linked Contacts; admins fill in manually.
+
+**Vocabulary-cleanup history (2026-05-08):**
+- **Tag consolidation**: 976 free-form tags → 51 canonical buckets across all 1,115 listings. Algorithmic pre-pass (754 deterministic, dictionary-driven) + Sonnet on the 222-tag residual. 16 vertical tags dropped (already covered by Categories filter). Mapping persisted at `/tmp/tag-mapping-final.json` for re-runs; PATCH via `scripts/apply-tag-mapping.py`.
+- **Attributed Revenue canonicalization**: 54 swarm-generated specs had non-canonical channel names (Referral, Push, Chat, Treasury, etc.). Cleanup script (`/tmp/cleanup-attr-rev.py`) remapped 46 to canonical channels (Referral→Affiliate, Push→SMS, etc.), 7 to a different canonical label entirely (Shipping/Protection/B2B/Gift Cards → `Upsell Revenue`, Wholesale/Channel → `Attributed Revenue (Affiliate)`, Wallet → `Attributed Revenue (SMS)`), and 1 (parker-banking-analytics Treasury) was flagged for Sean's manual review. All 54 reset to `status=draft` with `review_notes` describing the change.
 
 ## project structure
 
@@ -263,4 +276,4 @@ For `/admin/scrape-results` to work locally you need a copy of `1800dtc.db` at t
 
 ---
 
-*last updated: 2026-05-07*
+*last updated: 2026-05-11*
