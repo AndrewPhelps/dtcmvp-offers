@@ -61,7 +61,7 @@ The four structured dimensions are derived from each Listing's underlying SwagSp
 - `/admin/swags` — SWAG review queue with side-by-side review panel + live calculator, sortable lint columns, flag-for-fix workflow.
 
 **Backend (live in dtcmvp-app/handlers/listings/):**
-- `GET /api/listings` — public listing index (active listings only). `?status=draft` shows drafts.
+- `GET /api/listings` — public listing index (active listings only). `?status=draft` shows drafts. **Also consumed publicly by `dtcmvp-dot-com` (the marketing site) for the SEO-indexed mirror at `https://dtcmvp.com/shopify-apps/*` — any breaking change to this endpoint or its response shape must be coordinated with that consumer.**
 - `GET /api/listings/:slug` — single listing detail.
 - `GET /api/listings/tags` — tag counts for sidebar / filter UI.
 - `POST /api/listings/requests` (auth) — upsert a Request for the authed contact + listing.
