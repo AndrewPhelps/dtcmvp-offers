@@ -218,11 +218,18 @@ export default function SwagsMarketplaceClient({ listings, tags, initialListingS
 
   const matchesAllExcept = useCallback(
     (l: Listing, except: FilterDim) => {
-      if (except !== 'categories' && selectedCategories.size > 0 && !l.categories.some((c) => selectedCategories.has(c))) return false;
-      if (except !== 'benefitTypes' && selectedBenefitTypes.size > 0 && !l.benefitTypes.some((b) => selectedBenefitTypes.has(b))) return false;
-      if (except !== 'benefitLabels' && selectedBenefitLabels.size > 0 && !normalizedBenefitLabels(l).some((b) => selectedBenefitLabels.has(b))) return false;
-      if (except !== 'departments' && selectedDepartments.size > 0 && !l.departments.some((d) => selectedDepartments.has(d))) return false;
-      if (except !== 'tags' && selectedTags.size > 0 && !l.tags.some((t) => selectedTags.has(t))) return false;
+      // AND-within-section: selecting two values narrows the result set rather than widening it.
+      // Every selected value must be present on the listing.
+      const listingCategories = new Set(l.categories);
+      const listingBenefitTypes = new Set(l.benefitTypes);
+      const listingBenefitLabels = new Set(normalizedBenefitLabels(l));
+      const listingDepartments = new Set(l.departments);
+      const listingTags = new Set(l.tags);
+      if (except !== 'categories' && selectedCategories.size > 0 && ![...selectedCategories].every((c) => listingCategories.has(c))) return false;
+      if (except !== 'benefitTypes' && selectedBenefitTypes.size > 0 && ![...selectedBenefitTypes].every((b) => listingBenefitTypes.has(b))) return false;
+      if (except !== 'benefitLabels' && selectedBenefitLabels.size > 0 && ![...selectedBenefitLabels].every((b) => listingBenefitLabels.has(b))) return false;
+      if (except !== 'departments' && selectedDepartments.size > 0 && ![...selectedDepartments].every((d) => listingDepartments.has(d))) return false;
+      if (except !== 'tags' && selectedTags.size > 0 && ![...selectedTags].every((t) => listingTags.has(t))) return false;
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
         const hit =
