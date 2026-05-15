@@ -8,6 +8,7 @@ import { INTERESTED_FUNCTIONS, CURRENT_OBJECTIVES, COMPANY_SIZES, COMPANY_CATEGO
 
 export * from './enums'
 export * from './buckets'
+export * from './relevance'
 
 export type QuestionType = 'number' | 'select' | 'multiselect' | 'text'
 export type QuestionSection = 'company' | 'store' | 'audience' | 'goals'

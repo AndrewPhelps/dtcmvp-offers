@@ -8,6 +8,8 @@ import { SwagListingDrawer } from '@/components/swags';
 import { Listing, Offer, BenefitType } from '@/types';
 import { tagBadgeStyle } from '@/lib/categoryColors';
 import { useBrand } from '@/contexts';
+import { useInputs } from '@/components/inputs/InputsContext';
+import { brandInterestTags, relevanceScore } from '@/lib/inputs';
 import type { TagSummary } from '@/lib/api';
 
 interface SwagsMarketplaceClientProps {
@@ -158,6 +160,7 @@ export default function SwagsMarketplaceClient({ listings, tags, initialListingS
     clearRecommendationView,
     removeRecommendation,
   } = useBrand();
+  const { inputs } = useInputs();
 
   // Feed the recommendation engine with offer-shaped listings.
   useEffect(() => {
@@ -281,14 +284,28 @@ export default function SwagsMarketplaceClient({ listings, tags, initialListingS
     setSelectedTags(new Set());
   };
 
+  // Tags the logged-in brand cares about, from their saved Inputs. Empty when
+  // the brand hasn't saved interests yet — then the listing order is unchanged.
+  const interestTags = useMemo(
+    () => brandInterestTags(inputs.interestedFunctions, inputs.currentObjectives),
+    [inputs.interestedFunctions, inputs.currentObjectives],
+  );
+
   const filteredListings = useMemo(() => {
     if (selectedRecommendationSlugs) {
       return activePool.filter((l) => selectedRecommendationSlugs.includes(l.slug));
     }
-    return activePool
-      .filter((l) => matchesAllExcept(l, 'tags' as FilterDim) && (selectedTags.size === 0 || l.tags.some((t) => selectedTags.has(t))))
-      .sort((a, b) => (b.tier ?? 0) - (a.tier ?? 0));
-  }, [activePool, matchesAllExcept, selectedTags, selectedRecommendationSlugs]);
+    const matched = activePool.filter(
+      (l) => matchesAllExcept(l, 'tags' as FilterDim) && (selectedTags.size === 0 || l.tags.some((t) => selectedTags.has(t))),
+    );
+    // Personalized ordering: most-relevant-to-the-brand first, then tier.
+    // With no saved interests, relevance is 0 for all and tier wins (default).
+    return matched.sort((a, b) => {
+      const rel = relevanceScore(b.tags, interestTags) - relevanceScore(a.tags, interestTags);
+      if (rel !== 0) return rel;
+      return (b.tier ?? 0) - (a.tier ?? 0);
+    });
+  }, [activePool, matchesAllExcept, selectedTags, selectedRecommendationSlugs, interestTags]);
 
   const handleListingClick = (listing: Listing) => {
     setSelectedListing(listing);
