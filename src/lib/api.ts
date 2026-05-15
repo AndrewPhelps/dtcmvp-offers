@@ -308,7 +308,9 @@ export interface InputsPrefill {
 export async function getInputsPrefill(): Promise<InputsPrefill> {
   const res = await authFetch(`${API_URL}/inputs/prefill`);
   if (!res.ok) {
-    if (res.status === 401) return { saved: null, prefill: {} };
+    // 401 (no session) / 400 (session isn't a brand, e.g. an admin) — no
+    // prefill to offer; the caller falls back to defaults.
+    if (res.status === 401 || res.status === 400) return { saved: null, prefill: {} };
     throw new Error(`getInputsPrefill failed (${res.status})`);
   }
   return (await res.json()) as InputsPrefill;

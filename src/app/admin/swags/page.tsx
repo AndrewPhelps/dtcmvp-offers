@@ -6,6 +6,7 @@ import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import Modal from '@/components/common/Modal';
 import Button from '@/components/common/Button';
 import type { SwagSpec } from '@/lib/swag/swag-types';
+import { InputsProvider } from '@/components/inputs/InputsContext';
 
 const SwagCalculator = dynamic(
   () => import('@/components/swag/SwagCalculator'),
@@ -496,7 +497,9 @@ export default function AdminSwagsPage() {
               <SwagReviewPanel key={selectedSpec.meta.slug} spec={selectedSpec.spec} />
             </div>
             <div className="md:w-1/2 md:h-full overflow-y-auto p-4 md:p-6">
-              <SwagCalculator key={selectedSpec.meta.slug} spec={selectedSpec.spec} />
+              <InputsProvider>
+                <SwagCalculator key={selectedSpec.meta.slug} spec={selectedSpec.spec} />
+              </InputsProvider>
             </div>
           </div>
         )}

@@ -25,6 +25,9 @@ import { useAuth } from '@/contexts/AuthContext'
 import { submitIntroRequest } from '@/lib/api'
 import { useImpersonation } from '@/contexts/ImpersonationContext'
 import { useBrand } from '@/contexts'
+import { useInputs } from '@/components/inputs/InputsContext'
+import InputsForm from '@/components/inputs/InputsForm'
+import { QUESTION_BANK } from '@/lib/inputs'
 
 // Per-benefit colors: shades within each type so stacked bars are readable
 const BENEFIT_PALETTE: Record<BenefitType, string[]> = {
@@ -90,6 +93,22 @@ export default function SwagCalculator({ spec }: { spec: SwagSpec }) {
       }
     })
   }, [testBrand])
+
+  // Mirror the brand's saved Inputs (canonical question-bank fields) into the
+  // local profile, so the calculator computes against the same data the
+  // top-level /inputs page and the in-detail Input tab edit. Identity fields
+  // (brandName / contactName / contactEmail) stay owned by the effects above.
+  const { inputs: brandInputs, loading: inputsLoading } = useInputs()
+  useEffect(() => {
+    if (inputsLoading) return
+    setProfile((s) => {
+      const next = { ...s }
+      for (const q of QUESTION_BANK) {
+        ;(next as Record<string, unknown>)[q.id] = brandInputs[q.id]
+      }
+      return next
+    })
+  }, [brandInputs, inputsLoading])
 
   const [swagOverrides, setSwagOverrides] = useState<Record<string, number>>({})
   const [customPrice, setCustomPrice] = useState<number | null>(null)
@@ -394,70 +413,8 @@ export default function SwagCalculator({ spec }: { spec: SwagSpec }) {
         ) : view === 'inputs' ? (
           /* Inputs tab: full-width version of the sidebar */
           <div className="max-w-xl mx-auto">
-            <InputSection
-              title="Brand Profile"
-              subtitle="Your store's metrics, reusable across every SWAG"
-              accent="green"
-              defaultOpen={true}
-            >
-              <div>
-                <label className="block text-xs font-grotesk text-text-secondary mb-1.5">Brand name</label>
-                <input
-                  type="text"
-                  value={profile.brandName}
-                  onChange={(e) => setProfile((s) => ({ ...s, brandName: e.target.value }))}
-                  placeholder="Your Brand"
-                  className="w-full bg-bg-input border border-border rounded-lg px-3 py-2 text-sm text-text-primary font-grotesk transition-all outline-none focus:border-accent-green"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-grotesk text-text-secondary mb-1.5">Contact name</label>
-                <input
-                  type="text"
-                  value={profile.contactName}
-                  onChange={(e) => setProfile((s) => ({ ...s, contactName: e.target.value }))}
-                  placeholder="Your name"
-                  className="w-full bg-bg-input border border-border rounded-lg px-3 py-2 text-sm text-text-primary font-grotesk transition-all outline-none focus:border-accent-green"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-grotesk text-text-secondary mb-1.5">Contact email</label>
-                <input
-                  type="email"
-                  value={profile.contactEmail}
-                  onChange={(e) => setProfile((s) => ({ ...s, contactEmail: e.target.value }))}
-                  placeholder="you@yourbrand.com"
-                  className="w-full bg-bg-input border border-border rounded-lg px-3 py-2 text-sm text-text-primary font-grotesk transition-all outline-none focus:border-accent-green"
-                />
-              </div>
-              <CustomDropdown
-                label="Department"
-                value={profile.department}
-                options={DEPARTMENTS}
-                onChange={(v) => setProfile((s) => ({ ...s, department: v as Department }))}
-              />
-              <CustomDropdown
-                label="Category"
-                value={profile.primaryCategory}
-                options={CATEGORIES}
-                onChange={(v) => {
-                  const cat = v as Category
-                  const overrides = CATEGORY_OVERRIDES[cat] || {}
-                  setProfile((s) => ({ ...s, primaryCategory: cat, ...overrides }))
-                }}
-                hint={CATEGORY_OVERRIDES[profile.primaryCategory as Category] ? `adjusted defaults for ${profile.primaryCategory}` : undefined}
-              />
-              <div className="pt-1 border-t border-border" />
-              <InputField label="Annual order volume" value={profile.annualOrders} onChange={updateProfile('annualOrders')} step={1000} />
-              <InputField label="Average order value (AOV)" value={profile.aov} onChange={updateProfile('aov')} prefix="$" step={1} />
-              <InputField label="Monthly web traffic" value={profile.monthlyWebTraffic} onChange={updateProfile('monthlyWebTraffic')} step={5000} />
-              <InputField label="Return rate" value={profile.returnRate * 100} onChange={updatePctProfile('returnRate')} suffix="%" step={0.5} decimals={2} />
-              <InputField label="Avg cost per item" value={profile.avgCostPerItem} onChange={updateProfile('avgCostPerItem')} prefix="$" step={5} />
-              <InputField label="Email list size" value={profile.emailListSize} onChange={updateProfile('emailListSize')} step={1000} />
-              <InputField label="SMS list size" value={profile.smsListSize} onChange={updateProfile('smsListSize')} step={1000} />
-              <div className="pt-1 border-t border-border" />
-              <InputField label="Target ROI multiple" value={profile.targetRoiMultiple} onChange={updateProfile('targetRoiMultiple')} suffix="x" step={1} hint="'I want Nx return on my tools'" />
-            </InputSection>
+            {/* Brand profile: the shared Inputs surface, same data as /inputs. */}
+            <InputsForm mode="inline" />
 
             {/* SWAG Defaults */}
             {spec.benefits.map((benefit) => (
