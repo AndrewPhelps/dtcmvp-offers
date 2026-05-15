@@ -224,7 +224,7 @@ export default function SwagListingDrawer({
           isOpen={isOpen}
           onClose={onClose}
           header={detailHeader}
-          maxWidth="max-w-6xl"
+          fullScreen
         >
           <div className="flex items-center justify-center py-24">
             {specError ? (
@@ -283,7 +283,7 @@ export default function SwagListingDrawer({
     );
 
     return (
-      <Modal isOpen={isOpen} onClose={onClose} header={calcHeader} maxWidth="max-w-6xl">
+      <Modal isOpen={isOpen} onClose={onClose} header={calcHeader} fullScreen>
         <SwagCalculator spec={swagSpec} />
       </Modal>
     );
@@ -292,7 +292,7 @@ export default function SwagListingDrawer({
   // Generating view: SwagLoader inside the modal
   if (mode === 'generating') {
     return (
-      <Modal isOpen={isOpen} onClose={onClose} header={detailHeader} maxWidth="max-w-6xl">
+      <Modal isOpen={isOpen} onClose={onClose} header={detailHeader} fullScreen>
         <div className="relative min-h-[480px]">
           <SwagLoader
             profile={loaderProfile}

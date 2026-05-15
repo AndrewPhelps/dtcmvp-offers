@@ -13,9 +13,10 @@ interface ModalProps {
   minHeight?: string; // e.g., '500px' - minimum modal height
   contentHeight?: string; // e.g., '400px' - locks content area to exact height (scrolls if needed)
   maxWidth?: string; // e.g., 'max-w-lg', 'max-w-md' - defaults to 'max-w-4xl'
+  fullScreen?: boolean; // edge-to-edge, fills the whole viewport (ignores maxWidth)
 }
 
-export default function Modal({ isOpen, onClose, children, header, footer, progress, minHeight, contentHeight, maxWidth = 'max-w-4xl' }: ModalProps) {
+export default function Modal({ isOpen, onClose, children, header, footer, progress, minHeight, contentHeight, maxWidth = 'max-w-4xl', fullScreen = false }: ModalProps) {
   const handleEscape = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -54,16 +55,18 @@ export default function Modal({ isOpen, onClose, children, header, footer, progr
 
       {/* Modal container - clicking here closes modal */}
       <div
-        className={`fixed inset-0 z-50 flex items-center justify-center p-2 md:p-4 transition-opacity duration-300 ${
-          isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}
+        className={`fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-300 ${
+          fullScreen ? 'p-0' : 'p-2 md:p-4'
+        } ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         onClick={handleBackdropClick}
       >
         {/* Modal */}
         <div
-          className={`relative w-full ${maxWidth} max-h-[95vh] md:max-h-[90vh] bg-[var(--bg-card)] border border-[var(--border-default)] rounded-xl md:rounded-2xl flex flex-col transform transition-all duration-300 ease-out ${
-            isOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
-          }`}
+          className={`relative bg-[var(--bg-card)] flex flex-col transform transition-all duration-300 ease-out ${
+            fullScreen
+              ? 'w-full h-full max-w-none rounded-none'
+              : `w-full ${maxWidth} max-h-[95vh] md:max-h-[90vh] border border-[var(--border-default)] rounded-xl md:rounded-2xl`
+          } ${isOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}
           style={minHeight ? { minHeight } : undefined}
         >
           {/* Close button - top right inside modal */}
