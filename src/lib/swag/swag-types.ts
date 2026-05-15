@@ -171,6 +171,12 @@ export type BrandProfile = {
   smsListSize: number
   monthlyWebTraffic: number
   targetRoiMultiple: number  // e.g. 8 = 8x
+  // Personalization inputs — not consumed by the SWAG engine, used by the
+  // marketplace sidebar/sort and the canonical question bank in lib/inputs.
+  companyWebsite: string
+  companySize: string            // one of COMPANY_SIZES, '' when unknown
+  interestedFunctions: string[]  // subset of INTERESTED_FUNCTIONS
+  currentObjectives: string[]    // subset of CURRENT_OBJECTIVES
 }
 
 export const DEFAULT_BRAND_PROFILE: BrandProfile = {
@@ -187,6 +193,10 @@ export const DEFAULT_BRAND_PROFILE: BrandProfile = {
   smsListSize: 20_000,
   monthlyWebTraffic: 330_000,
   targetRoiMultiple: 8,
+  companyWebsite: '',
+  companySize: '',
+  interestedFunctions: [],
+  currentObjectives: [],
 }
 
 // ─── Computed results ───
@@ -227,7 +237,19 @@ export type PartnerEntry = {
 
 // Map of NUMERIC brand profile fields → display metadata
 export const BRAND_PROFILE_FIELDS: Record<
-  keyof Omit<BrandProfile, 'targetRoiMultiple' | 'brandName' | 'contactName' | 'contactEmail' | 'department' | 'primaryCategory'>,
+  keyof Omit<
+    BrandProfile,
+    | 'targetRoiMultiple'
+    | 'brandName'
+    | 'contactName'
+    | 'contactEmail'
+    | 'department'
+    | 'primaryCategory'
+    | 'companyWebsite'
+    | 'companySize'
+    | 'interestedFunctions'
+    | 'currentObjectives'
+  >,
   { label: string; prefix?: string; suffix?: string; step: number; hint?: string }
 > = {
   annualOrders: { label: 'Annual order volume', step: 1000 },
