@@ -13,7 +13,7 @@ Admin tooling under `/admin/*`: `/admin/scrape-results` (1,126 apps from 1800dtc
 | framework | Next.js 16 (Turbopack), React 19, TypeScript 5 |
 | styling | Tailwind CSS 4, Lucide React icons |
 | 3D graphics | Three.js (MoleculeLoader animation on the marketplace + SwagLoader) |
-| state | React Context (`AuthContext`, `BrandContext`, `ImpersonationContext`) |
+| state | React Context (`AuthContext`, `BrandContext`, `ImpersonationContext`, `InputsContext`) |
 | auth | Supabase JWT — proxied through `api.dtcmvpete.com`, mirrors dtcmvp-2.0 |
 | backend (Listings/Requests) | Node/Express in `dtcmvp-app/handlers/listings/` (DO droplet) |
 | backend (scrape) | `better-sqlite3` reading bind-mounted `/app/data/1800dtc.db` |
@@ -41,7 +41,9 @@ Live at **https://partners.dtcmvp.com** (deployed via `./deploy/deploy.sh` → D
   - **saved for later** — listings the brand bookmarked but hasn't generated yet.
 - `/[slug]` — deep-linkable URL. Renders the marketplace with the drawer pre-opened on that listing.
 
-**Marketplace sidebar — five structured filter sections** (AND across sections, OR within):
+When the logged-in brand has saved Inputs, the marketplace is **relevance-ranked** — see the Inputs surface section below.
+
+**Marketplace sidebar — five structured filter sections** (AND across sections, AND within — picking two values in one section narrows the result set, it does not widen it):
 1. **brand category** — `spec.narrative.byCategory` keys minus `Other` (canonical 9: Apparel & Fashion, Beauty & Cosmetics, Health & Wellness, Sports & Fitness, Food & Drink, Home & Electronics, Baby & Kids, Pet & Vet)
 2. **benefit type** — `spec.benefits[].type` (3 buckets: cost-saving / revenue-generation / time-saving)
 3. **benefit** — `spec.benefits[].label` (canonical 21: CVR Lift, AOV Lift, Ticket Deflection, Attributed Revenue, etc.). All `Attributed Revenue (X)` variants collapse to a single `Attributed Revenue` option in the filter — the underlying spec still carries the specific channel (Email / SMS / Affiliate / DM / Organic / Display) for narrative + drawer copy.
@@ -69,6 +71,9 @@ The four structured dimensions are derived from each Listing's underlying SwagSp
 - `PUT /api/listings/requests/:airtableId/notes` (auth) — append outcome note.
 - `POST /api/listings/intros` (auth): "Ask for an intro" submission from inside SwagCalculator. Side effects: (a) Slack notification to the intros channel with airtable links to the Meeting + Request records; (b) creates an Airtable Meeting record (`Status='Drafted'`, `SWAG Request=true`, with Brand / Partner / Participant / Host links resolved server-side); (c) PATCHes the matching Request with `Intro Requested At` and backfills the SWAG snapshot fields (`SWAG Total Annual Value`, `SWAG Max Monthly Price`, `SWAG Target ROI Multiple`).
 - `GET /api/listings/admin/test-brands` (admin) — search Brand contacts for impersonation.
+- `GET /api/inputs/me` (auth) — the authed brand's saved `Brand Inputs JSON`.
+- `PUT /api/inputs/me` (auth) — persist the brand's Inputs; write-through Airtable Contact → `listings_contacts` SQLite cache.
+- `GET /api/inputs/prefill` (auth) — prefill cascade for the Inputs surface; returns `{ saved, prefill }` (see Inputs surface section).
 
 **Data plumbing:**
 - Airtable Listings → `listings_listings` SQLite mirror, hourly sync via PM2 cron. See backend plan for the sync runner shape.
@@ -89,10 +94,11 @@ src/
 │   ├── login/page.tsx
 │   ├── b/[contactId]/page.tsx           # brand first-name verification
 │   ├── (brand)/                         # route group: brand-facing pages share the navbar layout
-│   │   ├── layout.tsx                   # navbar + BrandProvider + ImpersonationProvider
+│   │   ├── layout.tsx                   # navbar + BrandProvider + ImpersonationProvider + InputsProvider
 │   │   ├── page.tsx                     # `/` — marketplace (server) → SwagsMarketplaceClient
 │   │   ├── SwagsMarketplaceClient.tsx
 │   │   ├── [slug]/page.tsx              # `/[slug]` deep link → marketplace + drawer pre-opened
+│   │   ├── inputs/page.tsx              # `/inputs` — top-level brand Inputs surface
 │   │   └── my/page.tsx · MySwagsClient.tsx
 │   ├── admin/
 │   │   ├── layout.tsx · AdminTabs.tsx
@@ -108,9 +114,10 @@ src/
 ├── components/
 │   ├── common/                          # Badge, Button, Card, Drawer, Input, Modal, MoleculeLoader
 │   ├── swags/                           # SwagListingCard, SwagListingDrawer (the partner-detail modal)
-│   └── swag/                            # SwagCalculator + supporting (SwagLoader, SwagReport,
-│                                        # AskForIntroModal, ProjectionChart, AnimatedValue,
-│                                        # SwagDisclaimer, SwagReviewPanel [admin], TestBrandPicker)
+│   ├── swag/                            # SwagCalculator + supporting (SwagLoader, SwagReport,
+│   │                                    # AskForIntroModal, ProjectionChart, AnimatedValue,
+│   │                                    # SwagDisclaimer, SwagReviewPanel [admin], TestBrandPicker)
+│   └── inputs/                          # InputsContext (provider), InputsForm (page + inline modes)
 ├── contexts/
 │   ├── AuthContext.tsx                  # session + permissions
 │   ├── BrandContext.tsx                 # requests, saved/hidden state, recommendation engine
@@ -121,6 +128,10 @@ src/
 │   ├── swagDb.ts                        # better-sqlite3 reader/writer for swags.db
 │   ├── serverAuth.ts                    # is_admin check for /admin/scrape-results
 │   ├── categoryColors.ts                # color helpers (legacy + tag badge style)
+│   ├── inputs/                          # canonical brand-input question bank (source of truth)
+│   │   ├── index.ts                     # QUESTION_BANK, cascade(), section labels
+│   │   ├── enums.ts · buckets.ts        # vocabularies (mirrors chrome ext) + numeric bands
+│   │   └── relevance.ts                 # interest→tag map for marketplace ranking
 │   └── swag/                            # SWAG engine
 │       ├── swag-types.ts                # SwagSpec, BrandProfile, SwagBenefit, etc.
 │       ├── swag-engine.ts               # computeSwag(), formula evaluation
@@ -177,6 +188,8 @@ Notes:
 - `Champion` is a linked record → Contacts; UI renders the champion's name/title/company/avatar via Airtable lookups.
 - Partners are still Companies in Airtable with `Type=Partner`; `partner_airtable_id` on Listings links the SWAG to a real partner record where one exists.
 - The `Requests` linked record on Listings is auto-populated by Airtable when a Request is created with a `Listing` link.
+- `Brand Inputs JSON` (long text on Contacts) holds a brand's serialized Inputs answers; `Listing Questions JSON` (long text on Listings) is reserved for a partner's chosen opt-in question subset (field exists, not yet populated).
+- `listings_contacts` SQLite table caches brand contacts (`brand_inputs_json` + Company-enrichment lookups), populated on-demand by the inputs prefill route and refreshed hourly by `contacts-sync-hourly`. It is not a full mirror of all brand contacts.
 
 ## SWAG system
 
@@ -207,7 +220,21 @@ Only `status='approved'` specs surface in the user-facing `GET /api/swag` and `G
 
 **generate-swag skill** (`.claude/skills/generate-swag.md`) documents the 5-step process for creating a SWAG spec from a partner's public website. Includes canonical benefit label vocabulary for cross-partner comparability.
 
-**Admin review workflow** (`/admin/swags`): unchanged from the offers era. Drafts land via `upsert-swag.js`, an operator approves / flags / deletes via the side-by-side review panel + live calculator. Lint flags non-canonical labels, em dashes, AI-speak, and >$1M sample totals. Approved specs are eligible for the Listings sync.
+**Admin review workflow** (`/admin/swags`): unchanged from the offers era. Drafts land via `upsert-swag.js`, an operator approves / flags / deletes via the side-by-side review panel + live calculator. Lint flags non-canonical labels, em dashes, AI-speak, and >$1M sample totals. Approved specs are eligible for the Listings sync. The review-panel `SwagCalculator` is wrapped in `InputsProvider` so it runs without a brand session (prefill 400 degrades to `DEFAULT_BRAND_PROFILE`).
+
+## Inputs surface
+
+Brands describe their store once and every SWAG personalizes to it. Added 2026-05-15.
+
+**Where it lives:** the `/inputs` route (top-level nav, beside `swags` / `my swags`) and — as the same edit surface — the `Input` tab inside `SwagCalculator`. Both render the shared `<InputsForm>` and read/write one `InputsContext`; the calculator mirrors the context's canonical fields into its local `profile` so `computeSwag()` runs against the brand's saved numbers.
+
+**Question bank** (`src/lib/inputs/`, the source of truth): `QUESTION_BANK` (company website, revenue band, brand category, department, store economics, audience sizes, target ROI, plus `interestedFunctions` / `currentObjectives` multi-selects mirrored verbatim from the dtcmvp chrome extension), numeric `BUCKETS`, and `cascade()`. `BrandProfile` (in `swag/swag-types.ts`) carries four new personalization-only fields (`companyWebsite`, `companySize`, `interestedFunctions`, `currentObjectives`) the SWAG engine ignores.
+
+**Persistence:** a brand's answers serialize to the `Brand Inputs JSON` field on their Airtable Contact. `PUT /api/inputs/me` write-throughs Airtable → the `listings_contacts` SQLite cache.
+
+**Prefill cascade:** `GET /api/inputs/prefill` returns `{ saved, prefill }`; the client runs `cascade(saved, prefill)` with `DEFAULT_BRAND_PROFILE` as the final backstop. `prefill` is derived, in priority order, from the `listings_contacts` enrichment (revenue / category / website from the Contact's Company lookups) → a live Airtable contact fetch (cached on-demand) → a live Storeleads lookup for missing revenue.
+
+**Marketplace personalization:** when a brand has saved interests, `SwagsMarketplaceClient` ranks listings by relevance — `src/lib/inputs/relevance.ts` maps each `interestedFunctions` / `currentObjectives` label onto the canonical 51-tag vocabulary, and listings sort by tag-overlap count, then tier. No saved interests → unchanged tier sort. (Category pre-select was evaluated and dropped — listings are near-universally multi-category, so it narrowed nothing.)
 
 ## deployment
 
@@ -244,7 +271,7 @@ Client-side, in `BrandContext.generateRecommendations`:
 2. Pick 2-3 random from the pool.
 3. Surfaced as a session-scoped recommendation set.
 
-The previous "priority categories by department" matching is gone — Listings don't carry a category field. A future pass should re-introduce smarter matching using tags + `brandProfile.contactDepartment`.
+The `find swags for me` recommendation set is still random. Marketplace *ordering*, however, is now personalized for brands with saved Inputs — relevance ranking by `interestedFunctions` / `currentObjectives` → tags (see the Inputs surface section). A future pass could fold the same relevance signal into the recommendation set.
 
 ## dev setup
 
@@ -276,4 +303,4 @@ For `/admin/scrape-results` to work locally you need a copy of `1800dtc.db` at t
 
 ---
 
-*last updated: 2026-05-11*
+*last updated: 2026-05-15*
