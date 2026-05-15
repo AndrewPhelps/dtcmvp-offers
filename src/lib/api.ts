@@ -10,6 +10,7 @@
 
 import { Listing, ListingChampion, BrandRequest, BenefitType, RequestStatus } from '@/types';
 import { authFetch } from '@/lib/auth';
+import type { BrandProfile } from '@/lib/swag/swag-types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://webhooks.dtcmvp.com/api';
 
@@ -286,4 +287,42 @@ export async function submitIntroRequest(input: SubmitIntroInput): Promise<{ suc
     throw new Error(`Intro request failed (${res.status}): ${body}`);
   }
   return res.json() as Promise<{ success: true }>;
+}
+
+// ----- Brand Inputs (the Inputs surface) -----
+
+export type BrandInputs = Partial<BrandProfile>;
+
+export interface InputsPrefill {
+  /** The brand's previously-saved Inputs, or null if they've never saved. */
+  saved: BrandInputs | null;
+  /** Partial profile derived from Airtable enrichment + Storeleads. */
+  prefill: BrandInputs;
+}
+
+/**
+ * Prefill cascade for the authed brand. Returns the saved Inputs (if any) plus
+ * an enrichment-derived partial profile; the caller runs both through
+ * cascade() from @/lib/inputs.
+ */
+export async function getInputsPrefill(): Promise<InputsPrefill> {
+  const res = await authFetch(`${API_URL}/inputs/prefill`);
+  if (!res.ok) {
+    if (res.status === 401) return { saved: null, prefill: {} };
+    throw new Error(`getInputsPrefill failed (${res.status})`);
+  }
+  return (await res.json()) as InputsPrefill;
+}
+
+/** Persist the authed brand's Inputs. */
+export async function saveMyInputs(inputs: BrandInputs): Promise<void> {
+  const res = await authFetch(`${API_URL}/inputs/me`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ inputs }),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`saveMyInputs failed (${res.status}): ${body}`);
+  }
 }

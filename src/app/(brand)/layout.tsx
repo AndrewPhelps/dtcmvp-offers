@@ -8,12 +8,14 @@ import { Sparkles, Loader2, Menu, X } from 'lucide-react';
 import { BrandProvider, useBrand } from '@/contexts';
 import { ImpersonationProvider, useImpersonation } from '@/contexts/ImpersonationContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { InputsProvider } from '@/components/inputs/InputsContext';
 import { Button } from '@/components/common';
 import TestBrandPicker from '@/components/swag/TestBrandPicker';
 
 const brandNavItems = [
   { href: '/', label: 'swags', exact: true },
   { href: '/my', label: 'my swags', exact: true },
+  { href: '/inputs', label: 'inputs', exact: true },
 ];
 
 function NavActionsDesktop() {
@@ -231,7 +233,9 @@ export default function SwagsLayout({
   return (
     <ImpersonationProvider>
       <BrandProvider>
-        <SwagsLayoutContent>{children}</SwagsLayoutContent>
+        <InputsProvider>
+          <SwagsLayoutContent>{children}</SwagsLayoutContent>
+        </InputsProvider>
       </BrandProvider>
     </ImpersonationProvider>
   );
