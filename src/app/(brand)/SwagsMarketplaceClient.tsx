@@ -2,8 +2,8 @@
 
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
-import { Search, Sparkles, ArrowRight, Trash2, X, CheckCircle2 } from 'lucide-react';
-import { Card, MoleculeLoader } from '@/components/common';
+import { Search, Sparkles, ArrowRight, Trash2, X, CheckCircle2, SlidersHorizontal } from 'lucide-react';
+import { Card, MoleculeLoader, Drawer } from '@/components/common';
 import { SwagListingDrawer } from '@/components/swags';
 import { Listing, Offer, BenefitType } from '@/types';
 import { tagBadgeStyle } from '@/lib/categoryColors';
@@ -136,11 +136,11 @@ function TypewriterText({ text, speed = 25 }: { text: string; speed?: number }) 
 
 export default function SwagsMarketplaceClient({ listings, tags, initialListingSlug }: SwagsMarketplaceClientProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
   const [selectedBenefitTypes, setSelectedBenefitTypes] = useState<Set<BenefitType>>(new Set());
   const [selectedBenefitLabels, setSelectedBenefitLabels] = useState<Set<string>>(new Set());
-  const [selectedDepartments, setSelectedDepartments] = useState<Set<string>>(new Set());
-  const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
+  // Mobile only: the filter sidebar is collapsed into a slide-in sheet so the
+  // listings are the first thing a phone user sees. Desktop keeps the sidebar.
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
   const [selectedListing, setSelectedListing] = useState<Listing | null>(() => {
     if (!initialListingSlug) return null;
     return listings.find((l) => l.slug === initialListingSlug) ?? null;
@@ -210,7 +210,7 @@ export default function SwagsMarketplaceClient({ listings, tags, initialListingS
   // Each filter's option list with counts, sorted by count desc.
   // Counts use the OTHER active filters AND'd, so toggling one filter dimension
   // updates the counts in the others contextually.
-  type FilterDim = 'categories' | 'benefitTypes' | 'benefitLabels' | 'departments' | 'tags';
+  type FilterDim = 'benefitTypes' | 'benefitLabels';
   // Project a listing's benefit labels through the normalizer (collapses
   // `Attributed Revenue (X)` → `Attributed Revenue`). Always dedupe; a listing
   // with both Email + SMS variants should count once for the collapsed label.
@@ -219,20 +219,16 @@ export default function SwagsMarketplaceClient({ listings, tags, initialListingS
     [],
   );
 
+  // `except` lets the option-count builder ignore one dimension's own selection
+  // so its counts reflect the other active filters. Omit it to apply every filter.
   const matchesAllExcept = useCallback(
-    (l: Listing, except: FilterDim) => {
+    (l: Listing, except?: FilterDim) => {
       // AND-within-section: selecting two values narrows the result set rather than widening it.
       // Every selected value must be present on the listing.
-      const listingCategories = new Set(l.categories);
       const listingBenefitTypes = new Set(l.benefitTypes);
       const listingBenefitLabels = new Set(normalizedBenefitLabels(l));
-      const listingDepartments = new Set(l.departments);
-      const listingTags = new Set(l.tags);
-      if (except !== 'categories' && selectedCategories.size > 0 && ![...selectedCategories].every((c) => listingCategories.has(c))) return false;
       if (except !== 'benefitTypes' && selectedBenefitTypes.size > 0 && ![...selectedBenefitTypes].every((b) => listingBenefitTypes.has(b))) return false;
       if (except !== 'benefitLabels' && selectedBenefitLabels.size > 0 && ![...selectedBenefitLabels].every((b) => listingBenefitLabels.has(b))) return false;
-      if (except !== 'departments' && selectedDepartments.size > 0 && ![...selectedDepartments].every((d) => listingDepartments.has(d))) return false;
-      if (except !== 'tags' && selectedTags.size > 0 && ![...selectedTags].every((t) => listingTags.has(t))) return false;
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
         const hit =
@@ -244,7 +240,7 @@ export default function SwagsMarketplaceClient({ listings, tags, initialListingS
       }
       return true;
     },
-    [selectedCategories, selectedBenefitTypes, selectedBenefitLabels, selectedDepartments, selectedTags, searchQuery, normalizedBenefitLabels],
+    [selectedBenefitTypes, selectedBenefitLabels, searchQuery, normalizedBenefitLabels],
   );
 
   const buildOptionCounts = useCallback(
@@ -263,25 +259,14 @@ export default function SwagsMarketplaceClient({ listings, tags, initialListingS
     [activePool, matchesAllExcept],
   );
 
-  const categoryOptions = useMemo(() => buildOptionCounts('categories', (l) => l.categories), [buildOptionCounts]);
   const benefitTypeOptions = useMemo(() => buildOptionCounts<BenefitType>('benefitTypes', (l) => l.benefitTypes), [buildOptionCounts]);
   const benefitLabelOptions = useMemo(() => buildOptionCounts('benefitLabels', normalizedBenefitLabels), [buildOptionCounts, normalizedBenefitLabels]);
-  const departmentOptions = useMemo(() => buildOptionCounts('departments', (l) => l.departments), [buildOptionCounts]);
-  const tagOptions = useMemo(() => buildOptionCounts('tags', (l) => l.tags), [buildOptionCounts]);
 
-  const totalSelected =
-    selectedCategories.size +
-    selectedBenefitTypes.size +
-    selectedBenefitLabels.size +
-    selectedDepartments.size +
-    selectedTags.size;
+  const totalSelected = selectedBenefitTypes.size + selectedBenefitLabels.size;
   const hasAnyFilter = totalSelected > 0;
   const clearAllFilters = () => {
-    setSelectedCategories(new Set());
     setSelectedBenefitTypes(new Set());
     setSelectedBenefitLabels(new Set());
-    setSelectedDepartments(new Set());
-    setSelectedTags(new Set());
   };
 
   // Tags the logged-in brand cares about, from their saved Inputs. Empty when
@@ -295,9 +280,7 @@ export default function SwagsMarketplaceClient({ listings, tags, initialListingS
     if (selectedRecommendationSlugs) {
       return activePool.filter((l) => selectedRecommendationSlugs.includes(l.slug));
     }
-    const matched = activePool.filter(
-      (l) => matchesAllExcept(l, 'tags' as FilterDim) && (selectedTags.size === 0 || l.tags.some((t) => selectedTags.has(t))),
-    );
+    const matched = activePool.filter((l) => matchesAllExcept(l));
     // Personalized ordering: most-relevant-to-the-brand first, then tier.
     // With no saved interests, relevance is 0 for all and tier wins (default).
     return matched.sort((a, b) => {
@@ -305,7 +288,7 @@ export default function SwagsMarketplaceClient({ listings, tags, initialListingS
       if (rel !== 0) return rel;
       return (b.tier ?? 0) - (a.tier ?? 0);
     });
-  }, [activePool, matchesAllExcept, selectedTags, selectedRecommendationSlugs, interestTags]);
+  }, [activePool, matchesAllExcept, selectedRecommendationSlugs, interestTags]);
 
   const handleListingClick = (listing: Listing) => {
     setSelectedListing(listing);
@@ -325,6 +308,106 @@ export default function SwagsMarketplaceClient({ listings, tags, initialListingS
     if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
     return `${Math.floor(diffMins / 1440)}d ago`;
   };
+
+  // Search box — rendered in the desktop sidebar and again in the mobile bar
+  // above the listings (one is always hidden via responsive classes).
+  const searchInput = (
+    <div className="relative">
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-tertiary)]" />
+      <input
+        type="text"
+        placeholder="search swags..."
+        value={searchQuery}
+        onChange={(e) => {
+          setSearchQuery(e.target.value);
+          clearRecommendationView();
+        }}
+        className="w-full pl-10 pr-4 py-2.5 bg-[var(--bg-card)] border border-[var(--border-default)] rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:border-[var(--brand-green-primary)] transition-colors"
+      />
+    </div>
+  );
+
+  // The filter sections + recommendations — shared between the desktop sidebar
+  // and the mobile filter sheet.
+  const filterSections = (
+    <div className="space-y-6">
+      {hasAnyFilter && (
+        <button
+          onClick={clearAllFilters}
+          className="flex items-center gap-1.5 text-xs text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+        >
+          <X className="w-3 h-3" />
+          clear filters ({totalSelected})
+        </button>
+      )}
+
+      <FilterSection
+        label="benefit type"
+        options={benefitTypeOptions.map((o) => ({ value: o.value, count: o.count, display: BENEFIT_TYPE_LABEL[o.value] }))}
+        selected={selectedBenefitTypes}
+        onToggle={(v) => {
+          setSelectedBenefitTypes((prev) => toggleSet(prev, v));
+          clearRecommendationView();
+        }}
+      />
+
+      <FilterSection
+        label="benefit"
+        options={benefitLabelOptions.map((o) => ({ value: o.value, count: o.count, display: o.value }))}
+        selected={selectedBenefitLabels}
+        onToggle={(v) => {
+          setSelectedBenefitLabels((prev) => toggleSet(prev, v));
+          clearRecommendationView();
+        }}
+      />
+
+      {recommendations.length > 0 && (
+        <div>
+          <h3 className="text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider mb-3">
+            recommended for you
+          </h3>
+          <nav className="space-y-1">
+            {recommendations.map((rec) => {
+              const isSelected = selectedRecommendation === rec.id;
+              return (
+                <div
+                  key={rec.id}
+                  onClick={() => handleSelectRecommendation(rec.id)}
+                  className={`group w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-between cursor-pointer ${
+                    isSelected
+                      ? 'bg-[var(--brand-green-primary)]/10 text-[var(--brand-green-primary)] font-medium'
+                      : 'text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    {formatRecDate(rec.date)}
+                  </span>
+                  <span className="flex items-center gap-2">
+                    <span
+                      className={
+                        isSelected
+                          ? 'text-[var(--brand-green-primary)]'
+                          : 'text-[var(--text-tertiary)] group-hover:text-[var(--text-secondary)]'
+                      }
+                    >
+                      {rec.offerIds.length}
+                    </span>
+                    <button
+                      onClick={(e) => handleRemoveRecommendation(rec.id, e)}
+                      className="p-0.5 rounded hover:bg-[var(--bg-card)] transition-all cursor-pointer"
+                    >
+                      <Trash2 className="w-3 h-3 text-[var(--text-tertiary)] hover:text-[var(--brand-red)] transition-colors" />
+                    </button>
+                  </span>
+                </div>
+              );
+            })}
+          </nav>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div className="relative">
@@ -346,136 +429,39 @@ export default function SwagsMarketplaceClient({ listings, tags, initialListingS
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8 relative z-10">
         <div className="flex flex-col md:flex-row gap-4 md:gap-8">
-          <aside className="w-full md:w-64 md:flex-shrink-0">
+          {/* Desktop sidebar — hidden on mobile, where filters live in a sheet. */}
+          <aside className="hidden md:block md:w-64 md:flex-shrink-0">
             {/* Sticky sidebar with one scrollable container — sections inside flow
                 naturally and scroll as a single unit instead of nested per-section
                 scrollbars (which created bottom-cutoff in the old design). */}
-            <div className="md:sticky md:top-8 md:max-h-[calc(100vh-2.5rem)] md:overflow-y-auto md:overscroll-contain space-y-4 md:space-y-6 pb-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-tertiary)]" />
-                <input
-                  type="text"
-                  placeholder="search swags..."
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    clearRecommendationView();
-                  }}
-                  className="w-full pl-10 pr-4 py-2.5 bg-[var(--bg-card)] border border-[var(--border-default)] rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:border-[var(--brand-green-primary)] transition-colors"
-                />
-              </div>
-
-              {hasAnyFilter && (
-                <button
-                  onClick={clearAllFilters}
-                  className="flex items-center gap-1.5 text-xs text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
-                >
-                  <X className="w-3 h-3" />
-                  clear filters ({totalSelected})
-                </button>
-              )}
-
-              <FilterSection
-                label="brand category"
-                options={categoryOptions.map((o) => ({ value: o.value, count: o.count, display: o.value }))}
-                selected={selectedCategories}
-                onToggle={(v) => {
-                  setSelectedCategories((prev) => toggleSet(prev, v));
-                  clearRecommendationView();
-                }}
-              />
-
-              <FilterSection
-                label="benefit type"
-                options={benefitTypeOptions.map((o) => ({ value: o.value, count: o.count, display: BENEFIT_TYPE_LABEL[o.value] }))}
-                selected={selectedBenefitTypes}
-                onToggle={(v) => {
-                  setSelectedBenefitTypes((prev) => toggleSet(prev, v));
-                  clearRecommendationView();
-                }}
-              />
-
-              <FilterSection
-                label="benefit"
-                options={benefitLabelOptions.map((o) => ({ value: o.value, count: o.count, display: o.value }))}
-                selected={selectedBenefitLabels}
-                onToggle={(v) => {
-                  setSelectedBenefitLabels((prev) => toggleSet(prev, v));
-                  clearRecommendationView();
-                }}
-              />
-
-              <FilterSection
-                label="department"
-                options={departmentOptions.map((o) => ({ value: o.value, count: o.count, display: o.value }))}
-                selected={selectedDepartments}
-                onToggle={(v) => {
-                  setSelectedDepartments((prev) => toggleSet(prev, v));
-                  clearRecommendationView();
-                }}
-              />
-
-              {tagOptions.length > 0 && (
-                <FilterSection
-                  label="tag"
-                  options={tagOptions.map((o) => ({ value: o.value, count: o.count, display: o.value }))}
-                  selected={selectedTags}
-                  onToggle={(v) => {
-                    setSelectedTags((prev) => toggleSet(prev, v));
-                    clearRecommendationView();
-                  }}
-                />
-              )}
-
-              {recommendations.length > 0 && (
-                <div>
-                  <h3 className="text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider mb-3">
-                    recommended for you
-                  </h3>
-                  <nav className="space-y-1">
-                    {recommendations.map((rec) => {
-                      const isSelected = selectedRecommendation === rec.id;
-                      return (
-                        <div
-                          key={rec.id}
-                          onClick={() => handleSelectRecommendation(rec.id)}
-                          className={`group w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-between cursor-pointer ${
-                            isSelected
-                              ? 'bg-[var(--brand-green-primary)]/10 text-[var(--brand-green-primary)] font-medium'
-                              : 'text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]'
-                          }`}
-                        >
-                          <span className="flex items-center gap-2">
-                            <Sparkles className="w-3.5 h-3.5" />
-                            {formatRecDate(rec.date)}
-                          </span>
-                          <span className="flex items-center gap-2">
-                            <span
-                              className={
-                                isSelected
-                                  ? 'text-[var(--brand-green-primary)]'
-                                  : 'text-[var(--text-tertiary)] group-hover:text-[var(--text-secondary)]'
-                              }
-                            >
-                              {rec.offerIds.length}
-                            </span>
-                            <button
-                              onClick={(e) => handleRemoveRecommendation(rec.id, e)}
-                              className="p-0.5 rounded hover:bg-[var(--bg-card)] transition-all cursor-pointer"
-                            >
-                              <Trash2 className="w-3 h-3 text-[var(--text-tertiary)] hover:text-[var(--brand-red)] transition-colors" />
-                            </button>
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </nav>
-                </div>
-              )}
+            <div className="md:sticky md:top-8 md:max-h-[calc(100vh-2.5rem)] md:overflow-y-auto md:overscroll-contain space-y-6 pb-4">
+              {searchInput}
+              {filterSections}
             </div>
           </aside>
 
           <div className="flex-1 min-w-0">
+            {/* Mobile filter bar — search stays inline, filters open in a sheet. */}
+            <div className="md:hidden flex items-center gap-2 mb-4">
+              <div className="flex-1">{searchInput}</div>
+              <button
+                onClick={() => setFilterDrawerOpen(true)}
+                className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer flex-shrink-0 ${
+                  totalSelected > 0
+                    ? 'bg-[var(--brand-green-primary)]/10 border border-[var(--brand-green-primary)]/40 text-[var(--brand-green-primary)]'
+                    : 'bg-[var(--bg-card)] border border-[var(--border-default)] text-[var(--text-secondary)]'
+                }`}
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+                filters
+                {totalSelected > 0 && (
+                  <span className="px-1.5 py-0.5 rounded-full bg-[var(--brand-green-primary)]/20 text-xs font-mono">
+                    {totalSelected}
+                  </span>
+                )}
+              </button>
+            </div>
+
             {(isAnalyzing || showLoader) && (
               <div className="flex flex-col items-center justify-center pt-6 pb-12">
                 <MoleculeLoader
@@ -608,6 +594,23 @@ export default function SwagsMarketplaceClient({ listings, tags, initialListingS
           </div>
         </div>
       </main>
+
+      {/* Mobile filter sheet — same sections as the desktop sidebar. */}
+      <Drawer
+        isOpen={filterDrawerOpen}
+        onClose={() => setFilterDrawerOpen(false)}
+        header={<h2 className="text-lg font-semibold text-[var(--text-primary)]">filters</h2>}
+        footer={
+          <button
+            onClick={() => setFilterDrawerOpen(false)}
+            className="w-full py-4 text-center font-medium text-[var(--brand-green-primary)] hover:bg-[var(--bg-card-hover)] transition-colors cursor-pointer"
+          >
+            show {filteredListings.length} swag{filteredListings.length === 1 ? '' : 's'}
+          </button>
+        }
+      >
+        <div className="p-4">{filterSections}</div>
+      </Drawer>
 
       <SwagListingDrawer
         listing={selectedListing}
