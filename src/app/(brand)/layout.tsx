@@ -13,8 +13,8 @@ import { Button } from '@/components/common';
 import TestBrandPicker from '@/components/swag/TestBrandPicker';
 
 const brandNavItems = [
-  { href: '/', label: 'swags', exact: true },
-  { href: '/my', label: 'my swags', exact: true },
+  { href: '/', label: 'partners', exact: true },
+  { href: '/my', label: 'my partners', exact: true },
   { href: '/inputs', label: 'inputs', exact: true },
 ];
 
@@ -41,7 +41,7 @@ function NavActionsDesktop() {
       ) : (
         <>
           <Sparkles className="w-4 h-4 mr-2" />
-          find swags for me
+          find partners for me
         </>
       )}
     </Button>
@@ -76,7 +76,7 @@ function MobileMenuFindSwagsButton({ onClose }: MobileMenuFindSwagsButtonProps) 
       ) : (
         <>
           <Sparkles className="w-4 h-4 mr-2" />
-          find swags for me
+          find partners for me
         </>
       )}
     </Button>
