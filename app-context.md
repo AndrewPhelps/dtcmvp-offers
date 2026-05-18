@@ -1,6 +1,6 @@
 # dtcmvp-offers — partner SWAG marketplace
 
-Standalone Next.js app at **partners.dtcmvp.com**. Brands discover Shopify-app partners that have a published dtcmvp **SWAG** (Scientific Wild-Ass Guess — a first-party ROI analysis), open the partner's detail modal, and click **Generate SWAG** to launch an interactive ROI calculator that computes what that tool is worth to their specific store. Generating a SWAG persists a `Request` record so the brand can come back to it from "my swags / created". Partners get warm intros from brands who have already seen the financial upside.
+Standalone Next.js app at **partners.dtcmvp.com**. Brands discover Shopify-app partners that have a published dtcmvp **SWAG** (Scientific Wild-Ass Guess — a first-party ROI analysis), open the partner's detail modal, and click **Generate SWAG** to launch an interactive ROI calculator that computes what that tool is worth to their specific store. Generating a SWAG persists a `Request` record so the brand can come back to it from "my partners / created". Partners get warm intros from brands who have already seen the financial upside.
 
 The marketplace was previously framed as "exclusive partner offers" with a claim-an-offer flow. The full pivot to SWAGs landed 2026-05-07 — see `~/.claude/plans/let-s-keep-pricing-off-ethereal-thimble.md` (backend / data layer) and `~/.claude/plans/ok-we-re-making-major-encapsulated-cloud.md` (frontend rewrite).
 
@@ -25,17 +25,19 @@ Admin tooling under `/admin/*`: `/admin/scrape-results` (1,126 apps from 1800dtc
 
 Live at **https://partners.dtcmvp.com** (deployed via `./deploy/deploy.sh` → DO droplet, host port 3005).
 
+**Top nav** (brand pages): `partners` (`/`) · `my partners` (`/my`) · `inputs` (`/inputs`), plus a green `find partners for me` CTA. Relabelled from `swags` / `my swags` / `find swags for me` on 2026-05-18 — labels only; the SWAG concept is unchanged (you browse *partners*, each has a *SWAG*) and in-page copy still says "swags".
+
 **Brand flow:**
 - Marketplace at `/`: one card per partner with a published SWAG. Card shows logo, partner name, tagline, tag chips. Clicking opens the detail modal.
 - Detail modal: partner name + tags header, tagline, short description, benefit bullets, "Recommended by …" champion section, and three footer actions:
   - `not for me` (hide, removes from list)
-  - `save for later` (toggle, lands in `my swags / saved`)
+  - `save for later` (toggle, lands in `my partners / saved`)
   - **`generate swag`** (primary) — first-time only. Subsequent visits show **`view swag`**.
 - Generate SWAG → `SwagLoader` plays for ~3-5s (typewriter steps + 3D MoleculeLoader) while the spec is fetched and a Request record is upserted. Then the modal swaps to `SwagCalculator` with the partner's spec loaded and the brand's profile applied.
 - View SWAG (existing Request) → skips the loader, opens `SwagCalculator` directly.
 - Inside the calculator, **`Ask for an intro`** opens a confirmation modal; on submit the CTA flips in-place to **`Intro Requested {date}`** (inline + sticky + the Brief panel). Optimistic local state, persists across reloads via the `intro_requested_at` field on the Request.
-- `find swags for me` — green button in the navbar runs the recommendation engine (3D MoleculeLoader animation + brand profile from `data/brandProfile.ts`). Surfaces 2-3 listings as a session-scoped recommendation set.
-- `my swags`: three tabs.
+- `find partners for me` — green button in the navbar runs the recommendation engine (3D MoleculeLoader animation + brand profile from `data/brandProfile.ts`). Surfaces 2-3 listings as a session-scoped recommendation set.
+- `my partners`: three tabs.
   - **created**: every Request record for the logged-in brand. Click any to reopen the calculator. "Add outcome" appends a server-side note (timestamps preserved).
   - **intro requested**: subset of `created` where the brand has clicked Ask for an intro. Each row shows an `intro requested {date}` chip.
   - **saved for later** — listings the brand bookmarked but hasn't generated yet.
@@ -43,14 +45,13 @@ Live at **https://partners.dtcmvp.com** (deployed via `./deploy/deploy.sh` → D
 
 When the logged-in brand has saved Inputs, the marketplace is **relevance-ranked** — see the Inputs surface section below.
 
-**Marketplace sidebar — five structured filter sections** (AND across sections, AND within — picking two values in one section narrows the result set, it does not widen it):
-1. **brand category** — `spec.narrative.byCategory` keys minus `Other` (canonical 9: Apparel & Fashion, Beauty & Cosmetics, Health & Wellness, Sports & Fitness, Food & Drink, Home & Electronics, Baby & Kids, Pet & Vet)
-2. **benefit type** — `spec.benefits[].type` (3 buckets: cost-saving / revenue-generation / time-saving)
-3. **benefit** — `spec.benefits[].label` (canonical 21: CVR Lift, AOV Lift, Ticket Deflection, Attributed Revenue, etc.). All `Attributed Revenue (X)` variants collapse to a single `Attributed Revenue` option in the filter — the underlying spec still carries the specific channel (Email / SMS / Affiliate / DM / Organic / Display) for narrative + drawer copy.
-4. **department** — `spec.narrative.byDepartment` keys minus `Other` (canonical 19: CX / Support, Performance / Paid, Retention / CRM, etc.)
-5. **tag** — free-form descriptive tags from the spec. Originally 976 long-tail values; consolidated 2026-05-08 to 51 canonical buckets via an algorithmic pre-pass (754 deterministic remaps) + Sonnet residual review (222 remaining). Vertical-named tags (apparel, beauty, etc.) were dropped from this dimension since brand category covers them.
+**Marketplace sidebar — two structured filter sections** (AND across sections, AND within — picking two values in one section narrows the result set, it does not widen it):
+1. **benefit type** — `spec.benefits[].type` (3 buckets: cost-saving / revenue-generation / time-saving)
+2. **benefit** — `spec.benefits[].label` (canonical 21: CVR Lift, AOV Lift, Ticket Deflection, Attributed Revenue, etc.). All `Attributed Revenue (X)` variants collapse to a single `Attributed Revenue` option in the filter — the underlying spec still carries the specific channel (Email / SMS / Affiliate / DM / Organic / Display) for narrative + drawer copy.
 
-The four structured dimensions are derived from each Listing's underlying SwagSpec by `scripts/sync-listings.js` and pushed to Airtable Listings as `Benefit Types` / `Benefit Labels` / `Departments` / `Categories` multipleSelects, then mirrored to `listings_listings` SQLite.
+The sidebar previously also exposed **brand category**, **department**, and **tag** sections (5 total); trimmed to the two above on 2026-05-15 for focus. All four structured dimensions plus tags are still derived from each Listing's underlying SwagSpec by `scripts/sync-listings.js` and pushed to Airtable Listings as `Benefit Types` / `Benefit Labels` / `Departments` / `Categories` multipleSelects, then mirrored to `listings_listings` SQLite — the data layer is unchanged; the three dropped dimensions just no longer surface as filter UI. Tag data still powers the personalized marketplace ranking (see Inputs surface). Tag-consolidation history lives in the Vocabulary-cleanup section below.
+
+On mobile the sidebar collapses into a slide-in filter sheet (the common `Drawer`) behind a `filters` button so the listings appear first; the search box stays inline above them. Desktop keeps the persistent left sidebar.
 
 **Auth (live, mirrors dtcmvp-2.0):**
 - Partner login at `/login` — OTP + password, proxied through `api.dtcmvpete.com`.
@@ -195,7 +196,7 @@ Notes:
 
 **What is a SWAG:** Scientific Wild-Ass Guess. dtcmvp publishes first-party ROI analyses for Shopify apps. The brand sets a target ROI multiple (5x, 8x, 15x) and we tell them the max they should pay to hit that target. Every number we don't know for certain, we SWAG — and label it as such.
 
-**UX flow:** marketplace card → detail modal → **Generate SWAG** → SwagLoader animation → SwagCalculator (in the same modal). Back arrow returns to detail. Close returns to grid (scroll preserved). Re-opening a partner the brand has already generated for shows **View SWAG** instead of Generate SWAG, which skips the loader and opens the calculator directly.
+**UX flow:** marketplace card → detail modal → **Generate SWAG** → SwagLoader animation → SwagCalculator (in the same modal). Back arrow returns to detail. Close returns to grid (scroll preserved). Re-opening a partner the brand has already generated for shows **View SWAG** instead of Generate SWAG, which skips the loader and opens the calculator directly. The partner detail view is a centered modal; the SwagLoader and SwagCalculator render full-screen via the shared `Modal` component's `fullScreen` prop, so the generate → loader → calculator path is one edge-to-edge surface (`SwagCalculator` self-caps its content at `max-w-[1400px]`, so it stays centered on wide monitors).
 
 **Data storage:** SWAG specs live in `swags.db` (writable SQLite at `/app/swag-data/swags.db`), separate from the read-only `1800dtc.db`. Schema:
 
@@ -226,7 +227,7 @@ Only `status='approved'` specs surface in the user-facing `GET /api/swag` and `G
 
 Brands describe their store once and every SWAG personalizes to it. Added 2026-05-15.
 
-**Where it lives:** the `/inputs` route (top-level nav, beside `swags` / `my swags`) and — as the same edit surface — the `Input` tab inside `SwagCalculator`. Both render the shared `<InputsForm>` and read/write one `InputsContext`; the calculator mirrors the context's canonical fields into its local `profile` so `computeSwag()` runs against the brand's saved numbers.
+**Where it lives:** the `/inputs` route (top-level nav, beside `partners` / `my partners`) and — as the same edit surface — the `Input` tab inside `SwagCalculator`. Both render the shared `<InputsForm>` and read/write one `InputsContext`; the calculator mirrors the context's canonical fields into its local `profile` so `computeSwag()` runs against the brand's saved numbers.
 
 **Question bank** (`src/lib/inputs/`, the source of truth): `QUESTION_BANK` (company website, revenue band, brand category, department, store economics, audience sizes, target ROI, plus `interestedFunctions` / `currentObjectives` multi-selects mirrored verbatim from the dtcmvp chrome extension), numeric `BUCKETS`, and `cascade()`. `BrandProfile` (in `swag/swag-types.ts`) carries four new personalization-only fields (`companyWebsite`, `companySize`, `interestedFunctions`, `currentObjectives`) the SWAG engine ignores.
 
@@ -271,7 +272,7 @@ Client-side, in `BrandContext.generateRecommendations`:
 2. Pick 2-3 random from the pool.
 3. Surfaced as a session-scoped recommendation set.
 
-The `find swags for me` recommendation set is still random. Marketplace *ordering*, however, is now personalized for brands with saved Inputs — relevance ranking by `interestedFunctions` / `currentObjectives` → tags (see the Inputs surface section). A future pass could fold the same relevance signal into the recommendation set.
+The `find partners for me` recommendation set is still random. Marketplace *ordering*, however, is now personalized for brands with saved Inputs — relevance ranking by `interestedFunctions` / `currentObjectives` → tags (see the Inputs surface section). A future pass could fold the same relevance signal into the recommendation set.
 
 ## dev setup
 
@@ -301,6 +302,13 @@ For `/admin/scrape-results` to work locally you need a copy of `1800dtc.db` at t
 - `scripts/upsert-swag.js` — CLI for inserting/updating specs in swags.db
 - `scripts/sync-listings.js` — CLI for backfilling Airtable Listings from swags.db (per backend plan)
 
+## Current state / open items
+_Last updated: 2026-05-18_
+
+Everything below is deployed to partners.dtcmvp.com and verified in-browser. Nothing in flight.
+
+- **Terminology split (by design):** the brand nav says `partners` / `my partners` / `find partners for me`, but in-page copy still says "swags" (the `all swags` header, swag counts, the `generate swag` CTA). You browse *partners*; each has a *SWAG*. If that split ever reads wrong, the in-page strings are the sweep target — the 2026-05-18 nav rename was labels-only.
+
 ---
 
-*last updated: 2026-05-15*
+*last updated: 2026-05-18*
