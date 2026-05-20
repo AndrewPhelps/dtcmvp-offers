@@ -152,7 +152,7 @@ export default function MySwagsClient({ listings }: MySwagsClientProps) {
 
               <div className="hidden md:block">
                 <h3 className="text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider mb-3">
-                  my swags
+                  my partners
                 </h3>
                 <nav className="space-y-1">
                   <button
@@ -232,9 +232,9 @@ export default function MySwagsClient({ listings }: MySwagsClientProps) {
                 {createdRows.length === 0 ? (
                   <Card className="text-center py-8 md:py-12">
                     <Sparkles className="w-10 h-10 md:w-12 md:h-12 text-[var(--text-tertiary)] mx-auto mb-3 md:mb-4" />
-                    <p className="text-[var(--text-secondary)] mb-2">no swags generated yet</p>
+                    <p className="text-[var(--text-secondary)] mb-2">no partners yet</p>
                     <p className="text-sm text-[var(--text-tertiary)]">
-                      when you generate a swag, it will appear here
+                      when you generate a swag, the partner will appear here
                     </p>
                   </Card>
                 ) : (
@@ -401,9 +401,9 @@ export default function MySwagsClient({ listings }: MySwagsClientProps) {
                 {savedListings.length === 0 ? (
                   <Card className="text-center py-8 md:py-12">
                     <Bookmark className="w-10 h-10 md:w-12 md:h-12 text-[var(--text-tertiary)] mx-auto mb-3 md:mb-4" />
-                    <p className="text-[var(--text-secondary)] mb-2">no saved swags</p>
+                    <p className="text-[var(--text-secondary)] mb-2">no saved partners</p>
                     <p className="text-sm text-[var(--text-tertiary)]">
-                      tap save on a swag to keep track of ones you&apos;re interested in
+                      tap save on a partner to keep track of ones you&apos;re interested in
                     </p>
                   </Card>
                 ) : (
@@ -515,7 +515,7 @@ export default function MySwagsClient({ listings }: MySwagsClientProps) {
       >
         <div className="p-4 md:p-8">
           <p className="text-sm text-[var(--text-secondary)] mb-3 md:mb-4">
-            Record the outcome of this SWAG (call scheduled, partnership started, results achieved). New entries are appended; previous notes are preserved.
+            Record the outcome with this partner (call scheduled, partnership started, results achieved). New entries are appended; previous notes are preserved.
           </p>
           {existingNotes && (
             <div className="mb-4">
@@ -528,7 +528,7 @@ export default function MySwagsClient({ listings }: MySwagsClientProps) {
           <textarea
             value={notesValue}
             onChange={(e) => setNotesValue(e.target.value)}
-            placeholder={existingNotes ? 'add a new update...' : 'add notes about this swag...'}
+            placeholder={existingNotes ? 'add a new update...' : 'add notes about this partner...'}
             rows={5}
             className="w-full px-3 md:px-4 py-2.5 md:py-3 bg-[var(--bg-body)] border border-[var(--border-default)] rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:border-[var(--brand-green-primary)] resize-none"
             autoFocus

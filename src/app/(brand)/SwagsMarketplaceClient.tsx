@@ -316,7 +316,7 @@ export default function SwagsMarketplaceClient({ listings, tags, initialListingS
       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-tertiary)]" />
       <input
         type="text"
-        placeholder="search swags..."
+        placeholder="search partners..."
         value={searchQuery}
         onChange={(e) => {
           setSearchQuery(e.target.value);
@@ -480,7 +480,7 @@ export default function SwagsMarketplaceClient({ listings, tags, initialListingS
                   }`}
                 >
                   <p className="text-lg text-[var(--text-primary)] font-medium mb-3 -mt-2 text-center">
-                    finding swags for you
+                    finding partners for you
                   </p>
                   <p className="text-base text-[var(--text-secondary)] h-6 text-center">
                     {showLoadingText && !isCollapsing && (
@@ -503,11 +503,11 @@ export default function SwagsMarketplaceClient({ listings, tags, initialListingS
                         </span>
                       </>
                     ) : (
-                      <span className="text-[var(--text-primary)] font-medium">all swags</span>
+                      <span className="text-[var(--text-primary)] font-medium">all partners</span>
                     )}
                     <span className="text-[var(--text-tertiary)]">·</span>
                     <span className="text-sm text-[var(--text-tertiary)]">
-                      {filteredListings.length} swag{filteredListings.length === 1 ? '' : 's'}
+                      {filteredListings.length} partner{filteredListings.length === 1 ? '' : 's'}
                     </span>
                   </div>
                   {selectedRecommendation && (
@@ -515,7 +515,7 @@ export default function SwagsMarketplaceClient({ listings, tags, initialListingS
                       onClick={clearRecommendationView}
                       className="text-sm text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors cursor-pointer"
                     >
-                      view all swags
+                      view all partners
                     </button>
                   )}
                 </div>
@@ -584,7 +584,7 @@ export default function SwagsMarketplaceClient({ listings, tags, initialListingS
                   {filteredListings.length === 0 && (
                     <Card className="text-center py-12">
                       <p className="text-[var(--text-secondary)]">
-                        no swags found matching your criteria
+                        no partners found matching your criteria
                       </p>
                     </Card>
                   )}
@@ -605,7 +605,7 @@ export default function SwagsMarketplaceClient({ listings, tags, initialListingS
             onClick={() => setFilterDrawerOpen(false)}
             className="w-full py-4 text-center font-medium text-[var(--brand-green-primary)] hover:bg-[var(--bg-card-hover)] transition-colors cursor-pointer"
           >
-            show {filteredListings.length} swag{filteredListings.length === 1 ? '' : 's'}
+            show {filteredListings.length} partner{filteredListings.length === 1 ? '' : 's'}
           </button>
         }
       >
