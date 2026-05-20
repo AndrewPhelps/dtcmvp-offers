@@ -32,10 +32,10 @@ export default function InputSection({
   const [open, setOpen] = useState(defaultOpen)
 
   return (
-    <div className="border border-border rounded-xl bg-bg-secondary overflow-hidden">
+    <div className="border border-border rounded-xl bg-bg-secondary">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between p-4 hover:bg-bg-hover transition-colors text-left"
+        className="w-full flex items-center justify-between p-4 hover:bg-bg-hover transition-colors text-left rounded-t-xl"
       >
         <div className="flex items-center gap-3">
           <div className={`w-1.5 h-8 rounded-full ${accentMap[accent]}`} />
