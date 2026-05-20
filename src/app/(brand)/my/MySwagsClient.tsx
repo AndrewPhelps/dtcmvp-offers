@@ -2,8 +2,8 @@
 
 import { useState, useMemo } from 'react';
 import Image from 'next/image';
-import { ArrowRight, Bookmark, Sparkles, FileText, Handshake } from 'lucide-react';
-import { Card, Button, Modal } from '@/components/common';
+import { ArrowRight, Bookmark, Sparkles, Handshake } from 'lucide-react';
+import { Card } from '@/components/common';
 import { SwagListingDrawer } from '@/components/swags';
 import { useBrand } from '@/contexts';
 import { Listing } from '@/types';
@@ -21,14 +21,7 @@ export default function MySwagsClient({ listings }: MySwagsClientProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState<'detail' | 'calculator'>('calculator');
 
-  const [notesModalOpen, setNotesModalOpen] = useState(false);
-  const [notesAirtableId, setNotesAirtableId] = useState<string | null>(null);
-  const [notesValue, setNotesValue] = useState('');
-  const [existingNotes, setExistingNotes] = useState('');
-  const [notesSaving, setNotesSaving] = useState(false);
-  const [notesError, setNotesError] = useState<string | null>(null);
-
-  const { requests, savedOfferIds, updateRequestNotes, unsaveOffer } = useBrand();
+  const { requests, savedOfferIds, unsaveOffer } = useBrand();
 
   const listingsBySlug = useMemo(
     () => new Map(listings.map((l) => [l.slug, l])),
@@ -65,34 +58,6 @@ export default function MySwagsClient({ listings }: MySwagsClientProps) {
       day: 'numeric',
       year: 'numeric',
     });
-  };
-
-  const openNotesModal = (airtableId: string, currentNotes: string | undefined) => {
-    setNotesAirtableId(airtableId);
-    setExistingNotes(currentNotes || '');
-    setNotesValue('');
-    setNotesError(null);
-    setNotesModalOpen(true);
-  };
-  const closeNotesModal = () => {
-    setNotesModalOpen(false);
-    setNotesAirtableId(null);
-    setNotesValue('');
-    setExistingNotes('');
-    setNotesError(null);
-  };
-  const saveNotes = async () => {
-    if (!notesAirtableId || !notesValue.trim()) return;
-    setNotesSaving(true);
-    setNotesError(null);
-    try {
-      await updateRequestNotes(notesAirtableId, notesValue);
-      closeNotesModal();
-    } catch (err) {
-      setNotesError(err instanceof Error ? err.message : 'Failed to save outcome');
-    } finally {
-      setNotesSaving(false);
-    }
   };
 
   return (
@@ -165,7 +130,7 @@ export default function MySwagsClient({ listings }: MySwagsClientProps) {
                   >
                     <span className="flex items-center gap-2">
                       <Sparkles className="w-4 h-4" />
-                      created
+                      created swags
                     </span>
                     <span
                       className={
@@ -232,9 +197,9 @@ export default function MySwagsClient({ listings }: MySwagsClientProps) {
                 {createdRows.length === 0 ? (
                   <Card className="text-center py-8 md:py-12">
                     <Sparkles className="w-10 h-10 md:w-12 md:h-12 text-[var(--text-tertiary)] mx-auto mb-3 md:mb-4" />
-                    <p className="text-[var(--text-secondary)] mb-2">no partners yet</p>
+                    <p className="text-[var(--text-secondary)] mb-2">no swags generated yet</p>
                     <p className="text-sm text-[var(--text-tertiary)]">
-                      when you generate a swag, the partner will appear here
+                      when you generate a swag, it will appear here
                     </p>
                   </Card>
                 ) : (
@@ -293,17 +258,6 @@ export default function MySwagsClient({ listings }: MySwagsClientProps) {
                           </div>
                         </div>
 
-                        {req.airtableId && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openNotesModal(req.airtableId, req.notes);
-                            }}
-                            className="px-3 md:px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
-                          >
-                            {req.notes ? 'edit outcome' : 'add outcome'}
-                          </button>
-                        )}
                       </Card>
                     </div>
                   ))
@@ -378,17 +332,6 @@ export default function MySwagsClient({ listings }: MySwagsClientProps) {
                           </div>
                         </div>
 
-                        {req.airtableId && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openNotesModal(req.airtableId, req.notes);
-                            }}
-                            className="px-3 md:px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
-                          >
-                            {req.notes ? 'edit outcome' : 'add outcome'}
-                          </button>
-                        )}
                       </Card>
                     </div>
                   ))
@@ -486,56 +429,6 @@ export default function MySwagsClient({ listings }: MySwagsClientProps) {
         initialMode={drawerMode}
       />
 
-      <Modal
-        isOpen={notesModalOpen}
-        onClose={closeNotesModal}
-        header={
-          <div className="flex items-center gap-3">
-            <FileText className="w-5 h-5 text-[var(--brand-green-primary)]" />
-            <h2 className="text-xl font-semibold text-[var(--text-primary)]">
-              {existingNotes ? 'add outcome update' : 'add outcome'}
-            </h2>
-          </div>
-        }
-        footer={
-          <div className="flex items-center justify-end gap-2 md:gap-3 px-4 md:px-8 py-3 md:py-4">
-            <button
-              onClick={closeNotesModal}
-              disabled={notesSaving}
-              className="px-3 md:px-4 py-2 rounded-lg text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)] transition-colors cursor-pointer disabled:opacity-50"
-            >
-              cancel
-            </button>
-            <Button onClick={saveNotes} loading={notesSaving} disabled={!notesValue.trim()}>
-              save outcome
-            </Button>
-          </div>
-        }
-        maxWidth="max-w-lg"
-      >
-        <div className="p-4 md:p-8">
-          <p className="text-sm text-[var(--text-secondary)] mb-3 md:mb-4">
-            Record the outcome with this partner (call scheduled, partnership started, results achieved). New entries are appended; previous notes are preserved.
-          </p>
-          {existingNotes && (
-            <div className="mb-4">
-              <p className="text-xs uppercase tracking-widest text-[var(--text-tertiary)] mb-1.5">previous notes</p>
-              <pre className="whitespace-pre-wrap font-sans text-sm text-[var(--text-secondary)] bg-[var(--bg-body)] border border-[var(--border-default)] rounded-lg px-3 py-2.5 max-h-40 overflow-y-auto">
-                {existingNotes}
-              </pre>
-            </div>
-          )}
-          <textarea
-            value={notesValue}
-            onChange={(e) => setNotesValue(e.target.value)}
-            placeholder={existingNotes ? 'add a new update...' : 'add notes about this partner...'}
-            rows={5}
-            className="w-full px-3 md:px-4 py-2.5 md:py-3 bg-[var(--bg-body)] border border-[var(--border-default)] rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:border-[var(--brand-green-primary)] resize-none"
-            autoFocus
-          />
-          {notesError && <p className="mt-2 text-xs text-red-400">{notesError}</p>}
-        </div>
-      </Modal>
     </div>
   );
 }
