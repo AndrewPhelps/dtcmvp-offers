@@ -289,6 +289,49 @@ export async function submitIntroRequest(input: SubmitIntroInput): Promise<{ suc
   return res.json() as Promise<{ success: true }>;
 }
 
+// ----- Ranked recommendations (`find partners for me`) -----
+
+export interface RankedPick {
+  slug: string;
+  rank: number;
+  predictedAnnualValue: number;
+  department: string | null;
+  loudness: number;
+  reason: 'top_rank' | 'department_diversity' | 'underdog_quota';
+}
+
+export interface RankListingsResult {
+  picks: RankedPick[];
+  pool: { size: number; medianLoudness: number };
+  computeMs: number;
+}
+
+/**
+ * Ask the backend for a personalized, predicted-ROI ranked pick set.
+ *
+ * Returns null when the endpoint is not enabled (server feature flag off) or
+ * the call fails — callers fall back to the legacy random-slice path so the
+ * marketplace never breaks because of a backend issue.
+ */
+export async function rankListings(input: {
+  limit?: number;
+  exclude?: string[];
+  profile?: Partial<BrandProfile>;
+}): Promise<RankListingsResult | null> {
+  let res: Response;
+  try {
+    res = await authFetch(`${API_URL}/listings/rank`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    });
+  } catch {
+    return null;
+  }
+  if (!res.ok) return null; // 404 = flag off; 5xx = degrade silently
+  return (await res.json()) as RankListingsResult;
+}
+
 // ----- Brand Inputs (the Inputs surface) -----
 
 export type BrandInputs = Partial<BrandProfile>;

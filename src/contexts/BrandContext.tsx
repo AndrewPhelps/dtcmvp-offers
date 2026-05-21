@@ -4,7 +4,7 @@ import { createContext, useContext, useState, useEffect, useCallback, ReactNode 
 import { brandProfile, getLoadingMessages } from '@/data/brandProfile';
 import { Offer, BrandRequest } from '@/types';
 import {
-  getMyRequests, createRequest as apiCreateRequest, appendRequestNotes,
+  getMyRequests, createRequest as apiCreateRequest, appendRequestNotes, rankListings,
 } from '@/lib/api';
 import { useImpersonation } from '@/contexts/ImpersonationContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -58,7 +58,7 @@ interface BrandContextType {
   loadingMessageIndex: number;
   loadingMessages: string[];
   startAnalysis: () => void;
-  generateRecommendationsImmediate: () => void;
+  generateRecommendationsImmediate: () => Promise<void>;
   selectRecommendation: (recId: string) => void;
   clearRecommendationView: () => void;
   removeRecommendation: (recId: string) => void;
@@ -107,14 +107,34 @@ export function BrandProvider({ children }: { children: ReactNode }) {
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
   const loadingMessages = getLoadingMessages(brandProfile);
 
-  // Generate AI-like recommendations from the available pool. Listings don't carry
-  // a category field anymore, so the priority-bucket matching from the offers era
-  // is gone — for now we just pick from the un-hidden, un-generated pool.
-  const generateRecommendations = useCallback(() => {
+  // Generate AI-like recommendations from the available pool.
+  //
+  // v2 path (backend RANK_V2_ENABLED on): asks /api/listings/rank for a
+  // predicted-ROI-ranked, department-diversified, underdog-quota-respecting
+  // set of slugs. The backend computes computeSwag() against the brand's
+  // saved Inputs.
+  //
+  // v1 fallback (flag off OR network failure): random slice of the pool —
+  // identical to the pre-v2 behavior, so the green CTA never produces nothing.
+  const generateRecommendations = useCallback(async (): Promise<Offer[]> => {
     const generatedSlugs = state.requests.map((r) => r.listingSlug);
     const pool = availableOffers.filter(
       (o) => o.isActive && !state.hiddenOfferIds.includes(o.id) && !generatedSlugs.includes(o.id),
     );
+
+    const exclude = Array.from(new Set([...state.hiddenOfferIds, ...generatedSlugs]));
+    const ranked = await rankListings({ limit: 3, exclude });
+    if (ranked && ranked.picks.length > 0) {
+      const bySlug = new Map(pool.map((o) => [o.id, o]));
+      const matched: Offer[] = [];
+      for (const p of ranked.picks) {
+        const o = bySlug.get(p.slug);
+        if (o) matched.push(o);
+      }
+      if (matched.length > 0) return matched;
+    }
+
+    // Fallback: legacy random behavior.
     const count = Math.min(Math.floor(Math.random() * 2) + 2, pool.length);
     return pool.slice(0, count);
   }, [availableOffers, state.hiddenOfferIds, state.requests]);
@@ -126,8 +146,8 @@ export function BrandProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Generate recommendations immediately (no AI simulation)
-  const generateRecommendationsImmediate = useCallback(() => {
-    const recommendedOffers = generateRecommendations();
+  const generateRecommendationsImmediate = useCallback(async () => {
+    const recommendedOffers = await generateRecommendations();
     const newRecommendation: RecommendationSet = {
       id: Date.now().toString(),
       date: new Date(),
@@ -157,8 +177,10 @@ export function BrandProvider({ children }: { children: ReactNode }) {
       }, 2000);
     }, introAnimationDelay);
 
-    const completeTimeout = setTimeout(() => {
-      const recommendedOffers = generateRecommendations();
+    let cancelled = false;
+    const completeTimeout = setTimeout(async () => {
+      const recommendedOffers = await generateRecommendations();
+      if (cancelled) return;
       const newRecommendation: RecommendationSet = {
         id: Date.now().toString(),
         date: new Date(),
@@ -171,6 +193,7 @@ export function BrandProvider({ children }: { children: ReactNode }) {
     }, 8000);
 
     return () => {
+      cancelled = true;
       clearTimeout(startInterval);
       clearInterval(messageInterval);
       clearTimeout(completeTimeout);
