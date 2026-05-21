@@ -77,22 +77,38 @@ export default function SwagCalculator({ spec }: { spec: SwagSpec }) {
     }
   }, [user?.email])
 
-  // When an admin picks a test brand from the global picker, populate the
-  // profile's brand-identity fields. Numeric inputs (ROI etc.) stay as-is.
+  // Identity resolution. Two paths:
+  //   • Admin impersonating via the test-brand picker → use that brand.
+  //   • Real logged-in brand user → fall back to their auth identity so
+  //     calculator + loader + intros all show the brand's own name instead
+  //     of the empty DEFAULT_BRAND_PROFILE placeholder.
+  // Brand-set fields (brandName / contactName) on the local profile are only
+  // overwritten if they're empty, so a brand who explicitly typed something
+  // in the Inputs tab keeps it.
   useEffect(() => {
-    if (!testBrand) return
-    setProfile((s) => {
-      const cat = testBrand.primaryCategoryBucket
-      const validCategory = cat && (CATEGORIES as readonly string[]).includes(cat) ? (cat as Category) : s.primaryCategory
-      return {
+    if (testBrand) {
+      setProfile((s) => {
+        const cat = testBrand.primaryCategoryBucket
+        const validCategory = cat && (CATEGORIES as readonly string[]).includes(cat) ? (cat as Category) : s.primaryCategory
+        return {
+          ...s,
+          brandName: testBrand.companyName || s.brandName,
+          contactName: testBrand.name || s.contactName,
+          contactEmail: testBrand.email || s.contactEmail,
+          primaryCategory: validCategory,
+        }
+      })
+      return
+    }
+    if (user) {
+      setProfile((s) => ({
         ...s,
-        brandName: testBrand.companyName || s.brandName,
-        contactName: testBrand.name || s.contactName,
-        contactEmail: testBrand.email || s.contactEmail,
-        primaryCategory: validCategory,
-      }
-    })
-  }, [testBrand])
+        brandName: s.brandName || user.partner_name || '',
+        contactName: s.contactName || user.username || '',
+        contactEmail: s.contactEmail || user.email || '',
+      }))
+    }
+  }, [testBrand, user])
 
   // Mirror the brand's saved Inputs (canonical question-bank fields) into the
   // local profile, so the calculator computes against the same data the
@@ -719,46 +735,51 @@ export default function SwagCalculator({ spec }: { spec: SwagSpec }) {
             {/* ── Pricing intel card (collapsible, grey/muted) ── */}
             {spec.pricingIntel && <PricingIntelCard intel={spec.pricingIntel} partnerName={spec.partnerName} />}
 
-            {/* Benefit cards — grouped by type */}
-            {groupByType(r.benefits).map((group) => (
-              <div key={group.type}>
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-2 h-2 rounded-full" style={{ background: BENEFIT_TYPE_META[group.type].color }} />
-                  <span
-                    className="text-xs uppercase tracking-widest font-grotesk font-semibold"
-                    style={{ color: BENEFIT_TYPE_META[group.type].color }}
-                  >
-                    {BENEFIT_TYPE_META[group.type].label}
-                  </span>
-                  <span className="text-xs font-mono text-text-muted">
-                    {BENEFIT_TYPE_META[group.type].verb} {fmtMoneyCompact(group.subtotal)}/yr
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  {group.items.map((benefit, bi) => (
-                    <div
-                      key={benefit.id}
-                      className="metric-card"
-                      style={{ borderTop: `3px solid ${benefitColor(benefit.type, bi)}` }}
+            {/* Benefit cards — grouped by type, two groups side-by-side on
+                desktop. With 3+ types, the third wraps to a new row, still
+                half-width. Each group's items stack vertically inside its
+                half-column so the page never feels half-empty. */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              {groupByType(r.benefits).map((group) => (
+                <div key={group.type}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-2 h-2 rounded-full" style={{ background: BENEFIT_TYPE_META[group.type].color }} />
+                    <span
+                      className="text-xs uppercase tracking-widest font-grotesk font-semibold"
+                      style={{ color: BENEFIT_TYPE_META[group.type].color }}
                     >
-                      <h4 className="text-xs uppercase tracking-widest text-text-muted font-grotesk mb-3">
-                        {benefit.label}
-                      </h4>
-                      <div className="text-3xl font-bold font-mono text-text-primary tabular-nums mb-2">
-                        {fmtMoney(benefit.annualValue)}
-                        <span className="text-sm text-text-muted font-grotesk font-normal ml-1">/yr</span>
+                      {BENEFIT_TYPE_META[group.type].label}
+                    </span>
+                    <span className="text-xs font-mono text-text-muted">
+                      {BENEFIT_TYPE_META[group.type].verb} {fmtMoneyCompact(group.subtotal)}/yr
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 gap-4">
+                    {group.items.map((benefit, bi) => (
+                      <div
+                        key={benefit.id}
+                        className="metric-card"
+                        style={{ borderTop: `3px solid ${benefitColor(benefit.type, bi)}` }}
+                      >
+                        <h4 className="text-xs uppercase tracking-widest text-text-muted font-grotesk mb-3">
+                          {benefit.label}
+                        </h4>
+                        <div className="text-3xl font-bold font-mono text-text-primary tabular-nums mb-2">
+                          {fmtMoney(benefit.annualValue)}
+                          <span className="text-sm text-text-muted font-grotesk font-normal ml-1">/yr</span>
+                        </div>
+                        <p className="text-xs text-text-secondary font-grotesk leading-relaxed mb-2">
+                          {benefit.description}
+                        </p>
+                        <p className="text-[10px] font-mono text-text-muted leading-relaxed">
+                          {benefit.formulaBreakdown}
+                        </p>
                       </div>
-                      <p className="text-xs text-text-secondary font-grotesk leading-relaxed mb-2">
-                        {benefit.description}
-                      </p>
-                      <p className="text-[10px] font-mono text-text-muted leading-relaxed">
-                        {benefit.formulaBreakdown}
-                      </p>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
 
             {/* Projection chart */}
             {projectionMetrics.length > 0 && (

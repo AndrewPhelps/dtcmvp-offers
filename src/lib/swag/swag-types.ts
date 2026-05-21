@@ -179,9 +179,15 @@ export type BrandProfile = {
   currentObjectives: string[]    // subset of CURRENT_OBJECTIVES
 }
 
+// NB identity fields (brandName / contactName / contactEmail) are intentionally
+// empty so the cascade never bakes in placeholder names. SwagLoader +
+// SwagCalculator + the rank handler all template these with empty-string
+// fallbacks ("Your Brand", "your team") OR fill them from the logged-in
+// user's partner_name / username at runtime. The Sunday Swagger / Kyle Moloo
+// values that used to live here were dev seed data that leaked into prod.
 export const DEFAULT_BRAND_PROFILE: BrandProfile = {
-  brandName: 'Sunday Swagger',
-  contactName: 'Kyle Moloo',
+  brandName: '',
+  contactName: '',
   contactEmail: '',
   department: 'Marketing / Growth',
   primaryCategory: 'Apparel & Fashion',

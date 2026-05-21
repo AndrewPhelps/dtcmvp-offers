@@ -8,6 +8,7 @@ import { Modal, Button } from '@/components/common';
 import { Listing } from '@/types';
 import { useBrand } from '@/contexts';
 import { useImpersonation } from '@/contexts/ImpersonationContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { tagBadgeStyle } from '@/lib';
 import type { SwagSpec, BrandProfile, Category } from '@/lib/swag/swag-types';
 import { DEFAULT_BRAND_PROFILE, CATEGORIES } from '@/lib/swag/swag-types';
@@ -46,22 +47,34 @@ export default function SwagListingDrawer({
     generateSwag,
   } = useBrand();
 
-  // Mirror the SwagCalculator's testBrand merge so the loader animation
-  // shows the impersonated brand's identity instead of the Sunday Swagger /
-  // Kyle Moloo fixture defaults. Financial values stay as the defaults —
-  // the test-brand picker only carries identity + category.
+  // Resolve the loader-animation identity. Priority order:
+  //   1. Admin impersonating via test-brand picker → that brand's identity.
+  //   2. Real logged-in brand user → their own auth identity
+  //      (user.partner_name is overloaded to brand-company name; username
+  //      is the verified first-name from the /b/[contactId] login flow).
+  //   3. Defaults — empty strings; SwagLoader falls back to "Your Brand" /
+  //      "your team" rather than the old Sunday Swagger / Kyle Moloo
+  //      placeholder data.
   const { testBrand } = useImpersonation();
+  const { user } = useAuth();
   const loaderProfile: BrandProfile = useMemo(() => {
-    if (!testBrand) return DEFAULT_BRAND_PROFILE;
-    const cat = testBrand.primaryCategoryBucket;
+    if (testBrand) {
+      const cat = testBrand.primaryCategoryBucket;
+      return {
+        ...DEFAULT_BRAND_PROFILE,
+        brandName: testBrand.companyName || DEFAULT_BRAND_PROFILE.brandName,
+        contactName: testBrand.name || DEFAULT_BRAND_PROFILE.contactName,
+        contactEmail: testBrand.email || DEFAULT_BRAND_PROFILE.contactEmail,
+        ...(cat && CATEGORIES.includes(cat as Category) ? { primaryCategory: cat as Category } : {}),
+      };
+    }
     return {
       ...DEFAULT_BRAND_PROFILE,
-      brandName: testBrand.companyName || DEFAULT_BRAND_PROFILE.brandName,
-      contactName: testBrand.name || DEFAULT_BRAND_PROFILE.contactName,
-      contactEmail: testBrand.email || DEFAULT_BRAND_PROFILE.contactEmail,
-      ...(cat && CATEGORIES.includes(cat as Category) ? { primaryCategory: cat as Category } : {}),
+      brandName: user?.partner_name || DEFAULT_BRAND_PROFILE.brandName,
+      contactName: user?.username || DEFAULT_BRAND_PROFILE.contactName,
+      contactEmail: user?.email || DEFAULT_BRAND_PROFILE.contactEmail,
     };
-  }, [testBrand]);
+  }, [testBrand, user]);
 
   // Reset on open / close
   useEffect(() => {
