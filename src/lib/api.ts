@@ -297,12 +297,13 @@ export interface RankedPick {
   predictedAnnualValue: number;
   department: string | null;
   loudness: number;
+  overlap: number;
   reason: 'top_rank' | 'department_diversity' | 'underdog_quota';
 }
 
 export interface RankListingsResult {
   picks: RankedPick[];
-  pool: { size: number; medianLoudness: number };
+  pool: { size: number; medianLoudness: number; interestTagCount: number };
   computeMs: number;
 }
 
