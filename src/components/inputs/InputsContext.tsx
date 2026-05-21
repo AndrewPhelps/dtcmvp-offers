@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useImpersonation } from '@/contexts/ImpersonationContext';
 import type { BrandProfile } from '@/lib/swag/swag-types';
 import { DEFAULT_BRAND_PROFILE } from '@/lib/swag/swag-types';
 import { cascade } from '@/lib/inputs';
@@ -25,6 +26,12 @@ const InputsContext = createContext<InputsContextType | undefined>(undefined);
 
 export function InputsProvider({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useAuth();
+  const { testBrand } = useImpersonation();
+  // Re-key the prefill fetch by the effective identity so an admin switching
+  // test brands in the picker refetches that brand's saved Inputs (mirrors
+  // the BrandContext re-key on the same field). Without this the nav-gate
+  // signal would lag a step behind impersonation changes.
+  const effectiveIdentityKey = testBrand?.contactAirtableId || user?.email || null;
   const [inputs, setInputs] = useState<BrandProfile>(DEFAULT_BRAND_PROFILE);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -59,7 +66,7 @@ export function InputsProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [user, authLoading]);
+  }, [user, authLoading, effectiveIdentityKey]);
 
   const setField = useCallback(
     <K extends keyof BrandProfile>(key: K, value: BrandProfile[K]) => {
