@@ -56,6 +56,7 @@ On mobile the sidebar collapses into a slide-in filter sheet (the common `Drawer
 **Auth (live, mirrors dtcmvp-2.0):**
 - Partner login at `/login` — OTP + password, proxied through `api.dtcmvpete.com`.
 - Brand login at `/b/[contactId]` — first-name verification against Airtable Contact ID. Old `/brand/...` URLs 301 to `/b/...`.
+- **Cross-app SSO inbound:** requests carrying `?token=<jwt>` bypass the cookie gate in `src/middleware.ts` and are consumed client-side by `AuthContext` (`loginWithToken()` in `src/lib/auth.ts` → `POST /auth/exchange-token` for a full session → cookies + localStorage). Used by brand-portal's `/api/partners-handoff` to deliver brand contacts already signed in. While the exchange is in flight, `AuthContext` renders an `<SsoSplash />` instead of children so the unauthenticated marketplace skeleton doesn't flash. See `dtcmvp-brand-portal/app-context.md` for the sending side.
 - Old `/offers/*` and `/swags/*` URLs 301 to root-level paths (after the partners.dtcmvp.com move). Old `offers.dtcmvp.com` DNS is removed.
 - Middleware gates everything except `/login`, `/b/*`, `/api/*`, Next internals, and static assets. Cookie-based session with 45-min refresh.
 
@@ -303,12 +304,13 @@ For `/admin/scrape-results` to work locally you need a copy of `1800dtc.db` at t
 - `scripts/sync-listings.js` — CLI for backfilling Airtable Listings from swags.db (per backend plan)
 
 ## Current state / open items
-_Last updated: 2026-05-18_
+_Last updated: 2026-05-21_
 
 Everything below is deployed to partners.dtcmvp.com and verified in-browser. Nothing in flight.
 
 - **Terminology split (by design):** the brand nav says `partners` / `my partners` / `find partners for me`, but in-page copy still says "swags" (the `all swags` header, swag counts, the `generate swag` CTA). You browse *partners*; each has a *SWAG*. If that split ever reads wrong, the in-page strings are the sweep target — the 2026-05-18 nav rename was labels-only.
+- **Cross-app SSO inbound is live**, consuming `?token=` from brand-portal's `/api/partners-handoff`. The brand-portal-side button is currently feature-flagged off — flipping it surfaces no new behavior here, the receiving side is already deployed.
 
 ---
 
-*last updated: 2026-05-18*
+*last updated: 2026-05-21*
