@@ -109,6 +109,62 @@ export async function brandLogin(contactId: string, firstName: string): Promise<
   return data;
 }
 
+/**
+ * Cross-app SSO entry: take an access token from another dtcmvp app
+ * (e.g. brand-portal → partners.dtcmvp.com), exchange it for a full
+ * session on the dtcmvpete auth server, then persist the new session
+ * locally. Returns null on failure so callers can fall back to /login.
+ *
+ * Ported verbatim from dtcmvp-2.0/frontend/src/lib/auth.ts (the existing
+ * pattern that's been working in production for cross-app handoffs).
+ */
+export async function loginWithToken(token: string): Promise<{ user: UserProfile; session: AuthSession } | null> {
+  try {
+    console.log('[Auth] Exchanging token for full session...');
+    const exchangeResponse = await fetch(`${AUTH_API_URL}/auth/exchange-token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ access_token: token }),
+    });
+
+    let accessToken = token;
+    let refreshToken = '';
+    let expiresIn = 3600;
+
+    if (exchangeResponse.ok) {
+      const exchangeData = await exchangeResponse.json();
+      accessToken = exchangeData.access_token;
+      refreshToken = exchangeData.refresh_token;
+      expiresIn = exchangeData.expires_in;
+      console.log('[Auth] Token exchange successful, got full session with refresh_token');
+    } else {
+      console.warn('[Auth] Token exchange failed, falling back to access-only session:', exchangeResponse.status);
+    }
+
+    // Verify token by fetching the user profile.
+    const response = await fetch(`${AUTH_API_URL}/auth/user`, {
+      headers: { 'Authorization': `Bearer ${accessToken}` },
+    });
+
+    if (!response.ok) {
+      console.error('[Auth] Token validation failed:', response.status);
+      return null;
+    }
+
+    const userData = await response.json();
+    storeTokens(accessToken, refreshToken, expiresIn);
+    localStorage.setItem('user', JSON.stringify(userData));
+
+    return {
+      user: userData,
+      session: { access_token: accessToken, refresh_token: refreshToken, expires_in: expiresIn },
+    };
+  } catch (error) {
+    console.error('[Auth] Token login failed:', error);
+    return null;
+  }
+}
+
 function storeTokens(accessToken: string, refreshToken: string, expiresIn: number): void {
   if (typeof window === 'undefined') return;
 

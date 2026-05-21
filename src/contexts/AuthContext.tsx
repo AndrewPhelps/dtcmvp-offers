@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { UserProfile, getCurrentUser, signOut as authSignOut, initAuth } from '@/lib/auth';
+import { UserProfile, getCurrentUser, signOut as authSignOut, initAuth, loginWithToken } from '@/lib/auth';
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -30,6 +30,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loadUser = async () => {
     try {
+      // Cross-app SSO: if another dtcmvp app handed us an access token via
+      // ?token=<jwt>, exchange it for a full session before doing anything
+      // else. Mirrors dtcmvp-2.0's AuthContext (the pattern in production).
+      // We scrub the token + redirect params from the URL after consuming
+      // so they don't sit in the user's address bar / browser history.
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlToken = urlParams.get('token');
+
+        if (urlToken) {
+          console.log('[Auth] Found token in URL, attempting SSO login...');
+          const result = await loginWithToken(urlToken);
+
+          if (result) {
+            setUser(result.user);
+            setLoading(false);
+
+            // Respect ?redirect= from the inbound URL (defaults to /offers
+            // since that's the canonical landing page for brand contacts).
+            const requestedRedirect = urlParams.get('redirect') || '/offers';
+            const safeRedirect = requestedRedirect.startsWith('/') ? requestedRedirect : '/offers';
+
+            // Scrub token + redirect from the URL before navigating.
+            window.history.replaceState({}, '', window.location.pathname);
+            router.push(safeRedirect);
+            return;
+          } else {
+            console.error('[Auth] SSO token login failed; falling through to normal auth');
+          }
+        }
+      }
+
       if (isPublicPath(pathname)) {
         // Still try to load user in the background so logged-in visitors
         // see their state (e.g., a "continue to offers" CTA) but don't gate.
