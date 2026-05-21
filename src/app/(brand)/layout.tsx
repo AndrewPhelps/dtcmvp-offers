@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Sparkles, Loader2, Menu, X } from 'lucide-react';
+import { Sparkles, Loader2, Menu, X, Undo2 } from 'lucide-react';
 import { BrandProvider, useBrand } from '@/contexts';
 import { ImpersonationProvider, useImpersonation } from '@/contexts/ImpersonationContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -35,6 +35,45 @@ const brandNavItems = [
   { href: '/my', label: 'my partners', exact: true },
   { href: '/inputs', label: 'inputs', exact: true },
 ];
+
+const BRAND_PORTAL_BASE = 'https://brand.dtcmvp.com';
+
+/**
+ * Resolve the link target for the "back to your portal" affordance in the
+ * navbar. Respects admin impersonation — when an admin is testing as another
+ * brand, the link points to THAT brand's portal so the navigation is
+ * consistent with the rest of the impersonation surface.
+ *
+ * Returns null when no contact id resolves (e.g. an admin not impersonating,
+ * or a user whose profile has no airtable_contact_id) so the navbar can
+ * conditionally hide the link.
+ */
+function useBrandPortalLink(): { href: string; label: string } | null {
+  const { user } = useAuth();
+  const { testBrand } = useImpersonation();
+  const contactId = testBrand?.contactAirtableId || user?.airtable_contact_id || null;
+  if (!contactId) return null;
+  // Friendly-name resolution: impersonated brand's first name wins,
+  // then the auth user's first name, else a generic "your portal".
+  const firstName = (testBrand?.name || user?.username || '').trim().split(/\s+/)[0];
+  const label = firstName ? `${firstName.toLowerCase()}'s portal` : 'your portal';
+  return { href: `${BRAND_PORTAL_BASE}/${contactId}`, label };
+}
+
+function BrandPortalLink({ className = '' }: { className?: string }) {
+  const link = useBrandPortalLink();
+  if (!link) return null;
+  return (
+    <a
+      href={link.href}
+      className={`inline-flex items-center gap-1.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors ${className}`}
+      title="back to your brand portal"
+    >
+      <Undo2 className="w-4 h-4" />
+      <span>{link.label}</span>
+    </a>
+  );
+}
 
 function NavActionsDesktop() {
   const { startAnalysis, isAnalyzing } = useBrand();
@@ -207,8 +246,9 @@ function SwagsLayoutContent({
 
             {/* Right side actions */}
             <div className="flex items-center gap-2">
-              {/* Desktop: Full find-swags button */}
-              <div className="hidden md:block">
+              {/* Desktop: "back to your portal" + find-partners CTA */}
+              <div className="hidden md:flex items-center gap-4">
+                <BrandPortalLink />
                 <NavActionsDesktop />
               </div>
 
@@ -278,7 +318,8 @@ function SwagsLayoutContent({
             );
           })}
         </nav>
-        <div className="p-4 border-t border-[var(--border-default)]">
+        <div className="p-4 border-t border-[var(--border-default)] space-y-3">
+          <BrandPortalLink className="block" />
           <MobileMenuFindSwagsButton onClose={() => setMobileMenuOpen(false)} />
         </div>
       </div>
