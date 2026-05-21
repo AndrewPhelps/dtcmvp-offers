@@ -4,6 +4,17 @@ import type { NextRequest } from 'next/server';
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Cross-app SSO: requests carrying ?token=<jwt> are inbound from another
+  // dtcmvp app (e.g. brand-portal → partners.dtcmvp). Let them through so
+  // the page's client-side AuthContext can exchange the token, set the
+  // cookie, and render in one shot. Without this bypass the cookieless
+  // first hit would 307 → /login, flashing the login screen before SSO
+  // completes client-side. AuthContext still gates invalid tokens, so this
+  // isn't a security regression — it just skips a wasted server redirect.
+  if (request.nextUrl.searchParams.has('token')) {
+    return NextResponse.next();
+  }
+
   // Public routes (also excluded by the matcher below; in-function checks are defense in depth).
   if (pathname === '/login') return NextResponse.next();
   if (pathname.startsWith('/b/') || pathname === '/b') return NextResponse.next();

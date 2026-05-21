@@ -25,10 +25,26 @@ function isPublicPath(pathname: string): boolean {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  // True while a cross-app ?token= handoff is being exchanged. Used to
+  // suppress rendering of children (which would briefly show the
+  // unauthenticated marketplace skeleton) and show a "signing you in…"
+  // splash instead. Set in useEffect (not lazy init) to avoid SSR/client
+  // hydration mismatches — server has no URL to inspect.
+  const [ssoInProgress, setSsoInProgress] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
+  // Flip ssoInProgress on as early as possible during client mount so the
+  // splash replaces children before they get a chance to render their
+  // unauthenticated state. This runs once on mount (empty deps).
+  useEffect(() => {
+    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('token')) {
+      setSsoInProgress(true);
+    }
+  }, []);
+
   const loadUser = async () => {
+    let didSso = false;
     try {
       // Cross-app SSO: if another dtcmvp app handed us an access token via
       // ?token=<jwt>, exchange it for a full session before doing anything
@@ -40,6 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const urlToken = urlParams.get('token');
 
         if (urlToken) {
+          didSso = true;
           console.log('[Auth] Found token in URL, attempting SSO login...');
           const result = await loginWithToken(urlToken);
 
@@ -47,10 +64,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser(result.user);
             setLoading(false);
 
-            // Respect ?redirect= from the inbound URL (defaults to /offers
-            // since that's the canonical landing page for brand contacts).
-            const requestedRedirect = urlParams.get('redirect') || '/offers';
-            const safeRedirect = requestedRedirect.startsWith('/') ? requestedRedirect : '/offers';
+            // Respect ?redirect= from the inbound URL. Default to '/' since
+            // that's the canonical partners listing on partners.dtcmvp.com
+            // (middleware 301s /offers → /, but we'd rather avoid the
+            // round-trip and land directly on the canonical path).
+            const requestedRedirect = urlParams.get('redirect') || '/';
+            const safeRedirect = requestedRedirect.startsWith('/') ? requestedRedirect : '/';
 
             // Scrub token + redirect from the URL before navigating.
             window.history.replaceState({}, '', window.location.pathname);
@@ -99,6 +118,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       router.push('/login');
     } finally {
       setLoading(false);
+      // Always clear the SSO splash once loadUser has either succeeded or
+      // bailed to /login. We use `didSso` rather than checking the URL again
+      // because router.push above may have already navigated away.
+      if (didSso) setSsoInProgress(false);
     }
   };
 
@@ -146,8 +169,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={{ user, loading, signOut, refreshUser, hasPermission }}>
-      {children}
+      {ssoInProgress ? <SsoSplash /> : children}
     </AuthContext.Provider>
+  );
+}
+
+// Full-page splash shown while a cross-app ?token= is being exchanged.
+// Replaces the children render so the marketplace doesn't briefly flash
+// its unauthenticated skeleton. Tailwind primitives only — no project
+// CSS dependencies — so this works even before the page's own styles load.
+function SsoSplash() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-[var(--bg-body,#0a0e1a)]">
+      <div className="text-center">
+        <div
+          className="inline-block w-8 h-8 border-2 border-[var(--brand-green-secondary,#7af0a0)] border-t-transparent rounded-full animate-spin mb-4"
+          aria-hidden="true"
+        />
+        <p className="text-sm text-[var(--text-secondary,#94a3b8)] lowercase">
+          signing you in…
+        </p>
+      </div>
+    </div>
   );
 }
 
