@@ -48,16 +48,12 @@ const BRAND_PORTAL_BASE = 'https://brand.dtcmvp.com';
  * or a user whose profile has no airtable_contact_id) so the navbar can
  * conditionally hide the link.
  */
-function useBrandPortalLink(): { href: string; label: string } | null {
+function useBrandPortalLink(): { href: string } | null {
   const { user } = useAuth();
   const { testBrand } = useImpersonation();
   const contactId = testBrand?.contactAirtableId || user?.airtable_contact_id || null;
   if (!contactId) return null;
-  // Friendly-name resolution: impersonated brand's first name wins,
-  // then the auth user's first name, else a generic "your portal".
-  const firstName = (testBrand?.name || user?.username || '').trim().split(/\s+/)[0];
-  const label = firstName ? `${firstName.toLowerCase()}'s portal` : 'your portal';
-  return { href: `${BRAND_PORTAL_BASE}/${contactId}`, label };
+  return { href: `${BRAND_PORTAL_BASE}/${contactId}` };
 }
 
 function BrandPortalLink({ className = '' }: { className?: string }) {
@@ -70,7 +66,7 @@ function BrandPortalLink({ className = '' }: { className?: string }) {
       title="back to your brand portal"
     >
       <Undo2 className="w-4 h-4" />
-      <span>{link.label}</span>
+      <span>portal</span>
     </a>
   );
 }
