@@ -102,7 +102,7 @@
     "User testimonial: 'Our first campaign we saw a 1000% ROI'"
   ],
   "narrative": {
-    "headline": "PostPilot could add {totalValue}/yr to {brandName} through direct mail.",
+    "headline": "PostPilot could add {totalValue}/yr to {brandName}.",
     "byDepartment": {
       "Retention / CRM": "For {contactName} on the retention side: PostPilot reaches the 30-50% of your email list that has stopped opening. Direct mail reactivates lapsed customers that no digital channel can touch. The {benefit_lapsed_reactivation}/yr in reactivation revenue comes from customers {brandName} has already paid to acquire.",
       "Marketing / Growth": "For {contactName} and the marketing team: direct mail is the channel your competitors are not using. PostPilot's acquisition campaigns deliver 3.8-11.5x ROAS based on case studies, and the reactivation play brings back customers that email has lost for {brandName}.",

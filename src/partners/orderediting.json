@@ -63,7 +63,7 @@
     "David Protein: ~$1,000/day attributed to Order Editing"
   ],
   "narrative": {
-    "headline": "Order Editing could add {totalValue}/yr to {brandName} through self-serve order edits.",
+    "headline": "Order Editing could add {totalValue}/yr to {brandName}.",
     "byDepartment": {
       "CX / Support": "For {contactName} on the CX team: Order Editing eliminates the most repetitive ticket type (order changes). The {costSavingsTotal}/yr in savings comes from customers fixing their own orders instead of contacting support. Your agents get to focus on real problems.",
       "Ecommerce / DTC": "For {contactName} on the ecom side: Order Editing is a dual play. {costSavingsTotal}/yr in ticket deflection plus {revenueTotal}/yr in upsell revenue from the self-serve editing flow. Customers who edit their orders also add items.",

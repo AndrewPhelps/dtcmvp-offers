@@ -92,7 +92,7 @@
     "Calculator inputs: monthly order volume, product mix (cart/checkout/post-purchase/Rokt Thanks), gross margin"
   ],
   "narrative": {
-    "headline": "Aftersell could add {totalValue}/yr to {brandName} through post-purchase upsells and checkout optimization.",
+    "headline": "Aftersell could add {totalValue}/yr to {brandName}.",
     "byDepartment": {
       "Ecommerce / DTC": "For {contactName} on the ecom side: Aftersell adds revenue at three points in the checkout funnel: cart optimization, post-purchase upsells, and thank-you page ads. The {revenueTotal}/yr total comes from customers who have already committed to buying, so it is incremental to your existing conversion rate.",
       "Marketing / Growth": "For {contactName} and the marketing team: this is pure bottom-of-funnel revenue that requires zero additional traffic. {revenueTotal}/yr comes from monetizing the checkout and post-purchase experience for {brandName}'s existing orders.",
